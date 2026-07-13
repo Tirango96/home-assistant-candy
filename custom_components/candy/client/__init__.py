@@ -96,6 +96,10 @@ class CandyClient:
         return await self.fetch_statistics()
 
     async def fetch_statistics(self) -> WashingMachineStatistics:
+        prepare_url = _prepare_statistics_url(self.device_ip, self.use_encryption)
+        async with _LIMITER, self.session.get(prepare_url) as resp:
+            await resp.read()
+
         url = _statistics_url(self.device_ip, self.use_encryption)
         async with _LIMITER, self.session.get(url) as resp:
             if self.use_encryption:
@@ -170,6 +174,10 @@ def _status_url(device_ip: str, use_encryption: bool) -> str:
 
 def _statistics_url(device_ip: str, use_encryption: bool) -> str:
     return f"http://{device_ip}/http-getStatistics.json?encrypted={1 if use_encryption else 0}"
+
+
+def _prepare_statistics_url(device_ip: str, use_encryption: bool) -> str:
+    return f"http://{device_ip}/http-prepareStatistics.json?encrypted={1 if use_encryption else 0}"
 
 
 # Maps JSON root keys to human-readable device type labels

@@ -36,6 +36,10 @@ async def init_integration(
     )
     if statistics_response is not None:
         aioclient_mock.get(
+            f"http://{TEST_IP}/http-prepareStatistics.json?encrypted=0",
+            text='{"response":"SUCCESS"}',
+        )
+        aioclient_mock.get(
             f"http://{TEST_IP}/http-getStatistics.json?encrypted=0",
             text=statistics_response,
         )
