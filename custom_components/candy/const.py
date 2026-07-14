@@ -5,9 +5,21 @@ PLATFORMS = ["sensor"]
 
 DATA_KEY_COORDINATOR = "coordinator"
 DATA_KEY_STATS_COORDINATOR = "stats_coordinator"
+DATA_KEY_CLIENT = "client"
 
 CONF_INTEGRATION_TITLE = "Candy"
 CONF_KEY_USE_ENCRYPTION = "use_encryption"
+
+# Integration mode stored in config entry
+CONF_KEY_MODE = "mode"
+MODE_READ_ONLY = "read_only"
+MODE_FULL_CONTROL = "full_control"
+
+# Config entry fields populated from Simply-Fi cloud in Full Control mode
+CONF_KEY_MAC_ADDRESS = "mac_address"
+CONF_KEY_PROGRAMS = "simply_fi_programs"
+CONF_KEY_DEVICE_MODEL = "device_model"
+CONF_KEY_SERIAL_NUMBER = "serial_number"
 
 UNIQUE_ID_WASHING_MACHINE = "{0}-washing_machine"
 UNIQUE_ID_WASH_PROGRAM = "{0}-wash_program"

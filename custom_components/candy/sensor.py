@@ -11,7 +11,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory, UnitOfTemperature, UnitOfTime
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import (
@@ -30,6 +30,10 @@ from .client.model import (
     WashingMachineStatistics,
 )
 from .const import (
+    CONF_KEY_DEVICE_MODEL,
+    CONF_KEY_MAC_ADDRESS,
+    CONF_KEY_MODE,
+    CONF_KEY_SERIAL_NUMBER,
     DATA_KEY_COORDINATOR,
     DATA_KEY_STATS_COORDINATOR,
     DEVICE_NAME_DISHWASHER,
@@ -37,6 +41,7 @@ from .const import (
     DEVICE_NAME_TUMBLE_DRYER,
     DEVICE_NAME_WASHING_MACHINE,
     DOMAIN,
+    MODE_FULL_CONTROL,
     SUGGESTED_AREA_BATHROOM,
     SUGGESTED_AREA_KITCHEN,
     UNIQUE_ID_DISHWASHER,
@@ -77,13 +82,13 @@ async def async_setup_entry(
     if isinstance(coordinator.data, WashingMachineStatus):
         status = coordinator.data
         entities: list[CandyBaseSensor] = [
-            CandyWashingMachineSensor(coordinator, config_id),
-            CandyWashProgramSensor(coordinator, config_id),
-            CandyWashCycleStatusSensor(coordinator, config_id),
-            CandyWashRemainingTimeSensor(coordinator, config_id),
-            CandyWashTemperatureSensor(coordinator, config_id),
-            CandyWashSpinSpeedSensor(coordinator, config_id),
-            CandyWashErrorSensor(coordinator, config_id),
+            CandyWashingMachineSensor(coordinator, config_entry),
+            CandyWashProgramSensor(coordinator, config_entry),
+            CandyWashCycleStatusSensor(coordinator, config_entry),
+            CandyWashRemainingTimeSensor(coordinator, config_entry),
+            CandyWashTemperatureSensor(coordinator, config_entry),
+            CandyWashSpinSpeedSensor(coordinator, config_entry),
+            CandyWashErrorSensor(coordinator, config_entry),
         ]
         registry = er.async_get(hass)
 
@@ -98,48 +103,48 @@ async def async_setup_entry(
         if status.fill_percent is not None or _was_registered(
             UNIQUE_ID_WASH_FILL_PERCENT
         ):
-            entities.append(CandyWashFillPercentSensor(coordinator, config_id))
+            entities.append(CandyWashFillPercentSensor(coordinator, config_entry))
         if status.delay_value is not None or _was_registered(UNIQUE_ID_WASH_DELAY):
-            entities.append(CandyWashDelaySensor(coordinator, config_id))
+            entities.append(CandyWashDelaySensor(coordinator, config_entry))
         if status.ntc_water is not None or _was_registered(UNIQUE_ID_WASH_NTC_WATER):
-            entities.append(CandyWashNtcWaterSensor(coordinator, config_id))
+            entities.append(CandyWashNtcWaterSensor(coordinator, config_entry))
         if status.ntc_drum is not None or _was_registered(UNIQUE_ID_WASH_NTC_DRUM):
-            entities.append(CandyWashNtcDrumSensor(coordinator, config_id))
+            entities.append(CandyWashNtcDrumSensor(coordinator, config_entry))
         if status.motor_speed_freq is not None or _was_registered(
             UNIQUE_ID_WASH_MOTOR_FREQ
         ):
-            entities.append(CandyWashMotorFreqSensor(coordinator, config_id))
+            entities.append(CandyWashMotorFreqSensor(coordinator, config_entry))
         if status.check_up_state is not None or _was_registered(
             UNIQUE_ID_WASH_CHECK_UP
         ):
-            entities.append(CandyWashCheckUpSensor(coordinator, config_id))
+            entities.append(CandyWashCheckUpSensor(coordinator, config_entry))
         stats_coordinator = hass.data[DOMAIN][config_id].get(DATA_KEY_STATS_COORDINATOR)
         if stats_coordinator is not None:
-            entities.append(CandyWashTotalCyclesSensor(stats_coordinator, config_id))
+            entities.append(CandyWashTotalCyclesSensor(stats_coordinator, config_entry))
         async_add_entities(entities)
     elif isinstance(coordinator.data, TumbleDryerStatus):
         async_add_entities(
             [
-                CandyTumbleDryerSensor(coordinator, config_id),
-                CandyTumbleProgramSensor(coordinator, config_id),
-                CandyTumbleStatusSensor(coordinator, config_id),
-                CandyTumbleRemainingTimeSensor(coordinator, config_id),
+                CandyTumbleDryerSensor(coordinator, config_entry),
+                CandyTumbleProgramSensor(coordinator, config_entry),
+                CandyTumbleStatusSensor(coordinator, config_entry),
+                CandyTumbleRemainingTimeSensor(coordinator, config_entry),
             ]
         )
     elif isinstance(coordinator.data, OvenStatus):
         async_add_entities(
             [
-                CandyOvenSensor(coordinator, config_id),
-                CandyOvenProgramSensor(coordinator, config_id),
-                CandyOvenTempSensor(coordinator, config_id),
+                CandyOvenSensor(coordinator, config_entry),
+                CandyOvenProgramSensor(coordinator, config_entry),
+                CandyOvenTempSensor(coordinator, config_entry),
             ]
         )
     elif isinstance(coordinator.data, DishwasherStatus):
         async_add_entities(
             [
-                CandyDishwasherSensor(coordinator, config_id),
-                CandyDishwasherProgramSensor(coordinator, config_id),
-                CandyDishwasherRemainingTimeSensor(coordinator, config_id),
+                CandyDishwasherSensor(coordinator, config_entry),
+                CandyDishwasherProgramSensor(coordinator, config_entry),
+                CandyDishwasherRemainingTimeSensor(coordinator, config_entry),
             ]
         )
     else:
@@ -147,18 +152,32 @@ async def async_setup_entry(
 
 
 class CandyBaseSensor(CoordinatorEntity, SensorEntity):
-    def __init__(self, coordinator: DataUpdateCoordinator, config_id: str):
+    def __init__(self, coordinator: DataUpdateCoordinator, config_entry: ConfigEntry):
         super().__init__(coordinator)
-        self.config_id = config_id
+        self.config_entry = config_entry
+        self.config_id = config_entry.entry_id
 
     @property
     def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
+        info = DeviceInfo(
             identifiers={(DOMAIN, self.config_id)},
             name=self.device_name(),
             manufacturer="Candy",
             suggested_area=self.suggested_area(),
         )
+        if self.config_entry.data.get(CONF_KEY_MAC_ADDRESS):
+            info["connections"] = {
+                (
+                    dr.CONNECTION_NETWORK_MAC,
+                    self.config_entry.data[CONF_KEY_MAC_ADDRESS],
+                )
+            }
+        if self.config_entry.data.get(CONF_KEY_MODE) == MODE_FULL_CONTROL:
+            if self.config_entry.data.get(CONF_KEY_DEVICE_MODEL):
+                info["model"] = self.config_entry.data[CONF_KEY_DEVICE_MODEL]
+            if self.config_entry.data.get(CONF_KEY_SERIAL_NUMBER):
+                info["serial_number"] = self.config_entry.data[CONF_KEY_SERIAL_NUMBER]
+        return info
 
     @abstractmethod
     def device_name(self) -> str:

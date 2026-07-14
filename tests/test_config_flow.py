@@ -7,6 +7,7 @@ import pytest
 from custom_components.candy import CONF_KEY_USE_ENCRYPTION, DOMAIN
 from custom_components.candy.client import Encryption
 from custom_components.candy.config_flow import MANUAL_IP_OPTION
+from custom_components.candy.const import CONF_KEY_MODE, MODE_READ_ONLY
 
 # ---------------------------------------------------------------------------
 # Shared fixtures
@@ -94,12 +95,18 @@ async def test_no_encryption_detected(hass, no_discovery, detect_no_encryption):
         result["flow_id"], user_input={CONF_IP_ADDRESS: "192.168.0.66"}
     )
 
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "mode"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_MODE: MODE_READ_ONLY}
+    )
+
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     assert result["title"] == "Candy"
-    assert result["data"] == {
-        CONF_IP_ADDRESS: "192.168.0.66",
-        CONF_KEY_USE_ENCRYPTION: False,
-    }
+    assert result["data"][CONF_IP_ADDRESS] == "192.168.0.66"
+    assert result["data"][CONF_KEY_USE_ENCRYPTION] is False
+    assert result["data"][CONF_KEY_MODE] == MODE_READ_ONLY
     assert result["result"]
 
 
@@ -118,13 +125,19 @@ async def test_detected_encryption_and_key_found(
         result["flow_id"], user_input={CONF_IP_ADDRESS: "192.168.0.66"}
     )
 
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "mode"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_MODE: MODE_READ_ONLY}
+    )
+
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     assert result["title"] == "Candy"
-    assert result["data"] == {
-        CONF_IP_ADDRESS: "192.168.0.66",
-        CONF_KEY_USE_ENCRYPTION: True,
-        CONF_PASSWORD: "testkey",
-    }
+    assert result["data"][CONF_IP_ADDRESS] == "192.168.0.66"
+    assert result["data"][CONF_KEY_USE_ENCRYPTION] is True
+    assert result["data"][CONF_PASSWORD] == "testkey"
+    assert result["data"][CONF_KEY_MODE] == MODE_READ_ONLY
     assert result["result"]
 
 
@@ -162,13 +175,19 @@ async def test_detected_encryption_without_key(
         result["flow_id"], user_input={CONF_IP_ADDRESS: "192.168.0.66"}
     )
 
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "mode"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_MODE: MODE_READ_ONLY}
+    )
+
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     assert result["title"] == "Candy"
-    assert result["data"] == {
-        CONF_IP_ADDRESS: "192.168.0.66",
-        CONF_KEY_USE_ENCRYPTION: True,
-        CONF_PASSWORD: "",
-    }
+    assert result["data"][CONF_IP_ADDRESS] == "192.168.0.66"
+    assert result["data"][CONF_KEY_USE_ENCRYPTION] is True
+    assert result["data"][CONF_PASSWORD] == ""
+    assert result["data"][CONF_KEY_MODE] == MODE_READ_ONLY
     assert result["result"]
 
 
@@ -200,7 +219,7 @@ async def test_discovery_finds_devices_and_shows_select(hass, detect_no_encrypti
 
 
 async def test_discovery_select_device(hass, detect_no_encryption):  # pylint: disable=unused-argument
-    """Test selecting a discovered device creates the entry correctly."""
+    """Test selecting a discovered device proceeds to mode selection."""
     with (
         patch(
             "custom_components.candy.config_flow.discover_devices",
@@ -223,9 +242,17 @@ async def test_discovery_select_device(hass, detect_no_encryption):  # pylint: d
         result["flow_id"], user_input={CONF_IP_ADDRESS: "192.168.1.79"}
     )
 
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "mode"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_MODE: MODE_READ_ONLY}
+    )
+
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_IP_ADDRESS] == "192.168.1.79"
     assert result["data"][CONF_KEY_USE_ENCRYPTION] is False
+    assert result["data"][CONF_KEY_MODE] == MODE_READ_ONLY
 
 
 async def test_discovery_select_manual_fallback(hass):

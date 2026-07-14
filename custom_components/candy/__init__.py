@@ -34,6 +34,7 @@ from .client.model import (
 )
 from .const import (
     CONF_KEY_USE_ENCRYPTION,
+    DATA_KEY_CLIENT,
     DATA_KEY_COORDINATOR,
     DATA_KEY_STATS_COORDINATOR,
     DOMAIN,
@@ -248,15 +249,15 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
         can_infer_off = (
             prev_state in _OFF_INFERRED_STATES or prev_state == MachineState.OFF
         )
-        # Use a single attempt (no backoff) when we can fall back to a cached Off status —
-        # retrying a connection error against an offline device just wastes time at startup.
-        fetch = client.status() if can_infer_off else client.status_with_retry()
         # When we can fall back to Off, use a short timeout — this cuts the stall caused by
         # the OS TCP retransmit cycle (~13s) for offline devices. 7s is chosen to guarantee
         # the rate limiter (max_rate=1, time_period=3s) clears before the HTTP request starts,
         # plus margin for WiFi jitter and slow firmware. Live devices respond in <100ms.
         poll_timeout = 7 if can_infer_off else 40
         try:
+            # Use a single attempt (no backoff) when we can fall back to a cached Off status —
+            # retrying a connection error against an offline device just wastes time at startup.
+            fetch = client.status() if can_infer_off else client.status_with_retry()
             async with async_timeout.timeout(poll_timeout):
                 status = await fetch
                 _LOGGER.debug("Fetched status: %s", status)
@@ -286,7 +287,8 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})[config_entry.entry_id] = {
-        DATA_KEY_COORDINATOR: coordinator
+        DATA_KEY_COORDINATOR: coordinator,
+        DATA_KEY_CLIENT: client,
     }
 
     if isinstance(coordinator.data, WashingMachineStatus):
@@ -317,9 +319,9 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
             update_interval=timedelta(hours=1),
             update_method=update_statistics,
         )
-        machine_is_off = (
-            getattr(coordinator.data, "machine_state", None) == MachineState.OFF
-        )
+        machine_is_off = getattr(
+            coordinator.data, "machine_state", None
+        ) in _OFF_INFERRED_STATES | {MachineState.OFF}
         if last_known_statistics is not None:
             # Seed the coordinator with the restored value so we skip the initial
             # network fetch (which would retry 3× against an offline machine).

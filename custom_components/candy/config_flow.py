@@ -14,14 +14,41 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import voluptuous as vol
 
 from .client import detect_encryption, discover_devices
+from .client.cloud import SimplyFiCloudError, fetch_appliance_data
 from .client.decryption import Encryption
-from .const import CONF_INTEGRATION_TITLE, CONF_KEY_USE_ENCRYPTION, DOMAIN
+from .const import (
+    CONF_INTEGRATION_TITLE,
+    CONF_KEY_DEVICE_MODEL,
+    CONF_KEY_MAC_ADDRESS,
+    CONF_KEY_MODE,
+    CONF_KEY_PROGRAMS,
+    CONF_KEY_SERIAL_NUMBER,
+    CONF_KEY_USE_ENCRYPTION,
+    DOMAIN,
+    MODE_FULL_CONTROL,
+    MODE_READ_ONLY,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 STEP_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_IP_ADDRESS): str,
+    }
+)
+
+MODE_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_KEY_MODE, default=MODE_READ_ONLY): vol.In(
+            [MODE_READ_ONLY, MODE_FULL_CONTROL]
+        ),
+    }
+)
+
+CLOUD_SCHEMA = vol.Schema(
+    {
+        vol.Required("email"): str,
+        vol.Required("password"): str,
     }
 )
 
@@ -43,12 +70,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
     def __init__(self) -> None:
         """Initialise config flow."""
         self._discovered: dict[str, str] = {}  # ip -> device type label
+        self._ip_address: str = ""
+        self._config_data: dict[str, Any] = {}  # accumulated config entry data
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle the initial step — try auto-discovery first."""
-        # On first call (no user_input) attempt LAN discovery
         if user_input is None:
             try:
                 session = async_get_clientsession(self.hass)
@@ -64,7 +92,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
             if self._discovered:
                 return await self.async_step_select()
 
-        # No devices found or user came back from select with "manual" — show manual form
         return await self._handle_manual_ip(user_input)
 
     async def async_step_select(
@@ -77,9 +104,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
                 return self.async_show_form(
                     step_id="user", data_schema=STEP_DATA_SCHEMA
                 )
-            return await self._configure_device(selected)
+            return await self._configure_local(selected)
 
-        # Build the selector list: "IP — Device Type" + manual option
         options = {ip: f"{ip} — {label}" for ip, label in self._discovered.items()}
         options[MANUAL_IP_OPTION] = "Enter IP address manually"
 
@@ -95,7 +121,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
 
         errors: dict[str, str] = {}
         try:
-            result = await self._configure_device(user_input[CONF_IP_ADDRESS])
+            result = await self._configure_local(user_input[CONF_IP_ADDRESS])
         except Exception:  # pylint: disable=broad-except
             errors["base"] = "detect_encryption"
         else:
@@ -105,9 +131,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
             step_id="user", data_schema=STEP_DATA_SCHEMA, errors=errors
         )
 
-    async def _configure_device(self, ip: str) -> ConfigFlowResult:
-        """Detect encryption and create the config entry."""
-        config_data: dict[str, Any] = {CONF_IP_ADDRESS: ip}
+    async def _configure_local(self, ip: str) -> ConfigFlowResult:
+        """Detect encryption for the device and advance to mode selection."""
         errors: dict[str, str] = {}
 
         try:
@@ -123,13 +148,130 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
                 step_id="user", data_schema=STEP_DATA_SCHEMA, errors=errors
             )
 
-        if encryption_type == Encryption.ENCRYPTION:
-            config_data[CONF_KEY_USE_ENCRYPTION] = True
-            config_data[CONF_PASSWORD] = key
-        elif encryption_type == Encryption.NO_ENCRYPTION:
-            config_data[CONF_KEY_USE_ENCRYPTION] = False
-        elif encryption_type == Encryption.ENCRYPTION_WITHOUT_KEY:
-            config_data[CONF_KEY_USE_ENCRYPTION] = True
-            config_data[CONF_PASSWORD] = ""
+        self._ip_address = ip
+        self._config_data = {CONF_IP_ADDRESS: ip}
 
-        return self.async_create_entry(title=CONF_INTEGRATION_TITLE, data=config_data)
+        if encryption_type == Encryption.ENCRYPTION:
+            self._config_data[CONF_KEY_USE_ENCRYPTION] = True
+            self._config_data[CONF_PASSWORD] = key
+        elif encryption_type == Encryption.NO_ENCRYPTION:
+            self._config_data[CONF_KEY_USE_ENCRYPTION] = False
+        elif encryption_type == Encryption.ENCRYPTION_WITHOUT_KEY:
+            self._config_data[CONF_KEY_USE_ENCRYPTION] = True
+            self._config_data[CONF_PASSWORD] = ""
+
+        return await self.async_step_mode()
+
+    async def async_step_mode(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask the user whether they want Read-Only or Full Control mode."""
+        if user_input is None:
+            return self.async_show_form(step_id="mode", data_schema=MODE_SCHEMA)
+
+        mode = user_input[CONF_KEY_MODE]
+        self._config_data[CONF_KEY_MODE] = mode
+
+        if mode == MODE_FULL_CONTROL:
+            return await self.async_step_cloud()
+
+        # Read-only: create entry immediately
+        return self.async_create_entry(
+            title=CONF_INTEGRATION_TITLE, data=self._config_data
+        )
+
+    async def async_step_cloud(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Collect Simply-Fi credentials and fetch appliance data from cloud."""
+        if user_input is None:
+            return self.async_show_form(step_id="cloud", data_schema=CLOUD_SCHEMA)
+
+        errors: dict[str, str] = {}
+        try:
+            async with async_timeout.timeout(30):
+                appliance = await fetch_appliance_data(
+                    session=async_get_clientsession(self.hass),
+                    email=user_input["email"],
+                    password=user_input["password"],
+                    device_ip=self._ip_address,
+                )
+        except SimplyFiCloudError as err:
+            _LOGGER.warning("Simply-Fi cloud fetch failed: %s", err)
+            errors["base"] = "cloud_auth"
+            return self.async_show_form(
+                step_id="cloud", data_schema=CLOUD_SCHEMA, errors=errors
+            )
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.exception("Unexpected error during Simply-Fi cloud fetch")
+            errors["base"] = "cloud_auth"
+            return self.async_show_form(
+                step_id="cloud", data_schema=CLOUD_SCHEMA, errors=errors
+            )
+
+        # Credentials are NOT stored — only the fetched appliance data
+        if appliance.encryption_key:
+            self._config_data[CONF_KEY_USE_ENCRYPTION] = True
+            self._config_data[CONF_PASSWORD] = appliance.encryption_key
+        if appliance.mac_address:
+            self._config_data[CONF_KEY_MAC_ADDRESS] = appliance.mac_address
+        if appliance.appliance_model:
+            self._config_data[CONF_KEY_DEVICE_MODEL] = appliance.appliance_model
+        if appliance.serial_number:
+            self._config_data[CONF_KEY_SERIAL_NUMBER] = appliance.serial_number
+        self._config_data[CONF_KEY_PROGRAMS] = appliance.programs
+
+        return self.async_create_entry(
+            title=CONF_INTEGRATION_TITLE, data=self._config_data
+        )
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Allow upgrading Read-Only → Full Control without reinstalling.
+
+        Shows the cloud credentials form directly, since IP + encryption are already
+        stored in the config entry.
+        """
+        if user_input is None:
+            return self.async_show_form(step_id="reconfigure", data_schema=CLOUD_SCHEMA)
+
+        entry = self._get_reconfigure_entry()
+        self._ip_address = entry.data[CONF_IP_ADDRESS]
+        self._config_data = dict(entry.data)
+
+        errors: dict[str, str] = {}
+        try:
+            async with async_timeout.timeout(30):
+                appliance = await fetch_appliance_data(
+                    session=async_get_clientsession(self.hass),
+                    email=user_input["email"],
+                    password=user_input["password"],
+                    device_ip=self._ip_address,
+                )
+        except SimplyFiCloudError as err:
+            _LOGGER.warning("Simply-Fi cloud fetch failed during reconfigure: %s", err)
+            errors["base"] = "cloud_auth"
+            return self.async_show_form(
+                step_id="reconfigure", data_schema=CLOUD_SCHEMA, errors=errors
+            )
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.exception("Unexpected error during reconfigure cloud fetch")
+            errors["base"] = "cloud_auth"
+            return self.async_show_form(
+                step_id="reconfigure", data_schema=CLOUD_SCHEMA, errors=errors
+            )
+
+        self._config_data[CONF_KEY_MODE] = MODE_FULL_CONTROL
+        if appliance.encryption_key:
+            self._config_data[CONF_KEY_USE_ENCRYPTION] = True
+            self._config_data[CONF_PASSWORD] = appliance.encryption_key
+        if appliance.mac_address:
+            self._config_data[CONF_KEY_MAC_ADDRESS] = appliance.mac_address
+        if appliance.appliance_model:
+            self._config_data[CONF_KEY_DEVICE_MODEL] = appliance.appliance_model
+        if appliance.serial_number:
+            self._config_data[CONF_KEY_SERIAL_NUMBER] = appliance.serial_number
+        self._config_data[CONF_KEY_PROGRAMS] = appliance.programs
+
+        return self.async_update_reload_and_abort(entry, data=self._config_data)

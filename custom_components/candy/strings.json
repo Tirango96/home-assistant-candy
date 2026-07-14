@@ -12,11 +12,27 @@
         "data": {
           "ip_address": "Device"
         }
+      },
+      "mode": {
+        "title": "Integration mode",
+        "description": "Choose **Read-Only** to monitor your device without any cloud connection.\n\nChoose **Full Control** to also start/stop programs. This requires your Simply-Fi account credentials once — they are used only to download your appliance settings and are never stored.",
+        "data": {
+          "mode": "Mode"
+        }
+      },
+      "cloud": {
+        "title": "Simply-Fi account",
+        "description": "Enter your Simply-Fi / hOn credentials. They will be used once to fetch your appliance settings and will not be stored.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
       }
     },
     "error": {
       "unknown": "[%key:common::config_flow::error::unknown%]",
-      "detect_encryption": "Failed to detect encryption, check logs"
+      "detect_encryption": "Failed to detect encryption, check logs",
+      "cloud_auth": "Failed to connect to Simply-Fi cloud. Check your credentials and try again."
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
