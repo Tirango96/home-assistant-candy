@@ -199,7 +199,7 @@ class WashStartButton(CandyWashButtonBase):
         params = {
             "Write": 1,
             "StSt": 1,
-            "DelVl": delay,
+            "DelVl": delay * 3,  # device uses 20-min increments; 1 h = 3 units
             "PrNm": program.position,
             "PrCode": program.pr_code,
             "PrStr": program.name,

@@ -50,7 +50,7 @@ async def async_setup_entry(
 
 class WashDelayNumber(CoordinatorEntity, NumberEntity):
     _attr_native_min_value = 0
-    _attr_native_max_value = 23
+    _attr_native_max_value = 8
     _attr_native_step = 1
     _attr_native_unit_of_measurement = UnitOfTime.HOURS
     _attr_mode = NumberMode.BOX
