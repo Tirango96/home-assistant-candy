@@ -55,6 +55,7 @@ class WashDelayNumber(CoordinatorEntity, NumberEntity):
     _attr_native_unit_of_measurement = UnitOfTime.HOURS
     _attr_mode = NumberMode.BOX
     _attr_icon = "mdi:timer-outline"
+    _attr_translation_key = "wash_delay_number"
 
     def __init__(
         self,

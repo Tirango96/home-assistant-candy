@@ -81,6 +81,12 @@
       "wash_motor_frequency": {
         "name": "Wash motor frequency"
       },
+      "wash_maintenance": {
+        "name": "Wash maintenance"
+      },
+      "wash_total_cycles": {
+        "name": "Wash total cycles"
+      },
       "wash_program": {
         "name": "Wash program"
       },

@@ -51,6 +51,9 @@
       "washing_machine": {
         "name": "Washing machine"
       },
+      "wash_program": {
+        "name": "Wash program"
+      },
       "wash_cycle_status": {
         "name": "Wash cycle status"
       },
@@ -81,8 +84,17 @@
       "wash_motor_frequency": {
         "name": "Wash motor frequency"
       },
+      "wash_maintenance": {
+        "name": "Wash maintenance"
+      },
+      "wash_total_cycles": {
+        "name": "Wash total cycles"
+      },
       "tumble_dryer": {
         "name": "Tumble dryer"
+      },
+      "tumble_program": {
+        "name": "Dryer program"
       },
       "tumble_cycle_status": {
         "name": "Tumble cycle status"
@@ -93,11 +105,17 @@
       "oven": {
         "name": "Oven"
       },
+      "oven_program": {
+        "name": "Oven program"
+      },
       "oven_temperature": {
         "name": "Oven temperature"
       },
       "dishwasher": {
         "name": "Dishwasher"
+      },
+      "dishwasher_program": {
+        "name": "Dishwasher program"
       },
       "dishwasher_remaining_time": {
         "name": "Dishwasher remaining time"

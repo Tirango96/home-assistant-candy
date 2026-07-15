@@ -103,6 +103,8 @@ class CandyWashButtonBase(CoordinatorEntity, ButtonEntity):
 
 
 class WashStartButton(CandyWashButtonBase):
+    _attr_translation_key = "wash_start_button"
+
     def __init__(
         self,
         coordinator: DataUpdateCoordinator,
@@ -218,6 +220,8 @@ class WashStartButton(CandyWashButtonBase):
 
 
 class WashStopButton(CandyWashButtonBase):
+    _attr_translation_key = "wash_stop_button"
+
     @property
     def unique_id(self) -> str:
         return UNIQUE_ID_WASH_STOP_BUTTON.format(self.config_id)

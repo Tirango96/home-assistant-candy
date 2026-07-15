@@ -196,15 +196,14 @@ class CandyBaseSensor(CoordinatorEntity, SensorEntity):
 
 
 class CandyWashingMachineSensor(CandyBaseSensor):
+    _attr_translation_key = "washing_machine"
+    _attr_name = "Washing machine"
+
     def device_name(self) -> str:
         return DEVICE_NAME_WASHING_MACHINE
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_BATHROOM
-
-    @property
-    def name(self) -> str:
-        return self.device_name()
 
     @property
     def unique_id(self) -> str:
@@ -243,15 +242,14 @@ class CandyWashingMachineSensor(CandyBaseSensor):
 
 
 class CandyWashProgramSensor(CandyBaseSensor):
+    _attr_translation_key = "wash_program"
+    _attr_name = "Wash program"
+
     def device_name(self) -> str:
         return DEVICE_NAME_WASHING_MACHINE
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_BATHROOM
-
-    @property
-    def name(self) -> str:
-        return "Wash program"
 
     @property
     def unique_id(self) -> str:
@@ -275,15 +273,14 @@ class CandyWashProgramSensor(CandyBaseSensor):
 
 
 class CandyWashCycleStatusSensor(CandyBaseSensor):
+    _attr_translation_key = "wash_cycle_status"
+    _attr_name = "Wash cycle status"
+
     def device_name(self) -> str:
         return DEVICE_NAME_WASHING_MACHINE
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_BATHROOM
-
-    @property
-    def name(self) -> str:
-        return "Wash cycle status"
 
     @property
     def unique_id(self) -> str:
@@ -300,15 +297,14 @@ class CandyWashCycleStatusSensor(CandyBaseSensor):
 
 
 class CandyWashRemainingTimeSensor(CandyBaseSensor):
+    _attr_translation_key = "wash_remaining_time"
+    _attr_name = "Wash cycle remaining time"
+
     def device_name(self) -> str:
         return DEVICE_NAME_WASHING_MACHINE
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_BATHROOM
-
-    @property
-    def name(self) -> str:
-        return "Wash cycle remaining time"
 
     @property
     def unique_id(self) -> str:
@@ -337,15 +333,14 @@ class CandyWashRemainingTimeSensor(CandyBaseSensor):
 class CandyWashTemperatureSensor(CandyBaseSensor):
     """Set temperature selected on the washing machine."""
 
+    _attr_translation_key = "wash_temperature"
+    _attr_name = "Wash temperature"
+
     def device_name(self) -> str:
         return DEVICE_NAME_WASHING_MACHINE
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_BATHROOM
-
-    @property
-    def name(self) -> str:
-        return "Wash temperature"
 
     @property
     def unique_id(self) -> str:
@@ -371,15 +366,14 @@ class CandyWashTemperatureSensor(CandyBaseSensor):
 class CandyWashSpinSpeedSensor(CandyBaseSensor):
     """Spin speed selected on the washing machine."""
 
+    _attr_translation_key = "wash_spin_speed"
+    _attr_name = "Wash spin speed"
+
     def device_name(self) -> str:
         return DEVICE_NAME_WASHING_MACHINE
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_BATHROOM
-
-    @property
-    def name(self) -> str:
-        return "Wash spin speed"
 
     @property
     def unique_id(self) -> str:
@@ -401,15 +395,14 @@ class CandyWashSpinSpeedSensor(CandyBaseSensor):
 class CandyWashFillPercentSensor(CandyBaseSensor):
     """Water fill level in the drum (0-100%)."""
 
+    _attr_translation_key = "wash_fill_level"
+    _attr_name = "Wash fill level"
+
     def device_name(self) -> str:
         return DEVICE_NAME_WASHING_MACHINE
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_BATHROOM
-
-    @property
-    def name(self) -> str:
-        return "Wash fill level"
 
     @property
     def unique_id(self) -> str:
@@ -431,6 +424,9 @@ class CandyWashFillPercentSensor(CandyBaseSensor):
 class CandyWashErrorSensor(CandyBaseSensor):
     """Error code reported by the washing machine (0 = no error)."""
 
+    _attr_translation_key = "wash_error_code"
+    _attr_name = "Wash error code"
+
     def device_name(self) -> str:
         return DEVICE_NAME_WASHING_MACHINE
 
@@ -440,10 +436,6 @@ class CandyWashErrorSensor(CandyBaseSensor):
     @property
     def entity_category(self) -> EntityCategory:
         return EntityCategory.DIAGNOSTIC
-
-    @property
-    def name(self) -> str:
-        return "Wash error code"
 
     @property
     def unique_id(self) -> str:
@@ -461,15 +453,14 @@ class CandyWashErrorSensor(CandyBaseSensor):
 class CandyWashDelaySensor(CandyBaseSensor):
     """Delay start value set on the washing machine."""
 
+    _attr_translation_key = "wash_delay_start"
+    _attr_name = "Wash delay start"
+
     def device_name(self) -> str:
         return DEVICE_NAME_WASHING_MACHINE
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_BATHROOM
-
-    @property
-    def name(self) -> str:
-        return "Wash delay start"
 
     @property
     def unique_id(self) -> str:
@@ -495,6 +486,9 @@ class CandyWashDelaySensor(CandyBaseSensor):
 class CandyWashNtcWaterSensor(CandyBaseSensor):
     """Raw NTC water temperature sensor reading."""
 
+    _attr_translation_key = "wash_ntc_water"
+    _attr_name = "Wash NTC water"
+
     def device_name(self) -> str:
         return DEVICE_NAME_WASHING_MACHINE
 
@@ -504,10 +498,6 @@ class CandyWashNtcWaterSensor(CandyBaseSensor):
     @property
     def entity_category(self) -> EntityCategory:
         return EntityCategory.DIAGNOSTIC
-
-    @property
-    def name(self) -> str:
-        return "Wash NTC water"
 
     @property
     def unique_id(self) -> str:
@@ -525,6 +515,9 @@ class CandyWashNtcWaterSensor(CandyBaseSensor):
 class CandyWashNtcDrumSensor(CandyBaseSensor):
     """Raw NTC drum temperature sensor reading."""
 
+    _attr_translation_key = "wash_ntc_drum"
+    _attr_name = "Wash NTC drum"
+
     def device_name(self) -> str:
         return DEVICE_NAME_WASHING_MACHINE
 
@@ -534,10 +527,6 @@ class CandyWashNtcDrumSensor(CandyBaseSensor):
     @property
     def entity_category(self) -> EntityCategory:
         return EntityCategory.DIAGNOSTIC
-
-    @property
-    def name(self) -> str:
-        return "Wash NTC drum"
 
     @property
     def unique_id(self) -> str:
@@ -555,6 +544,9 @@ class CandyWashNtcDrumSensor(CandyBaseSensor):
 class CandyWashMotorFreqSensor(CandyBaseSensor):
     """Motor APS frequency reported by the washing machine."""
 
+    _attr_translation_key = "wash_motor_frequency"
+    _attr_name = "Wash motor frequency"
+
     def device_name(self) -> str:
         return DEVICE_NAME_WASHING_MACHINE
 
@@ -564,10 +556,6 @@ class CandyWashMotorFreqSensor(CandyBaseSensor):
     @property
     def entity_category(self) -> EntityCategory:
         return EntityCategory.DIAGNOSTIC
-
-    @property
-    def name(self) -> str:
-        return "Wash motor frequency"
 
     @property
     def unique_id(self) -> str:
@@ -593,6 +581,8 @@ class CandyWashMotorFreqSensor(CandyBaseSensor):
 class CandyWashCheckUpSensor(CandyBaseSensor, RestoreSensor):
     """Check-up state reported by the washing machine (0 = ok, non-zero = service due)."""
 
+    _attr_translation_key = "wash_maintenance"
+    _attr_name = "Wash maintenance"
     _restored_state: str | None = None
 
     async def async_added_to_hass(self) -> None:
@@ -610,10 +600,6 @@ class CandyWashCheckUpSensor(CandyBaseSensor, RestoreSensor):
     @property
     def entity_category(self) -> EntityCategory:
         return EntityCategory.DIAGNOSTIC
-
-    @property
-    def name(self) -> str:
-        return "Wash maintenance"
 
     @property
     def unique_id(self) -> str:
@@ -634,6 +620,8 @@ class CandyWashCheckUpSensor(CandyBaseSensor, RestoreSensor):
 class CandyWashTotalCyclesSensor(CandyBaseSensor, RestoreSensor):
     """Total number of wash cycles completed by the washing machine."""
 
+    _attr_translation_key = "wash_total_cycles"
+    _attr_name = "Wash total cycles"
     _restored_cycles: int | None = None
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
@@ -658,10 +646,6 @@ class CandyWashTotalCyclesSensor(CandyBaseSensor, RestoreSensor):
         return EntityCategory.DIAGNOSTIC
 
     @property
-    def name(self) -> str:
-        return "Wash total cycles"
-
-    @property
     def unique_id(self) -> str:
         return UNIQUE_ID_WASH_TOTAL_CYCLES.format(self.config_id)
 
@@ -677,15 +661,14 @@ class CandyWashTotalCyclesSensor(CandyBaseSensor, RestoreSensor):
 
 
 class CandyTumbleDryerSensor(CandyBaseSensor):
+    _attr_translation_key = "tumble_dryer"
+    _attr_name = "Tumble dryer"
+
     def device_name(self) -> str:
         return DEVICE_NAME_TUMBLE_DRYER
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_BATHROOM
-
-    @property
-    def name(self) -> str:
-        return self.device_name()
 
     @property
     def unique_id(self) -> str:
@@ -720,15 +703,14 @@ class CandyTumbleDryerSensor(CandyBaseSensor):
 
 
 class CandyTumbleProgramSensor(CandyBaseSensor):
+    _attr_translation_key = "tumble_program"
+    _attr_name = "Dryer program"
+
     def device_name(self) -> str:
         return DEVICE_NAME_TUMBLE_DRYER
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_BATHROOM
-
-    @property
-    def name(self) -> str:
-        return "Dryer program"
 
     @property
     def unique_id(self) -> str:
@@ -745,15 +727,14 @@ class CandyTumbleProgramSensor(CandyBaseSensor):
 
 
 class CandyTumbleStatusSensor(CandyBaseSensor):
+    _attr_translation_key = "tumble_cycle_status"
+    _attr_name = "Dryer cycle status"
+
     def device_name(self) -> str:
         return DEVICE_NAME_TUMBLE_DRYER
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_BATHROOM
-
-    @property
-    def name(self) -> str:
-        return "Dryer cycle status"
 
     @property
     def unique_id(self) -> str:
@@ -772,15 +753,14 @@ class CandyTumbleStatusSensor(CandyBaseSensor):
 
 
 class CandyTumbleRemainingTimeSensor(CandyBaseSensor):
+    _attr_translation_key = "tumble_remaining_time"
+    _attr_name = "Dryer cycle remaining time"
+
     def device_name(self) -> str:
         return DEVICE_NAME_TUMBLE_DRYER
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_BATHROOM
-
-    @property
-    def name(self) -> str:
-        return "Dryer cycle remaining time"
 
     @property
     def unique_id(self) -> str:
@@ -807,15 +787,14 @@ class CandyTumbleRemainingTimeSensor(CandyBaseSensor):
 
 
 class CandyOvenSensor(CandyBaseSensor):
+    _attr_translation_key = "oven"
+    _attr_name = "Oven"
+
     def device_name(self) -> str:
         return DEVICE_NAME_OVEN
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_KITCHEN
-
-    @property
-    def name(self) -> str:
-        return self.device_name()
 
     @property
     def unique_id(self) -> str:
@@ -849,15 +828,14 @@ class CandyOvenSensor(CandyBaseSensor):
 
 
 class CandyOvenProgramSensor(CandyBaseSensor):
+    _attr_translation_key = "oven_program"
+    _attr_name = "Oven program"
+
     def device_name(self) -> str:
         return DEVICE_NAME_OVEN
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_KITCHEN
-
-    @property
-    def name(self) -> str:
-        return "Oven program"
 
     @property
     def unique_id(self) -> str:
@@ -879,15 +857,14 @@ class CandyOvenProgramSensor(CandyBaseSensor):
 
 
 class CandyOvenTempSensor(CandyBaseSensor):
+    _attr_translation_key = "oven_temperature"
+    _attr_name = "Oven temperature"
+
     def device_name(self) -> str:
         return DEVICE_NAME_OVEN
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_KITCHEN
-
-    @property
-    def name(self) -> str:
-        return "Oven temperature"
 
     @property
     def unique_id(self) -> str:
@@ -912,15 +889,14 @@ class CandyOvenTempSensor(CandyBaseSensor):
 
 
 class CandyDishwasherSensor(CandyBaseSensor):
+    _attr_translation_key = "dishwasher"
+    _attr_name = "Dishwasher"
+
     def device_name(self) -> str:
         return DEVICE_NAME_DISHWASHER
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_KITCHEN
-
-    @property
-    def name(self) -> str:
-        return self.device_name()
 
     @property
     def unique_id(self) -> str:
@@ -961,15 +937,14 @@ class CandyDishwasherSensor(CandyBaseSensor):
 
 
 class CandyDishwasherProgramSensor(CandyBaseSensor):
+    _attr_translation_key = "dishwasher_program"
+    _attr_name = "Dishwasher program"
+
     def device_name(self) -> str:
         return DEVICE_NAME_DISHWASHER
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_KITCHEN
-
-    @property
-    def name(self) -> str:
-        return "Dishwasher program"
 
     @property
     def unique_id(self) -> str:
@@ -986,15 +961,14 @@ class CandyDishwasherProgramSensor(CandyBaseSensor):
 
 
 class CandyDishwasherRemainingTimeSensor(CandyBaseSensor):
+    _attr_translation_key = "dishwasher_remaining_time"
+    _attr_name = "Dishwasher remaining time"
+
     def device_name(self) -> str:
         return DEVICE_NAME_DISHWASHER
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_KITCHEN
-
-    @property
-    def name(self) -> str:
-        return "Dishwasher remaining time"
 
     @property
     def unique_id(self) -> str:
