@@ -13,6 +13,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .client import CandyClient, WashingMachineStatus, WashingMachineWashProgram
+from .client.model import MachineState
 from .const import (
     CONF_KEY_DEVICE_MODEL,
     CONF_KEY_MAC_ADDRESS,
@@ -117,6 +118,10 @@ class CandyWashSelectBase(CoordinatorEntity, SelectEntity):
                 return p
         return None
 
+    def _machine_is_idle(self) -> bool:
+        status = cast(WashingMachineStatus, self.coordinator.data)
+        return status.machine_state in {MachineState.IDLE, MachineState.OFF}
+
 
 class WashProgramSelect(CandyWashSelectBase):
     def __init__(
@@ -142,6 +147,10 @@ class WashProgramSelect(CandyWashSelectBase):
     @property
     def icon(self) -> str:
         return "mdi:washing-machine"
+
+    @property
+    def available(self) -> bool:
+        return super().available and self._machine_is_idle()
 
     @property
     def options(self) -> list[str]:
@@ -183,7 +192,12 @@ class WashTempSelect(CandyWashSelectBase):
     @property
     def available(self) -> bool:
         prog = self._active_program()
-        return super().available and prog is not None and prog.max_temperature != 255
+        return (
+            super().available
+            and self._machine_is_idle()
+            and prog is not None
+            and prog.max_temperature != 255
+        )
 
     @property
     def options(self) -> list[str]:
@@ -235,7 +249,12 @@ class WashSpinSelect(CandyWashSelectBase):
     @property
     def available(self) -> bool:
         prog = self._active_program()
-        return super().available and prog is not None and prog.max_spin_speed != 255
+        return (
+            super().available
+            and self._machine_is_idle()
+            and prog is not None
+            and prog.max_spin_speed != 255
+        )
 
     @property
     def options(self) -> list[str]:
@@ -289,7 +308,11 @@ class WashSoilSelect(CandyWashSelectBase):
         prog = self._active_program()
         if prog is None:
             return False
-        return super().available and prog.min_soil_level < prog.max_soil_level
+        return (
+            super().available
+            and self._machine_is_idle()
+            and prog.min_soil_level < prog.max_soil_level
+        )
 
     @property
     def options(self) -> list[str]:

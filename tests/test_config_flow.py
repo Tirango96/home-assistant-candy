@@ -3,11 +3,20 @@ from unittest.mock import AsyncMock, patch
 from homeassistant import config_entries, data_entry_flow
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
 import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.candy import CONF_KEY_USE_ENCRYPTION, DOMAIN
 from custom_components.candy.client import Encryption
+from custom_components.candy.client.cloud import CloudApplianceData, SimplyFiCloudError
 from custom_components.candy.config_flow import MANUAL_IP_OPTION
-from custom_components.candy.const import CONF_KEY_MODE, MODE_READ_ONLY
+from custom_components.candy.const import (
+    CONF_KEY_DEVICE_MODEL,
+    CONF_KEY_MODE,
+    CONF_KEY_PROGRAMS,
+    CONF_KEY_SERIAL_NUMBER,
+    MODE_FULL_CONTROL,
+    MODE_READ_ONLY,
+)
 
 # ---------------------------------------------------------------------------
 # Shared fixtures
@@ -291,3 +300,216 @@ async def test_discovery_no_devices_shows_manual_form(hass, no_discovery):
 
     assert result["type"] == data_entry_flow.FlowResultType.FORM
     assert result["step_id"] == "user"
+
+
+# ---------------------------------------------------------------------------
+# Full Control flow (mode=FULL_CONTROL → cloud credentials step)
+# ---------------------------------------------------------------------------
+
+_MOCK_APPLIANCE = CloudApplianceData(
+    mac_address="AA:BB:CC:DD:EE:FF",
+    encryption_key="testenckey",
+    appliance_model="RO41274DWMSE/1-S",
+    serial_number="1234567890123456",
+    programs=[
+        {
+            "program": {
+                "position": 1,
+                "name": "COTTON",
+                "command_parameters": [
+                    {"command_parameter": {"name": "pr_code", "validation": "136"}},
+                    {
+                        "command_parameter": {
+                            "name": "maximum_temperature",
+                            "validation": "90",
+                        }
+                    },
+                    {
+                        "command_parameter": {
+                            "name": "default_temperature",
+                            "validation": "40",
+                        }
+                    },
+                    {
+                        "command_parameter": {
+                            "name": "maximum_spin_speed",
+                            "validation": "1400",
+                        }
+                    },
+                    {
+                        "command_parameter": {
+                            "name": "default_spin_speed",
+                            "validation": "800",
+                        }
+                    },
+                    {
+                        "command_parameter": {
+                            "name": "minimum_soil_level",
+                            "validation": "1",
+                        }
+                    },
+                    {
+                        "command_parameter": {
+                            "name": "maximum_soil_level",
+                            "validation": "3",
+                        }
+                    },
+                    {
+                        "command_parameter": {
+                            "name": "default_soil_level",
+                            "validation": "2",
+                        }
+                    },
+                ],
+            }
+        }
+    ],
+)
+
+
+@pytest.fixture(name="mock_cloud_success")
+def _mock_cloud_success_fixture():
+    with patch(
+        "custom_components.candy.config_flow.fetch_appliance_data",
+        new_callable=AsyncMock,
+        return_value=_MOCK_APPLIANCE,
+    ):
+        yield
+
+
+@pytest.fixture(name="mock_cloud_error")
+def _mock_cloud_error_fixture():
+    with patch(
+        "custom_components.candy.config_flow.fetch_appliance_data",
+        new_callable=AsyncMock,
+        side_effect=SimplyFiCloudError("bad credentials"),
+    ):
+        yield
+
+
+async def test_full_control_flow(
+    hass, no_discovery, detect_no_encryption, mock_cloud_success
+):
+    """Full Control setup flow: IP → mode=FULL_CONTROL → cloud credentials → entry created."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_IP_ADDRESS: "192.168.0.66"}
+    )
+    assert result["step_id"] == "mode"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_MODE: MODE_FULL_CONTROL}
+    )
+    assert result["step_id"] == "cloud"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={"email": "user@example.com", "password": "pass"}
+    )
+
+    assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
+    data = result["data"]
+    assert data[CONF_KEY_MODE] == MODE_FULL_CONTROL
+    assert data[CONF_KEY_USE_ENCRYPTION] is True
+    assert data[CONF_PASSWORD] == "testenckey"
+    assert data[CONF_KEY_DEVICE_MODEL] == "RO41274DWMSE/1-S"
+    assert data[CONF_KEY_SERIAL_NUMBER] == "1234567890123456"
+    assert len(data[CONF_KEY_PROGRAMS]) == 1
+    # Credentials must NOT be stored
+    assert "email" not in data
+    assert "password_plain" not in data
+
+
+async def test_full_control_cloud_error(
+    hass, no_discovery, detect_no_encryption, mock_cloud_error
+):
+    """Cloud step shows cloud_auth error when fetch_appliance_data raises."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_IP_ADDRESS: "192.168.0.66"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_MODE: MODE_FULL_CONTROL}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={"email": "bad@example.com", "password": "wrong"}
+    )
+
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "cloud"
+    assert result["errors"] == {"base": "cloud_auth"}
+
+
+# ---------------------------------------------------------------------------
+# Reconfigure flow (Read-Only → Full Control upgrade)
+# ---------------------------------------------------------------------------
+
+
+async def test_reconfigure_to_full_control(hass, mock_cloud_success):
+    """Reconfigure flow upgrades a Read-Only entry to Full Control."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="reconfigure-test",
+        data={
+            CONF_IP_ADDRESS: "192.168.0.66",
+            CONF_KEY_USE_ENCRYPTION: False,
+            CONF_PASSWORD: "",
+            CONF_KEY_MODE: MODE_READ_ONLY,
+        },
+    )
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={
+            "source": config_entries.SOURCE_RECONFIGURE,
+            "entry_id": entry.entry_id,
+        },
+    )
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={"email": "user@example.com", "password": "pass"}
+    )
+
+    assert result["type"] == data_entry_flow.FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+
+    updated = hass.config_entries.async_get_entry(entry.entry_id)
+    assert updated.data[CONF_KEY_MODE] == MODE_FULL_CONTROL
+    assert updated.data[CONF_KEY_DEVICE_MODEL] == "RO41274DWMSE/1-S"
+    assert len(updated.data[CONF_KEY_PROGRAMS]) == 1
+
+
+async def test_reconfigure_cloud_error(hass, mock_cloud_error):
+    """Reconfigure flow shows cloud_auth error when cloud fetch fails."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="reconfigure-test-err",
+        data={
+            CONF_IP_ADDRESS: "192.168.0.66",
+            CONF_KEY_USE_ENCRYPTION: False,
+            CONF_PASSWORD: "",
+            CONF_KEY_MODE: MODE_READ_ONLY,
+        },
+    )
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={
+            "source": config_entries.SOURCE_RECONFIGURE,
+            "entry_id": entry.entry_id,
+        },
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={"email": "bad@example.com", "password": "wrong"}
+    )
+
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+    assert result["errors"] == {"base": "cloud_auth"}

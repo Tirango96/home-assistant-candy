@@ -226,6 +226,13 @@ class WashStopButton(CandyWashButtonBase):
     def icon(self) -> str:
         return "mdi:stop-circle-outline"
 
+    @property
+    def available(self) -> bool:
+        if not super().available:
+            return False
+        status = cast(WashingMachineStatus, self.coordinator.data)
+        return status.machine_state not in {MachineState.IDLE, MachineState.OFF}
+
     async def async_press(self) -> None:
         status = cast(WashingMachineStatus, self.coordinator.data)
         params = {

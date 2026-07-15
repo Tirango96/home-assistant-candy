@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import cast
+
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -11,6 +13,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .client import CandyClient, WashingMachineStatus
+from .client.model import MachineState
 from .const import (
     CONF_KEY_DEVICE_MODEL,
     CONF_KEY_MAC_ADDRESS,
@@ -66,6 +69,13 @@ class WashDelayNumber(CoordinatorEntity, NumberEntity):
     @property
     def unique_id(self) -> str:
         return UNIQUE_ID_WASH_DELAY_NUMBER.format(self.config_id)
+
+    @property
+    def available(self) -> bool:
+        if not super().available:
+            return False
+        status = cast(WashingMachineStatus, self.coordinator.data)
+        return status.machine_state in {MachineState.IDLE, MachineState.OFF}
 
     @property
     def device_info(self) -> DeviceInfo:
