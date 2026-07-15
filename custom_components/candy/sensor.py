@@ -7,6 +7,7 @@ from homeassistant.components.sensor import (
     RestoreSensor,
     SensorDeviceClass,
     SensorEntity,
+    SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
@@ -325,6 +326,10 @@ class CandyWashRemainingTimeSensor(CandyBaseSensor):
         return UnitOfTime.MINUTES
 
     @property
+    def device_class(self) -> SensorDeviceClass:
+        return SensorDeviceClass.DURATION
+
+    @property
     def icon(self) -> str:
         return "mdi:progress-clock"
 
@@ -577,6 +582,10 @@ class CandyWashMotorFreqSensor(CandyBaseSensor):
         return UnitOfFrequency.HERTZ
 
     @property
+    def device_class(self) -> SensorDeviceClass:
+        return SensorDeviceClass.FREQUENCY
+
+    @property
     def icon(self) -> str:
         return "mdi:sine-wave"
 
@@ -626,6 +635,7 @@ class CandyWashTotalCyclesSensor(CandyBaseSensor, RestoreSensor):
     """Total number of wash cycles completed by the washing machine."""
 
     _restored_cycles: int | None = None
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -788,6 +798,10 @@ class CandyTumbleRemainingTimeSensor(CandyBaseSensor):
         return UnitOfTime.MINUTES
 
     @property
+    def device_class(self) -> SensorDeviceClass:
+        return SensorDeviceClass.DURATION
+
+    @property
     def icon(self) -> str:
         return "mdi:progress-clock"
 
@@ -887,6 +901,10 @@ class CandyOvenTempSensor(CandyBaseSensor):
     @property
     def native_unit_of_measurement(self) -> str:
         return UnitOfTemperature.CELSIUS
+
+    @property
+    def device_class(self) -> SensorDeviceClass:
+        return SensorDeviceClass.TEMPERATURE
 
     @property
     def icon(self) -> str:
@@ -992,6 +1010,10 @@ class CandyDishwasherRemainingTimeSensor(CandyBaseSensor):
     @property
     def native_unit_of_measurement(self) -> str:
         return UnitOfTime.MINUTES
+
+    @property
+    def device_class(self) -> SensorDeviceClass:
+        return SensorDeviceClass.DURATION
 
     @property
     def icon(self) -> str:
