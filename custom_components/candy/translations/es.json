@@ -1,16 +1,69 @@
 {
   "config": {
     "abort": {
-      "already_configured": "El dispositivo ya esta configurado"
+      "already_configured": "El dispositivo ya está configurado"
     },
     "error": {
-      "unknown": "Error inesperado"
+      "unknown": "Error inesperado",
+      "detect_encryption": "Error al detectar el cifrado, comprueba los registros",
+      "cloud_auth": "No se pudo conectar al servicio Simply-Fi. Comprueba las credenciales e inténtalo de nuevo."
     },
     "step": {
       "user": {
         "data": {
-          "ip_address": "Dirección IP Dispositivo"
+          "ip_address": "Dirección IP del dispositivo"
         }
+      },
+      "select": {
+        "title": "Dispositivos Candy encontrados en tu red",
+        "description": "Selecciona un dispositivo para configurar, o elige \"Introducir IP manualmente\".",
+        "data": {
+          "ip_address": "Dispositivo"
+        }
+      },
+      "mode": {
+        "title": "Modo de integración",
+        "description": "Elige **Solo lectura** para monitorear el dispositivo sin conexión a la nube.\n\nElige **Control total** para iniciar/detener programas. Requiere tus credenciales de Simply-Fi una sola vez — se usan únicamente para descargar la configuración y nunca se almacenan.",
+        "data": {
+          "mode": "Modo"
+        }
+      },
+      "cloud": {
+        "title": "Cuenta Simply-Fi",
+        "description": "Introduce tus credenciales de Simply-Fi / hOn. Se usarán una sola vez para obtener la configuración del dispositivo y no se almacenarán.",
+        "data": {
+          "email": "Correo electrónico",
+          "password": "Contraseña"
+        }
+      }
+    }
+  },
+  "entity": {
+    "select": {
+      "wash_program_select": {
+        "name": "Programa de lavado"
+      },
+      "wash_temp_select": {
+        "name": "Temperatura de lavado"
+      },
+      "wash_spin_select": {
+        "name": "Velocidad de centrifugado"
+      },
+      "wash_soil_select": {
+        "name": "Nivel de suciedad"
+      }
+    },
+    "number": {
+      "wash_delay_number": {
+        "name": "Retardo de inicio"
+      }
+    },
+    "button": {
+      "wash_start_button": {
+        "name": "Iniciar lavado"
+      },
+      "wash_stop_button": {
+        "name": "Detener lavado"
       }
     }
   },

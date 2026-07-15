@@ -5,13 +5,65 @@
     },
     "error": {
       "unknown": "Erreur inconnue",
-      "detect_encryption": "Impossible de détecter le cryptage, vérifiez les journaux."
+      "detect_encryption": "Impossible de détecter le cryptage, vérifiez les journaux.",
+      "cloud_auth": "Impossible de se connecter au cloud Simply-Fi. Vérifiez vos identifiants et réessayez."
     },
     "step": {
       "user": {
         "data": {
           "ip_address": "Adresse IP du dispositif"
         }
+      },
+      "select": {
+        "title": "Appareils Candy trouvés sur votre réseau",
+        "description": "Sélectionnez un appareil à configurer, ou choisissez \"Saisir l'adresse IP manuellement\".",
+        "data": {
+          "ip_address": "Appareil"
+        }
+      },
+      "mode": {
+        "title": "Mode d'intégration",
+        "description": "Choisissez **Lecture seule** pour surveiller l'appareil sans connexion au cloud.\n\nChoisissez **Contrôle total** pour démarrer/arrêter des programmes. Vos identifiants Simply-Fi sont requis une seule fois — ils servent uniquement à télécharger vos paramètres et ne sont jamais enregistrés.",
+        "data": {
+          "mode": "Mode"
+        }
+      },
+      "cloud": {
+        "title": "Compte Simply-Fi",
+        "description": "Entrez vos identifiants Simply-Fi / hOn. Ils seront utilisés une seule fois pour récupérer les paramètres de l'appareil et ne seront pas enregistrés.",
+        "data": {
+          "email": "E-mail",
+          "password": "Mot de passe"
+        }
+      }
+    }
+  },
+  "entity": {
+    "select": {
+      "wash_program_select": {
+        "name": "Programme de lavage"
+      },
+      "wash_temp_select": {
+        "name": "Température de lavage"
+      },
+      "wash_spin_select": {
+        "name": "Vitesse d'essorage"
+      },
+      "wash_soil_select": {
+        "name": "Niveau de salissure"
+      }
+    },
+    "number": {
+      "wash_delay_number": {
+        "name": "Délai de départ"
+      }
+    },
+    "button": {
+      "wash_start_button": {
+        "name": "Démarrer le lavage"
+      },
+      "wash_stop_button": {
+        "name": "Arrêter le lavage"
       }
     }
   },

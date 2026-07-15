@@ -5,7 +5,8 @@
     },
     "error": {
       "unknown": "Errore sconosciuto",
-      "detect_encryption": "Rilevamento crittografia fallito, controlla i log"
+      "detect_encryption": "Rilevamento crittografia fallito, controlla i log",
+      "cloud_auth": "Impossibile connettersi al cloud Simply-Fi. Controlla le credenziali e riprova."
     },
     "step": {
       "user": {
@@ -18,6 +19,21 @@
         "description": "Seleziona un dispositivo da configurare, oppure scegli \"Inserisci IP manualmente\".",
         "data": {
           "ip_address": "Dispositivo"
+        }
+      },
+      "mode": {
+        "title": "Modalità di integrazione",
+        "description": "Scegli **Solo lettura** per monitorare il dispositivo senza connessione al cloud.\n\nScegli **Controllo completo** per avviare/fermare i programmi. Le credenziali Simply-Fi sono richieste una sola volta — vengono usate solo per scaricare le impostazioni del dispositivo e non vengono mai salvate.",
+        "data": {
+          "mode": "Modalità"
+        }
+      },
+      "cloud": {
+        "title": "Account Simply-Fi",
+        "description": "Inserisci le credenziali Simply-Fi / hOn. Verranno usate una sola volta per ottenere le impostazioni del dispositivo e non verranno salvate.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
         }
       }
     }
@@ -89,6 +105,33 @@
       },
       "dishwasher_program": {
         "name": "Programma lavastoviglie"
+      }
+    },
+    "select": {
+      "wash_program_select": {
+        "name": "Programma di lavaggio"
+      },
+      "wash_temp_select": {
+        "name": "Temperatura di lavaggio"
+      },
+      "wash_spin_select": {
+        "name": "Velocità centrifuga"
+      },
+      "wash_soil_select": {
+        "name": "Livello di sporco"
+      }
+    },
+    "number": {
+      "wash_delay_number": {
+        "name": "Ritardo partenza"
+      }
+    },
+    "button": {
+      "wash_start_button": {
+        "name": "Avvia lavaggio"
+      },
+      "wash_stop_button": {
+        "name": "Ferma lavaggio"
       }
     }
   },
