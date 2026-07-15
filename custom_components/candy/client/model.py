@@ -243,6 +243,7 @@ class WashingMachineWashProgram:
     min_soil_level: int
     max_soil_level: int
     default_soil_level: int
+    steam: bool
 
     @classmethod
     def from_dict(cls, program_dict: dict) -> "WashingMachineWashProgram":
@@ -277,6 +278,7 @@ class WashingMachineWashProgram:
             min_soil_level=_int("minimum_soil_level"),
             max_soil_level=_int("maximum_soil_level"),
             default_soil_level=_int("default_soil_level"),
+            steam=_int("steam") != 0,
         )
 
 

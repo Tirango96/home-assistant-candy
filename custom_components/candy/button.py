@@ -37,6 +37,7 @@ from .const import (
     UNIQUE_ID_WASH_SOIL_SELECT,
     UNIQUE_ID_WASH_SPIN_SELECT,
     UNIQUE_ID_WASH_START_BUTTON,
+    UNIQUE_ID_WASH_STEAM_SWITCH,
     UNIQUE_ID_WASH_STOP_BUTTON,
     UNIQUE_ID_WASH_TEMP_SELECT,
 )
@@ -196,6 +197,12 @@ class WashStartButton(CandyWashButtonBase):
         else:
             soil = program.default_soil_level
 
+        steam_entity_id = registry.async_get_entity_id(
+            "switch", DOMAIN, UNIQUE_ID_WASH_STEAM_SWITCH.format(self.config_id)
+        )
+        steam_state = self.hass.states.get(steam_entity_id) if steam_entity_id else None
+        steam = steam_state.state == "on" if steam_state else False
+
         params = {
             "Write": 1,
             "StSt": 1,
@@ -209,7 +216,7 @@ class WashStartButton(CandyWashButtonBase):
             "OptMsk1": 0,
             "OptMsk2": 0,
             "Lang": 0,
-            "Stm": 0,
+            "Stm": 1 if steam else 0,
             "Dry": 0,
             "ED": 0,
             "RecipeId": 0,

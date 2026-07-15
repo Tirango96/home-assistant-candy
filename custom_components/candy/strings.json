@@ -140,6 +140,11 @@
         "name": "Wash delay"
       }
     },
+    "switch": {
+      "wash_steam_switch": {
+        "name": "Wash steam"
+      }
+    },
     "button": {
       "wash_start_button": {
         "name": "Start wash"

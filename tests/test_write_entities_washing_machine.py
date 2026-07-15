@@ -24,6 +24,7 @@ from custom_components.candy.const import (
     UNIQUE_ID_WASH_SOIL_SELECT,
     UNIQUE_ID_WASH_SPIN_SELECT,
     UNIQUE_ID_WASH_START_BUTTON,
+    UNIQUE_ID_WASH_STEAM_SWITCH,
     UNIQUE_ID_WASH_STOP_BUTTON,
     UNIQUE_ID_WASH_TEMP_SELECT,
 )
@@ -34,7 +35,7 @@ from .common import TEST_IP
 # Minimal program catalog used across all tests
 # ---------------------------------------------------------------------------
 
-# COTTON: pos=1, supports temp/spin/soil selection
+# COTTON: pos=1, supports temp/spin/soil selection, supports steam
 _COTTON = {
     "program": {
         "position": 1,
@@ -48,11 +49,12 @@ _COTTON = {
             {"command_parameter": {"name": "minimum_soil_level", "validation": "1"}},
             {"command_parameter": {"name": "maximum_soil_level", "validation": "3"}},
             {"command_parameter": {"name": "default_soil_level", "validation": "2"}},
+            {"command_parameter": {"name": "steam", "validation": "5"}},
         ],
     }
 }
 
-# RAPID: pos=2, temp and spin fixed (255 = not selectable), soil fixed
+# RAPID: pos=2, temp and spin fixed (255 = not selectable), soil fixed, no steam
 _RAPID = {
     "program": {
         "position": 2,
@@ -66,6 +68,7 @@ _RAPID = {
             {"command_parameter": {"name": "minimum_soil_level", "validation": "0"}},
             {"command_parameter": {"name": "maximum_soil_level", "validation": "0"}},
             {"command_parameter": {"name": "default_soil_level", "validation": "0"}},
+            {"command_parameter": {"name": "steam", "validation": "0"}},
         ],
     }
 }
@@ -486,3 +489,94 @@ async def test_no_write_entities_in_read_only_mode(
         )
         is None
     )
+    assert (
+        registry.async_get_entity_id(
+            "switch", DOMAIN, UNIQUE_ID_WASH_STEAM_SWITCH.format(entry.entry_id)
+        )
+        is None
+    )
+
+
+# ---------------------------------------------------------------------------
+# Steam switch
+# ---------------------------------------------------------------------------
+
+
+async def test_steam_switch_available_for_cotton_idle(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control(hass, aioclient_mock, _IDLE_JSON)
+    state = _state(hass, entry, "switch", UNIQUE_ID_WASH_STEAM_SWITCH)
+    assert state is not None
+    assert state.state not in ("unavailable", "unknown")
+
+
+async def test_steam_switch_unavailable_for_rapid_idle(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    rapid_idle = _IDLE_JSON.replace('"Pr": "1"', '"Pr": "2"').replace(
+        '"PrCode": "136"', '"PrCode": "5"'
+    )
+    entry = await _init_full_control(hass, aioclient_mock, rapid_idle)
+    state = _state(hass, entry, "switch", UNIQUE_ID_WASH_STEAM_SWITCH)
+    assert state is not None
+    assert state.state == "unavailable"
+
+
+async def test_steam_switch_unavailable_when_running(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control(hass, aioclient_mock, _RUNNING_JSON)
+    state = _state(hass, entry, "switch", UNIQUE_ID_WASH_STEAM_SWITCH)
+    assert state is not None
+    assert state.state == "unavailable"
+
+
+async def test_start_button_sends_steam_when_enabled(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control(hass, aioclient_mock, _IDLE_JSON)
+    registry = er.async_get(hass)
+
+    steam_entity_id = registry.async_get_entity_id(
+        "switch", DOMAIN, UNIQUE_ID_WASH_STEAM_SWITCH.format(entry.entry_id)
+    )
+    assert steam_entity_id is not None
+    await hass.services.async_call(
+        "switch", "turn_on", {"entity_id": steam_entity_id}, blocking=True
+    )
+
+    start_entity_id = registry.async_get_entity_id(
+        "button", DOMAIN, UNIQUE_ID_WASH_START_BUTTON.format(entry.entry_id)
+    )
+    with patch(
+        "custom_components.candy.client.CandyClient.send_command",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        await hass.services.async_call(
+            "button", "press", {"entity_id": start_entity_id}, blocking=True
+        )
+
+    query_string: str = mock_send.call_args[0][0]
+    assert "Stm=1" in query_string
+
+
+async def test_start_button_no_steam_by_default(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control(hass, aioclient_mock, _IDLE_JSON)
+    registry = er.async_get(hass)
+    start_entity_id = registry.async_get_entity_id(
+        "button", DOMAIN, UNIQUE_ID_WASH_START_BUTTON.format(entry.entry_id)
+    )
+
+    with patch(
+        "custom_components.candy.client.CandyClient.send_command",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        await hass.services.async_call(
+            "button", "press", {"entity_id": start_entity_id}, blocking=True
+        )
+
+    query_string: str = mock_send.call_args[0][0]
+    assert "Stm=0" in query_string
