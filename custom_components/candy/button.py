@@ -201,6 +201,7 @@ class WashStartButton(CandyWashButtonBase):
             "DelVl": delay,
             "PrNm": program.position,
             "PrCode": program.pr_code,
+            "PrStr": program.name,
             "TmpTgt": temp,
             "SLevTgt": soil,
             "SpdTgt": spin // 100,

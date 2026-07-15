@@ -334,6 +334,7 @@ async def test_start_button_sends_command(
     assert "StSt=1" in query_string
     assert "PrNm=1" in query_string
     assert "PrCode=136" in query_string
+    assert "PrStr=COTTON" in query_string
 
 
 # ---------------------------------------------------------------------------
