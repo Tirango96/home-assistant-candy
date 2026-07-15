@@ -1,0 +1,237 @@
+from __future__ import annotations
+
+from typing import cast
+from urllib.parse import urlencode
+
+from homeassistant.components.button import ButtonEntity
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.update_coordinator import (
+    CoordinatorEntity,
+    DataUpdateCoordinator,
+)
+
+from .client import CandyClient, WashingMachineStatus, WashingMachineWashProgram
+from .client.model import MachineState
+from .const import (
+    CONF_KEY_DEVICE_MODEL,
+    CONF_KEY_MAC_ADDRESS,
+    CONF_KEY_MODE,
+    CONF_KEY_PROGRAMS,
+    CONF_KEY_SERIAL_NUMBER,
+    DATA_KEY_CLIENT,
+    DATA_KEY_COORDINATOR,
+    DEVICE_NAME_WASHING_MACHINE,
+    DOMAIN,
+    MODE_FULL_CONTROL,
+    SUGGESTED_AREA_BATHROOM,
+    UNIQUE_ID_WASH_DELAY_NUMBER,
+    UNIQUE_ID_WASH_PROGRAM_SELECT,
+    UNIQUE_ID_WASH_SOIL_SELECT,
+    UNIQUE_ID_WASH_SPIN_SELECT,
+    UNIQUE_ID_WASH_START_BUTTON,
+    UNIQUE_ID_WASH_STOP_BUTTON,
+    UNIQUE_ID_WASH_TEMP_SELECT,
+)
+
+
+async def async_setup_entry(
+    hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities
+) -> None:
+    config_id = config_entry.entry_id
+
+    if config_entry.data.get(CONF_KEY_MODE) != MODE_FULL_CONTROL:
+        return
+
+    coordinator: DataUpdateCoordinator = hass.data[DOMAIN][config_id][
+        DATA_KEY_COORDINATOR
+    ]
+    if not isinstance(coordinator.data, WashingMachineStatus):
+        return
+
+    client: CandyClient = hass.data[DOMAIN][config_id][DATA_KEY_CLIENT]
+    programs = _parse_programs(config_entry)
+
+    async_add_entities(
+        [
+            WashStartButton(coordinator, config_entry, client, programs),
+            WashStopButton(coordinator, config_entry, client),
+        ]
+    )
+
+
+def _parse_programs(config_entry: ConfigEntry) -> list[WashingMachineWashProgram]:
+    raw: list[dict] = config_entry.data.get(CONF_KEY_PROGRAMS, [])
+    programs = [WashingMachineWashProgram.from_dict(p) for p in raw]
+    return [p for p in programs if p.position != 0]
+
+
+class CandyWashButtonBase(CoordinatorEntity, ButtonEntity):
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        client: CandyClient,
+    ) -> None:
+        super().__init__(coordinator)
+        self.config_entry = config_entry
+        self.config_id = config_entry.entry_id
+        self._client = client
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        info = DeviceInfo(
+            identifiers={(DOMAIN, self.config_id)},
+            name=DEVICE_NAME_WASHING_MACHINE,
+            manufacturer="Candy",
+            suggested_area=SUGGESTED_AREA_BATHROOM,
+        )
+        if self.config_entry.data.get(CONF_KEY_MAC_ADDRESS):
+            info["connections"] = {
+                (
+                    dr.CONNECTION_NETWORK_MAC,
+                    self.config_entry.data[CONF_KEY_MAC_ADDRESS],
+                )
+            }
+        if self.config_entry.data.get(CONF_KEY_MODE) == MODE_FULL_CONTROL:
+            if self.config_entry.data.get(CONF_KEY_DEVICE_MODEL):
+                info["model"] = self.config_entry.data[CONF_KEY_DEVICE_MODEL]
+            if self.config_entry.data.get(CONF_KEY_SERIAL_NUMBER):
+                info["serial_number"] = self.config_entry.data[CONF_KEY_SERIAL_NUMBER]
+        return info
+
+
+class WashStartButton(CandyWashButtonBase):
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        client: CandyClient,
+        programs: list[WashingMachineWashProgram],
+    ) -> None:
+        super().__init__(coordinator, config_entry, client)
+        self._programs = programs
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_START_BUTTON.format(self.config_id)
+
+    @property
+    def icon(self) -> str:
+        return "mdi:play-circle-outline"
+
+    @property
+    def available(self) -> bool:
+        if not super().available:
+            return False
+        status = cast(WashingMachineStatus, self.coordinator.data)
+        return status.machine_state in {MachineState.IDLE, MachineState.OFF}
+
+    async def async_press(self) -> None:
+        registry = er.async_get(self.hass)
+
+        def _get_state(unique_id_template: str) -> str | None:
+            entity_id = registry.async_get_entity_id(
+                "select", DOMAIN, unique_id_template.format(self.config_id)
+            )
+            if entity_id is None:
+                return None
+            state = self.hass.states.get(entity_id)
+            return state.state if state else None
+
+        def _get_number(unique_id_template: str) -> float:
+            entity_id = registry.async_get_entity_id(
+                "number", DOMAIN, unique_id_template.format(self.config_id)
+            )
+            if entity_id is None:
+                return 0
+            state = self.hass.states.get(entity_id)
+            try:
+                return float(state.state) if state else 0
+            except (ValueError, TypeError):
+                return 0
+
+        program_name = _get_state(UNIQUE_ID_WASH_PROGRAM_SELECT)
+        program = next((p for p in self._programs if p.name == program_name), None)
+        if program is None:
+            raise ValueError(
+                f"Cannot start: program '{program_name}' not found in catalog"
+            )
+
+        temp_str = _get_state(UNIQUE_ID_WASH_TEMP_SELECT)
+        spin_str = _get_state(UNIQUE_ID_WASH_SPIN_SELECT)
+        soil_str = _get_state(UNIQUE_ID_WASH_SOIL_SELECT)
+        delay = int(_get_number(UNIQUE_ID_WASH_DELAY_NUMBER))
+
+        try:
+            temp = (
+                int(temp_str)
+                if temp_str not in (None, "unavailable", "unknown")
+                else program.default_temperature
+            )
+        except (ValueError, TypeError):
+            temp = program.default_temperature
+
+        try:
+            spin = (
+                int(spin_str)
+                if spin_str not in (None, "unavailable", "unknown")
+                else program.default_spin_speed
+            )
+        except (ValueError, TypeError):
+            spin = program.default_spin_speed
+
+        if program.min_soil_level < program.max_soil_level:
+            try:
+                soil = (
+                    int(soil_str)
+                    if soil_str not in (None, "unavailable", "unknown")
+                    else program.default_soil_level
+                )
+            except (ValueError, TypeError):
+                soil = program.default_soil_level
+        else:
+            soil = program.default_soil_level
+
+        params = {
+            "Write": 1,
+            "StSt": 1,
+            "DelVl": delay,
+            "PrNm": program.position,
+            "PrCode": program.pr_code,
+            "TmpTgt": temp,
+            "SLevTgt": soil,
+            "SpdTgt": spin // 100,
+            "OptMsk1": 0,
+            "OptMsk2": 0,
+            "Lang": 0,
+            "Stm": 0,
+            "Dry": 0,
+            "ED": 0,
+            "RecipeId": 0,
+            "StartCheckUp": 0,
+            "DispTestOn": 1,
+        }
+        await self._client.send_command(urlencode(params))
+
+
+class WashStopButton(CandyWashButtonBase):
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_STOP_BUTTON.format(self.config_id)
+
+    @property
+    def icon(self) -> str:
+        return "mdi:stop-circle-outline"
+
+    async def async_press(self) -> None:
+        status = cast(WashingMachineStatus, self.coordinator.data)
+        params = {
+            "Write": 1,
+            "StSt": 0,
+            "PrNm": status.program,
+            "DelVl": 0,
+        }
+        await self._client.send_command(urlencode(params))

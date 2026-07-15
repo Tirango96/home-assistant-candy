@@ -106,6 +106,33 @@
       "dishwasher_program": {
         "name": "Dishwasher program"
       }
+    },
+    "select": {
+      "wash_program_select": {
+        "name": "Wash program"
+      },
+      "wash_temp_select": {
+        "name": "Wash temperature"
+      },
+      "wash_spin_select": {
+        "name": "Wash spin speed"
+      },
+      "wash_soil_select": {
+        "name": "Wash soil level"
+      }
+    },
+    "number": {
+      "wash_delay_number": {
+        "name": "Wash delay"
+      }
+    },
+    "button": {
+      "wash_start_button": {
+        "name": "Start wash"
+      },
+      "wash_stop_button": {
+        "name": "Stop wash"
+      }
     }
   },
   "title": "Candy"

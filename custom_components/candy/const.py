@@ -1,7 +1,7 @@
 """Constants for the Candy integration."""
 
 DOMAIN = "candy"
-PLATFORMS = ["sensor"]
+PLATFORMS = ["sensor", "select", "number", "button"]
 
 DATA_KEY_COORDINATOR = "coordinator"
 DATA_KEY_STATS_COORDINATOR = "stats_coordinator"
@@ -35,6 +35,14 @@ UNIQUE_ID_WASH_NTC_DRUM = "{0}-wash_ntc_drum"
 UNIQUE_ID_WASH_MOTOR_FREQ = "{0}-wash_motor_freq"
 UNIQUE_ID_WASH_TOTAL_CYCLES = "{0}-wash_total_cycles"
 UNIQUE_ID_WASH_CHECK_UP = "{0}-wash_check_up"
+
+UNIQUE_ID_WASH_PROGRAM_SELECT = "{0}-wash_program_select"
+UNIQUE_ID_WASH_TEMP_SELECT = "{0}-wash_temp_select"
+UNIQUE_ID_WASH_SPIN_SELECT = "{0}-wash_spin_select"
+UNIQUE_ID_WASH_SOIL_SELECT = "{0}-wash_soil_select"
+UNIQUE_ID_WASH_DELAY_NUMBER = "{0}-wash_delay_number"
+UNIQUE_ID_WASH_START_BUTTON = "{0}-wash_start_button"
+UNIQUE_ID_WASH_STOP_BUTTON = "{0}-wash_stop_button"
 
 UNIQUE_ID_TUMBLE_DRYER = "{0}-tumble_dryer"
 UNIQUE_ID_TUMBLE_PROGRAM = "{0}-tumble_program"

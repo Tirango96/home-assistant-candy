@@ -232,6 +232,55 @@ class OvenStatus:
 
 
 @dataclass
+class WashingMachineWashProgram:
+    position: int
+    name: str
+    pr_code: int
+    max_temperature: int
+    default_temperature: int
+    max_spin_speed: int
+    default_spin_speed: int
+    min_soil_level: int
+    max_soil_level: int
+    default_soil_level: int
+
+    @classmethod
+    def from_dict(cls, program_dict: dict) -> "WashingMachineWashProgram":
+        """Parse a program entry from the Simply-Fi appliances JSON."""
+        p = program_dict["program"]
+        params = {
+            cp["command_parameter"]["name"]: cp["command_parameter"]["validation"]
+            for cp in p["command_parameters"]
+        }
+
+        def _int(key: str, fallback: int = 0) -> int:
+            val = params.get(key, "")
+            try:
+                return int(val)
+            except (ValueError, TypeError):
+                return fallback
+
+        raw_name: str = p.get("name", "")
+        for prefix in ("DUAL_WM_WD_PROGRAM_NAME_", "DUAL_WM_WD_"):
+            if raw_name.startswith(prefix):
+                raw_name = raw_name[len(prefix) :]
+                break
+
+        return cls(
+            position=int(p["position"]),
+            name=raw_name,
+            pr_code=_int("pr_code"),
+            max_temperature=_int("maximum_temperature"),
+            default_temperature=_int("default_temperature"),
+            max_spin_speed=_int("maximum_spin_speed"),
+            default_spin_speed=_int("default_spin_speed"),
+            min_soil_level=_int("minimum_soil_level"),
+            max_soil_level=_int("maximum_soil_level"),
+            default_soil_level=_int("default_soil_level"),
+        )
+
+
+@dataclass
 class WashingMachineStatistics:
     total_cycles: int
 

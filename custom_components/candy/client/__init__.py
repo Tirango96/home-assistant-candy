@@ -16,6 +16,7 @@ from .model import (
     TumbleDryerStatus,
     WashingMachineStatistics,
     WashingMachineStatus,
+    WashingMachineWashProgram as WashingMachineWashProgram,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -86,6 +87,26 @@ class CandyClient:
                 )
 
             return status
+
+    async def send_command(self, query_string: str) -> None:
+        """Send a write command to the device.
+
+        query_string is a URL-encoded parameter string, e.g.
+        'Write=1&StSt=1&PrNm=11&...'
+        """
+        if self.use_encryption and self.encryption_key:
+            payload = decrypt(self.encryption_key.encode(), query_string.encode())
+            hex_data = payload.hex()
+            url = _write_url(self.device_ip, use_encryption=True, data=hex_data)
+        else:
+            url = _write_url(self.device_ip, use_encryption=False, data=query_string)
+
+        async with _LIMITER, self.session.get(url) as resp:
+            if resp.status != 200:
+                text = await resp.text()
+                raise ValueError(
+                    f"Write command failed (HTTP {resp.status}): {text[:200]}"
+                )
 
     @backoff.on_exception(
         backoff.expo, aiohttp.ClientError, max_tries=3, logger=__name__
@@ -170,6 +191,12 @@ async def detect_encryption(
 
 def _status_url(device_ip: str, use_encryption: bool) -> str:
     return f"http://{device_ip}/http-read.json?encrypted={1 if use_encryption else 0}"
+
+
+def _write_url(device_ip: str, use_encryption: bool, data: str) -> str:
+    if use_encryption:
+        return f"http://{device_ip}/http-write.json?encrypted=1&data={data}"
+    return f"http://{device_ip}/http-write.json?encrypted=0&{data}"
 
 
 def _statistics_url(device_ip: str, use_encryption: bool) -> str:
