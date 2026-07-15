@@ -4,6 +4,7 @@ from typing import cast
 
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
@@ -51,7 +52,7 @@ class WashDelayNumber(CoordinatorEntity, NumberEntity):
     _attr_native_min_value = 0
     _attr_native_max_value = 23
     _attr_native_step = 1
-    _attr_native_unit_of_measurement = "h"
+    _attr_native_unit_of_measurement = UnitOfTime.HOURS
     _attr_mode = NumberMode.BOX
     _attr_icon = "mdi:timer-outline"
 

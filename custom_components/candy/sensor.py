@@ -9,7 +9,13 @@ from homeassistant.components.sensor import (
     SensorEntity,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EntityCategory, UnitOfTemperature, UnitOfTime
+from homeassistant.const import (
+    PERCENTAGE,
+    EntityCategory,
+    UnitOfFrequency,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
@@ -410,7 +416,7 @@ class CandyWashFillPercentSensor(CandyBaseSensor):
 
     @property
     def native_unit_of_measurement(self) -> str:
-        return "%"
+        return PERCENTAGE
 
     @property
     def icon(self) -> str:
@@ -568,7 +574,7 @@ class CandyWashMotorFreqSensor(CandyBaseSensor):
 
     @property
     def native_unit_of_measurement(self) -> str:
-        return "Hz"
+        return UnitOfFrequency.HERTZ
 
     @property
     def icon(self) -> str:
