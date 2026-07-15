@@ -27,6 +27,14 @@
           "email": "Email",
           "password": "Password"
         }
+      },
+      "reconfigure": {
+        "title": "Upgrade to Full Control",
+        "description": "Enter your Simply-Fi / hOn credentials to fetch your appliance settings. They will be used once and will not be stored.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
       }
     },
     "error": {
@@ -93,6 +101,33 @@
       },
       "dishwasher_remaining_time": {
         "name": "Dishwasher remaining time"
+      }
+    },
+    "select": {
+      "wash_program_select": {
+        "name": "Wash program"
+      },
+      "wash_temp_select": {
+        "name": "Wash temperature"
+      },
+      "wash_spin_select": {
+        "name": "Wash spin speed"
+      },
+      "wash_soil_select": {
+        "name": "Wash soil level"
+      }
+    },
+    "number": {
+      "wash_delay_number": {
+        "name": "Wash delay"
+      }
+    },
+    "button": {
+      "wash_start_button": {
+        "name": "Start wash"
+      },
+      "wash_stop_button": {
+        "name": "Stop wash"
       }
     }
   }

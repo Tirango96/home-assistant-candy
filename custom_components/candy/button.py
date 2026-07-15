@@ -13,7 +13,12 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 
-from .client import CandyClient, WashingMachineStatus, WashingMachineWashProgram
+from .client import (
+    CandyClient,
+    WashingMachineStatus,
+    WashingMachineWashProgram,
+    parse_wash_programs,
+)
 from .client.model import MachineState
 from .const import (
     CONF_KEY_DEVICE_MODEL,
@@ -52,7 +57,7 @@ async def async_setup_entry(
         return
 
     client: CandyClient = hass.data[DOMAIN][config_id][DATA_KEY_CLIENT]
-    programs = _parse_programs(config_entry)
+    programs = parse_wash_programs(config_entry.data.get(CONF_KEY_PROGRAMS, []))
 
     async_add_entities(
         [
@@ -60,12 +65,6 @@ async def async_setup_entry(
             WashStopButton(coordinator, config_entry, client),
         ]
     )
-
-
-def _parse_programs(config_entry: ConfigEntry) -> list[WashingMachineWashProgram]:
-    raw: list[dict] = config_entry.data.get(CONF_KEY_PROGRAMS, [])
-    programs = [WashingMachineWashProgram.from_dict(p) for p in raw]
-    return [p for p in programs if p.position != 0]
 
 
 class CandyWashButtonBase(CoordinatorEntity, ButtonEntity):
@@ -127,7 +126,7 @@ class WashStartButton(CandyWashButtonBase):
         if not super().available:
             return False
         status = cast(WashingMachineStatus, self.coordinator.data)
-        return status.machine_state in {MachineState.IDLE, MachineState.OFF}
+        return status.machine_state == MachineState.IDLE
 
     async def async_press(self) -> None:
         registry = er.async_get(self.hass)

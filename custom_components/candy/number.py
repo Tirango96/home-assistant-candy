@@ -51,6 +51,7 @@ class WashDelayNumber(CoordinatorEntity, NumberEntity):
     _attr_native_min_value = 0
     _attr_native_max_value = 23
     _attr_native_step = 1
+    _attr_native_unit_of_measurement = "h"
     _attr_mode = NumberMode.BOX
     _attr_icon = "mdi:timer-outline"
 

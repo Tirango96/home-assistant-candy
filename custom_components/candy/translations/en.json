@@ -35,6 +35,14 @@
           "email": "Email",
           "password": "Password"
         }
+      },
+      "reconfigure": {
+        "title": "Upgrade to Full Control",
+        "description": "Enter your Simply-Fi / hOn credentials to fetch your appliance settings. They will be used once and will not be stored.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
       }
     }
   },

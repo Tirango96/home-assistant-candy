@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from unittest.mock import AsyncMock, patch
 
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
@@ -11,9 +12,11 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.candy import CONF_KEY_USE_ENCRYPTION, DOMAIN
+from custom_components.candy.client.model import MachineState
 from custom_components.candy.const import (
     CONF_KEY_MODE,
     CONF_KEY_PROGRAMS,
+    DATA_KEY_COORDINATOR,
     MODE_FULL_CONTROL,
     MODE_READ_ONLY,
     UNIQUE_ID_WASH_DELAY_NUMBER,
@@ -85,6 +88,16 @@ _RUNNING_JSON = """{
   }
 }"""
 
+# MachMd=1 (IDLE) is the closest the device returns; OFF is synthetic (unreachable).
+# Simulate it by using IDLE JSON and then patching the coordinator data to MachineState.OFF.
+_OFF_JSON = """{
+  "statusLavatrice": {
+    "WiFiStatus": "0", "Err": "0", "MachMd": "1", "Pr": "1", "PrPh": "0",
+    "PrCode": "136", "SLevel": "0", "Temp": "40", "SpinSp": "8",
+    "DelVal": "0", "RemTime": "0", "FillR": "0", "CheckUpState": "0"
+  }
+}"""
+
 _STATS_OK = '{"Program1": "0"}'
 
 
@@ -117,6 +130,19 @@ async def _init_full_control(
     _add_stats_mocks(aioclient_mock)
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    return entry
+
+
+async def _init_full_control_off(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> MockConfigEntry:
+    """Init Full Control with the machine in the synthetic OFF state."""
+    entry = await _init_full_control(hass, aioclient_mock, _IDLE_JSON)
+    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR]
+    off_status = copy.copy(coordinator.data)
+    off_status.machine_state = MachineState.OFF
+    coordinator.async_set_updated_data(off_status)
     await hass.async_block_till_done()
     return entry
 
@@ -308,6 +334,33 @@ async def test_start_button_unavailable_when_running(
     state = _state(hass, entry, "button", UNIQUE_ID_WASH_START_BUTTON)
     assert state is not None
     assert state.state == "unavailable"
+
+
+async def test_start_button_unavailable_when_off(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control_off(hass, aioclient_mock)
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_START_BUTTON)
+    assert state is not None
+    assert state.state == "unavailable"
+
+
+async def test_program_select_available_when_off(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control_off(hass, aioclient_mock)
+    state = _state(hass, entry, "select", UNIQUE_ID_WASH_PROGRAM_SELECT)
+    assert state is not None
+    assert state.state not in ("unavailable", "unknown")
+
+
+async def test_delay_number_available_when_off(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control_off(hass, aioclient_mock)
+    state = _state(hass, entry, "number", UNIQUE_ID_WASH_DELAY_NUMBER)
+    assert state is not None
+    assert state.state not in ("unavailable", "unknown")
 
 
 async def test_start_button_sends_command(

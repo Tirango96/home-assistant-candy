@@ -69,14 +69,9 @@ async def _authenticate(
     verifier, challenge = _generate_pkce_pair()
 
     # Step 1: GET /ciam/authorize
-    authorize_url = (
-        f"{_CIAM_BASE}/ciam/authorize"
-        f"?username={email}"
-        f"&password={password}"
-        f"&code_challenge={challenge}"
-    )
     async with session.get(
-        authorize_url,
+        f"{_CIAM_BASE}/ciam/authorize",
+        params={"username": email, "password": password, "code_challenge": challenge},
         headers={"User-Agent": _HON_USER_AGENT},
     ) as resp:
         if resp.status != 200:

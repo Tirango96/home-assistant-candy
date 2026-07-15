@@ -21,6 +21,13 @@ from .model import (
 
 _LOGGER = logging.getLogger(__name__)
 
+
+def parse_wash_programs(raw: list[dict]) -> list[WashingMachineWashProgram]:
+    """Parse and filter the raw program list stored in a config entry."""
+    programs = [WashingMachineWashProgram.from_dict(p) for p in raw]
+    return [p for p in programs if p.position != 0]
+
+
 # Some devices reportedly can't handle too frequent requests and respond with BAD_REQUEST
 # This global limiter makes sure we don't call the API too fast
 # https://github.com/ofalvai/home-assistant-candy/issues/61
