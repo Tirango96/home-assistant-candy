@@ -20,6 +20,7 @@ from custom_components.candy.const import (
     MODE_FULL_CONTROL,
     MODE_READ_ONLY,
     UNIQUE_ID_WASH_DELAY_NUMBER,
+    UNIQUE_ID_WASH_ESTIMATED_DURATION,
     UNIQUE_ID_WASH_PROGRAM_SELECT,
     UNIQUE_ID_WASH_SOIL_SELECT,
     UNIQUE_ID_WASH_SPIN_SELECT,
@@ -51,6 +52,25 @@ _COTTON = {
             {"command_parameter": {"name": "maximum_soil_level", "validation": "3"}},
             {"command_parameter": {"name": "default_soil_level", "validation": "2"}},
             {"command_parameter": {"name": "steam", "validation": "5"}},
+            {"command_parameter": {"name": "default_duration", "validation": "90"}},
+            {
+                "command_parameter": {
+                    "name": "remaining_time_soil_max",
+                    "validation": "120",
+                }
+            },
+            {
+                "command_parameter": {
+                    "name": "remaining_time_soil_medium",
+                    "validation": "90",
+                }
+            },
+            {
+                "command_parameter": {
+                    "name": "remaining_time_soil_min",
+                    "validation": "60",
+                }
+            },
         ],
     }
 }
@@ -71,6 +91,25 @@ _RAPID = {
             {"command_parameter": {"name": "maximum_soil_level", "validation": "0"}},
             {"command_parameter": {"name": "default_soil_level", "validation": "0"}},
             {"command_parameter": {"name": "steam", "validation": "0"}},
+            {"command_parameter": {"name": "default_duration", "validation": "14"}},
+            {
+                "command_parameter": {
+                    "name": "remaining_time_soil_max",
+                    "validation": "0",
+                }
+            },
+            {
+                "command_parameter": {
+                    "name": "remaining_time_soil_medium",
+                    "validation": "0",
+                }
+            },
+            {
+                "command_parameter": {
+                    "name": "remaining_time_soil_min",
+                    "validation": "0",
+                }
+            },
         ],
     }
 }
@@ -594,3 +633,99 @@ async def test_start_button_no_steam_by_default(
 
     query_string: str = mock_send.call_args[0][0]
     assert "Stm=0" in query_string
+
+
+# ---------------------------------------------------------------------------
+# Estimated duration sensor
+# ---------------------------------------------------------------------------
+
+
+async def test_estimated_duration_available_when_idle(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control(hass, aioclient_mock, _IDLE_JSON)
+    state = _state(hass, entry, "sensor", UNIQUE_ID_WASH_ESTIMATED_DURATION)
+    assert state is not None
+    assert state.state not in ("unavailable", "unknown")
+
+
+async def test_estimated_duration_unavailable_when_running(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control(hass, aioclient_mock, _RUNNING_JSON)
+    state = _state(hass, entry, "sensor", UNIQUE_ID_WASH_ESTIMATED_DURATION)
+    assert state is not None
+    assert state.state == "unavailable"
+
+
+async def test_estimated_duration_cotton_default_soil(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    # SLevel=0 is outside Cotton's range [1,3], falls back to default_soil_level=2 → medium=90
+    entry = await _init_full_control(hass, aioclient_mock, _IDLE_JSON)
+    state = _state(hass, entry, "sensor", UNIQUE_ID_WASH_ESTIMATED_DURATION)
+    assert state is not None
+    assert state.state == "90"
+
+
+async def test_estimated_duration_cotton_heavy_soil(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    # SLevel=3 → duration_soil_max = 120
+    slevel3 = _IDLE_JSON.replace('"SLevel": "0"', '"SLevel": "3"')
+    entry = await _init_full_control(hass, aioclient_mock, slevel3)
+    state = _state(hass, entry, "sensor", UNIQUE_ID_WASH_ESTIMATED_DURATION)
+    assert state is not None
+    assert state.state == "120"
+
+
+async def test_estimated_duration_cotton_light_soil(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    # SLevel=1 → duration_soil_min = 60
+    slevel1 = _IDLE_JSON.replace('"SLevel": "0"', '"SLevel": "1"')
+    entry = await _init_full_control(hass, aioclient_mock, slevel1)
+    state = _state(hass, entry, "sensor", UNIQUE_ID_WASH_ESTIMATED_DURATION)
+    assert state is not None
+    assert state.state == "60"
+
+
+async def test_estimated_duration_rapid_uses_default_duration(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    # Rapid has fixed soil (min=max=0) → uses default_duration = 14
+    rapid_idle = _IDLE_JSON.replace('"Pr": "1"', '"Pr": "2"').replace(
+        '"PrCode": "136"', '"PrCode": "5"'
+    )
+    entry = await _init_full_control(hass, aioclient_mock, rapid_idle)
+    state = _state(hass, entry, "sensor", UNIQUE_ID_WASH_ESTIMATED_DURATION)
+    assert state is not None
+    assert state.state == "14"
+
+
+async def test_estimated_duration_not_registered_in_read_only(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="test-read-only-dur",
+        data={
+            CONF_IP_ADDRESS: TEST_IP,
+            CONF_KEY_USE_ENCRYPTION: False,
+            CONF_PASSWORD: "",
+            CONF_KEY_MODE: MODE_READ_ONLY,
+        },
+    )
+    aioclient_mock.get(f"http://{TEST_IP}/http-read.json?encrypted=0", text=_IDLE_JSON)
+    _add_stats_mocks(aioclient_mock)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    registry = er.async_get(hass)
+    assert (
+        registry.async_get_entity_id(
+            "sensor", DOMAIN, UNIQUE_ID_WASH_ESTIMATED_DURATION.format(entry.entry_id)
+        )
+        is None
+    )
