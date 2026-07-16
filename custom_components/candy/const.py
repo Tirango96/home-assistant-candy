@@ -6,6 +6,7 @@ PLATFORMS = ["sensor", "select", "number", "button", "switch"]
 DATA_KEY_COORDINATOR = "coordinator"
 DATA_KEY_STATS_COORDINATOR = "stats_coordinator"
 DATA_KEY_CLIENT = "client"
+DATA_KEY_WRITE_PENDING = "write_pending"
 
 CONF_INTEGRATION_TITLE = "Candy"
 CONF_KEY_USE_ENCRYPTION = "use_encryption"

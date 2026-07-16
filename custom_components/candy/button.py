@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import cast
 from urllib.parse import urlencode
 
@@ -28,6 +29,7 @@ from .const import (
     CONF_KEY_SERIAL_NUMBER,
     DATA_KEY_CLIENT,
     DATA_KEY_COORDINATOR,
+    DATA_KEY_WRITE_PENDING,
     DEVICE_NAME_WASHING_MACHINE,
     DOMAIN,
     MODE_FULL_CONTROL,
@@ -81,6 +83,19 @@ class CandyWashButtonBase(CoordinatorEntity, ButtonEntity):
         self.config_entry = config_entry
         self.config_id = config_entry.entry_id
         self._client = client
+
+    @property
+    def available(self) -> bool:
+        return not self.hass.data[DOMAIN][self.config_id].get(
+            DATA_KEY_WRITE_PENDING, False
+        )
+
+    async def _post_command_refresh(self) -> None:
+        self.hass.data[DOMAIN][self.config_id][DATA_KEY_WRITE_PENDING] = True
+        self.coordinator.async_update_listeners()
+        await asyncio.sleep(5)
+        self.hass.data[DOMAIN][self.config_id][DATA_KEY_WRITE_PENDING] = False
+        await self.coordinator.async_request_refresh()
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -229,6 +244,7 @@ class WashStartButton(CandyWashButtonBase):
             "DispTestOn": 1,
         }
         await self._client.send_command(urlencode(params))
+        await self._post_command_refresh()
 
 
 class WashPauseButton(CandyWashButtonBase):
@@ -252,6 +268,7 @@ class WashPauseButton(CandyWashButtonBase):
 
     async def async_press(self) -> None:
         await self._client.send_command("Pa=1")
+        await self._post_command_refresh()
 
 
 class WashStopButton(CandyWashButtonBase):
@@ -282,3 +299,4 @@ class WashStopButton(CandyWashButtonBase):
             "DelVl": 0,
         }
         await self._client.send_command(urlencode(params))
+        await self._post_command_refresh()
