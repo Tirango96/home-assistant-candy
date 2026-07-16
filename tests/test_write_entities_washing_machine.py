@@ -172,8 +172,8 @@ async def test_program_select_options(
     entry = await _init_full_control(hass, aioclient_mock, _IDLE_JSON)
     state = _state(hass, entry, "select", UNIQUE_ID_WASH_PROGRAM_SELECT)
     assert state is not None
-    assert "COTTON" in state.attributes["options"]
-    assert "RAPID" in state.attributes["options"]
+    assert "Cotton" in state.attributes["options"]
+    assert "Rapid" in state.attributes["options"]
 
 
 async def test_program_select_available_when_idle(

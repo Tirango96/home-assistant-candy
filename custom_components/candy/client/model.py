@@ -283,6 +283,10 @@ class WashingMachineWashProgram:
             steam=_int("steam") != 0,
         )
 
+    @property
+    def display_name(self) -> str:
+        return self.name.replace("_", " ").title()
+
 
 @dataclass
 class WashingMachineStatistics:

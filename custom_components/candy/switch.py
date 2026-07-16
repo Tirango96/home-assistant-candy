@@ -131,7 +131,10 @@ class WashSteamSwitch(CoordinatorEntity, SwitchEntity):
         if entity_id is not None:
             state = self.hass.states.get(entity_id)
             if state is not None and state.state not in ("unavailable", "unknown"):
-                return next((p for p in self._programs if p.name == state.state), None)
+                return next(
+                    (p for p in self._programs if p.display_name == state.state),
+                    None,
+                )
         status = cast(WashingMachineStatus, self.coordinator.data)
         for p in self._programs:
             if p.position == status.program:

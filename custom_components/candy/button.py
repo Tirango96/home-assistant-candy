@@ -157,7 +157,9 @@ class WashStartButton(CandyWashButtonBase):
                 return 0
 
         program_name = _get_state(UNIQUE_ID_WASH_PROGRAM_SELECT)
-        program = next((p for p in self._programs if p.name == program_name), None)
+        program = next(
+            (p for p in self._programs if p.display_name == program_name), None
+        )
         if program is None:
             raise ValueError(
                 f"Cannot start: program '{program_name}' not found in catalog"

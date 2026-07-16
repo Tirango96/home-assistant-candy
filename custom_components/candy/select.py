@@ -156,18 +156,18 @@ class WashProgramSelect(CandyWashSelectBase):
 
     @property
     def options(self) -> list[str]:
-        return [p.name for p in self._programs]
+        return [p.display_name for p in self._programs]
 
     @property
     def current_option(self) -> str | None:
         if self._current_option is not None:
             return self._current_option
         prog = self._current_program()
-        return prog.name if prog else None
+        return prog.display_name if prog else None
 
     async def async_select_option(self, option: str) -> None:
         self._current_option = option
-        selected = next((p for p in self._programs if p.name == option), None)
+        selected = next((p for p in self._programs if p.display_name == option), None)
         if selected is None:
             return
         self._temp_select.update_for_program(selected)
