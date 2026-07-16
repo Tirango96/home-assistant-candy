@@ -30,7 +30,6 @@
       },
       "cloud": {
         "title": "Compte Simply-Fi",
-        "description": "Entrez vos identifiants Simply-Fi / hOn. Ils seront utilisés une seule fois pour récupérer les paramètres de l'appareil et ne seront pas enregistrés.",
         "data": {
           "email": "E-mail",
           "password": "Mot de passe"

@@ -30,7 +30,6 @@
       },
       "cloud": {
         "title": "Cuenta Simply-Fi",
-        "description": "Introduce tus credenciales de Simply-Fi / hOn. Se usarán una sola vez para obtener la configuración del dispositivo y no se almacenarán.",
         "data": {
           "email": "Correo electrónico",
           "password": "Contraseña"
