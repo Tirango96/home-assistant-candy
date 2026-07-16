@@ -757,11 +757,20 @@ class CandyWashEstimatedDurationSensor(CandyBaseSensor):
             "select", DOMAIN, UNIQUE_ID_WASH_PROGRAM_SELECT.format(self.config_id)
         )
         prog_state = self.hass.states.get(prog_eid) if prog_eid else None
-        if prog_state is None or prog_state.state in ("unavailable", "unknown"):
-            return None
-        program = next(
-            (p for p in self._programs if p.display_name == prog_state.state), None
-        )
+        if prog_state is not None and prog_state.state not in (
+            "unavailable",
+            "unknown",
+        ):
+            program = next(
+                (p for p in self._programs if p.display_name == prog_state.state), None
+            )
+        else:
+            status = cast(WashingMachineStatus, self.coordinator.data)
+            program = next(
+                (p for p in self._programs if p.selector_position == status.program),
+                None,
+            )
+
         if program is None:
             return None
 
@@ -770,14 +779,26 @@ class CandyWashEstimatedDurationSensor(CandyBaseSensor):
                 "select", DOMAIN, UNIQUE_ID_WASH_SOIL_SELECT.format(self.config_id)
             )
             soil_state = self.hass.states.get(soil_eid) if soil_eid else None
-            try:
-                soil = (
-                    int(soil_state.state)
-                    if soil_state and soil_state.state not in ("unavailable", "unknown")
-                    else program.default_soil_level
-                )
-            except (ValueError, TypeError):
-                soil = program.default_soil_level
+            if soil_state is not None and soil_state.state not in (
+                "unavailable",
+                "unknown",
+            ):
+                try:
+                    soil = int(soil_state.state)
+                except (ValueError, TypeError):
+                    soil = program.default_soil_level
+            else:
+                device_status = cast(WashingMachineStatus, self.coordinator.data)
+                if (
+                    device_status.soil_level is not None
+                    and program.min_soil_level
+                    <= device_status.soil_level
+                    <= program.max_soil_level
+                ):
+                    soil = device_status.soil_level
+                else:
+                    soil = program.default_soil_level
+
             if soil <= 1:
                 minutes = program.duration_soil_min
             elif soil == 2:
