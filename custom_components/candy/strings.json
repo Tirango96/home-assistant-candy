@@ -119,6 +119,9 @@
       "wash_soil_level": {
         "name": "Wash soil level"
       },
+      "wash_estimated_duration": {
+        "name": "Estimated cycle duration"
+      },
       "tumble_dryer": {
         "name": "Tumble dryer"
       },

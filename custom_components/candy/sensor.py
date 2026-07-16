@@ -17,16 +17,17 @@ from homeassistant.const import (
     UnitOfTemperature,
     UnitOfTime,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
 )
 
-from .client import WashingMachineStatus, parse_wash_programs
+from .client import WashingMachineStatus, WashingMachineWashProgram, parse_wash_programs
 from .client.model import (
     DishwasherState,
     DishwasherStatus,
@@ -66,13 +67,16 @@ from .const import (
     UNIQUE_ID_WASH_CYCLE_STATUS,
     UNIQUE_ID_WASH_DELAY,
     UNIQUE_ID_WASH_ERROR,
+    UNIQUE_ID_WASH_ESTIMATED_DURATION,
     UNIQUE_ID_WASH_FILL_PERCENT,
     UNIQUE_ID_WASH_MOTOR_FREQ,
     UNIQUE_ID_WASH_NTC_DRUM,
     UNIQUE_ID_WASH_NTC_WATER,
     UNIQUE_ID_WASH_PROGRAM,
+    UNIQUE_ID_WASH_PROGRAM_SELECT,
     UNIQUE_ID_WASH_REMAINING_TIME,
     UNIQUE_ID_WASH_SOIL_LEVEL,
+    UNIQUE_ID_WASH_SOIL_SELECT,
     UNIQUE_ID_WASH_SPIN_SPEED,
     UNIQUE_ID_WASH_TEMPERATURE,
     UNIQUE_ID_WASH_TOTAL_CYCLES,
@@ -129,6 +133,11 @@ async def async_setup_entry(
             entities.append(CandyWashCheckUpSensor(coordinator, config_entry))
         if status.soil_level is not None or _was_registered(UNIQUE_ID_WASH_SOIL_LEVEL):
             entities.append(CandyWashSoilLevelSensor(coordinator, config_entry))
+        programs = parse_wash_programs(config_entry.data.get(CONF_KEY_PROGRAMS, []))
+        if programs:
+            entities.append(
+                CandyWashEstimatedDurationSensor(coordinator, config_entry, programs)
+            )
         stats_coordinator = hass.data[DOMAIN][config_id].get(DATA_KEY_STATS_COORDINATOR)
         if stats_coordinator is not None:
             entities.append(CandyWashTotalCyclesSensor(stats_coordinator, config_entry))
@@ -695,6 +704,112 @@ class CandyWashTotalCyclesSensor(CandyBaseSensor, RestoreSensor):
     @property
     def icon(self) -> str:
         return "mdi:counter"
+
+
+class CandyWashEstimatedDurationSensor(CandyBaseSensor):
+    """Estimated cycle duration based on the selected program and soil level."""
+
+    _attr_translation_key = "wash_estimated_duration"
+    _attr_name = "Estimated cycle duration"
+
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        programs: list[WashingMachineWashProgram],
+    ) -> None:
+        super().__init__(coordinator, config_entry)
+        self._programs = programs
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        registry = er.async_get(self.hass)
+        watch_ids = []
+        for uid in (UNIQUE_ID_WASH_PROGRAM_SELECT, UNIQUE_ID_WASH_SOIL_SELECT):
+            eid = registry.async_get_entity_id(
+                "select", DOMAIN, uid.format(self.config_id)
+            )
+            if eid:
+                watch_ids.append(eid)
+        if watch_ids:
+            self.async_on_remove(
+                async_track_state_change_event(
+                    self.hass, watch_ids, self._on_select_changed
+                )
+            )
+
+    @callback
+    def _on_select_changed(self, event) -> None:
+        self.async_write_ha_state()
+
+    @property
+    def available(self) -> bool:
+        if not super().available:
+            return False
+        status = cast(WashingMachineStatus, self.coordinator.data)
+        return status.machine_state == MachineState.IDLE
+
+    @property
+    def native_value(self) -> StateType:
+        registry = er.async_get(self.hass)
+
+        prog_eid = registry.async_get_entity_id(
+            "select", DOMAIN, UNIQUE_ID_WASH_PROGRAM_SELECT.format(self.config_id)
+        )
+        prog_state = self.hass.states.get(prog_eid) if prog_eid else None
+        if prog_state is None or prog_state.state in ("unavailable", "unknown"):
+            return None
+        program = next(
+            (p for p in self._programs if p.display_name == prog_state.state), None
+        )
+        if program is None:
+            return None
+
+        if program.min_soil_level < program.max_soil_level:
+            soil_eid = registry.async_get_entity_id(
+                "select", DOMAIN, UNIQUE_ID_WASH_SOIL_SELECT.format(self.config_id)
+            )
+            soil_state = self.hass.states.get(soil_eid) if soil_eid else None
+            try:
+                soil = (
+                    int(soil_state.state)
+                    if soil_state and soil_state.state not in ("unavailable", "unknown")
+                    else program.default_soil_level
+                )
+            except (ValueError, TypeError):
+                soil = program.default_soil_level
+            if soil <= 1:
+                minutes = program.duration_soil_min
+            elif soil == 2:
+                minutes = program.duration_soil_medium
+            else:
+                minutes = program.duration_soil_max
+        else:
+            minutes = program.default_duration
+
+        return minutes if minutes > 0 else None
+
+    @property
+    def native_unit_of_measurement(self) -> str:
+        return UnitOfTime.MINUTES
+
+    @property
+    def device_class(self) -> SensorDeviceClass:
+        return SensorDeviceClass.DURATION
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_ESTIMATED_DURATION.format(self.config_id)
+
+    def device_name(self) -> str:
+        return DEVICE_NAME_WASHING_MACHINE
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_BATHROOM
+
+    @property
+    def icon(self) -> str:
+        return "mdi:timer-outline"
 
 
 class CandyTumbleDryerSensor(CandyBaseSensor):

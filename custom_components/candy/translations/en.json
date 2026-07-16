@@ -116,6 +116,9 @@
       "wash_soil_level": {
         "name": "Wash soil level"
       },
+      "wash_estimated_duration": {
+        "name": "Estimated cycle duration"
+      },
       "wash_program": {
         "name": "Wash program"
       },
