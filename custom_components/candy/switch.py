@@ -57,6 +57,7 @@ async def async_setup_entry(
 
 
 class WashSteamSwitch(CoordinatorEntity, SwitchEntity):
+    _attr_name = "Wash steam"
     _attr_translation_key = "wash_steam_switch"
     _attr_icon = "mdi:weather-fog"
 

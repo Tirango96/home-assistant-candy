@@ -104,6 +104,7 @@ class CandyWashButtonBase(CoordinatorEntity, ButtonEntity):
 
 
 class WashStartButton(CandyWashButtonBase):
+    _attr_name = "Start wash"
     _attr_translation_key = "wash_start_button"
 
     def __init__(
@@ -227,6 +228,7 @@ class WashStartButton(CandyWashButtonBase):
 
 
 class WashStopButton(CandyWashButtonBase):
+    _attr_name = "Stop wash"
     _attr_translation_key = "wash_stop_button"
 
     @property

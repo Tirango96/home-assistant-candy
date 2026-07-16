@@ -123,6 +123,7 @@ class CandyWashSelectBase(CoordinatorEntity, SelectEntity):
 
 
 class WashProgramSelect(CandyWashSelectBase):
+    _attr_name = "Wash program"
     _attr_translation_key = "wash_program_select"
 
     def __init__(
@@ -179,6 +180,7 @@ class WashProgramSelect(CandyWashSelectBase):
 
 
 class WashTempSelect(CandyWashSelectBase):
+    _attr_name = "Wash temperature"
     _attr_translation_key = "wash_temp_select"
     _current_option: str | None = None
     _current_program: WashingMachineWashProgram | None = None  # type: ignore[assignment]
@@ -237,6 +239,7 @@ class WashTempSelect(CandyWashSelectBase):
 
 
 class WashSpinSelect(CandyWashSelectBase):
+    _attr_name = "Wash spin speed"
     _attr_translation_key = "wash_spin_select"
     _current_option: str | None = None
     _current_program: WashingMachineWashProgram | None = None  # type: ignore[assignment]
@@ -295,6 +298,7 @@ class WashSpinSelect(CandyWashSelectBase):
 
 
 class WashSoilSelect(CandyWashSelectBase):
+    _attr_name = "Wash soil level"
     _attr_translation_key = "wash_soil_select"
     _current_option: str | None = None
     _current_program: WashingMachineWashProgram | None = None  # type: ignore[assignment]
