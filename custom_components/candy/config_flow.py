@@ -61,11 +61,70 @@ def _get_local_subnet(hass_ip: str) -> str:
     return ".".join(parts) + ".0"
 
 
+class OptionsFlowHandler(config_entries.OptionsFlow):
+    """Handle the options flow for upgrading to Full Control via the COG icon."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Show Simply-Fi credentials form and upgrade to Full Control on submit."""
+        if user_input is None:
+            return self.async_show_form(step_id="init", data_schema=CLOUD_SCHEMA)
+
+        errors: dict[str, str] = {}
+        try:
+            async with async_timeout.timeout(30):
+                appliance = await fetch_appliance_data(
+                    session=async_get_clientsession(self.hass),
+                    email=user_input["email"],
+                    password=user_input["password"],
+                    device_ip=self.config_entry.data[CONF_IP_ADDRESS],
+                )
+        except SimplyFiCloudError as err:
+            _LOGGER.warning("Simply-Fi cloud fetch failed in options flow: %s", err)
+            errors["base"] = "cloud_auth"
+            return self.async_show_form(
+                step_id="init", data_schema=CLOUD_SCHEMA, errors=errors
+            )
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.exception("Unexpected error in options flow cloud fetch")
+            errors["base"] = "cloud_auth"
+            return self.async_show_form(
+                step_id="init", data_schema=CLOUD_SCHEMA, errors=errors
+            )
+
+        new_data = dict(self.config_entry.data)
+        new_data[CONF_KEY_MODE] = MODE_FULL_CONTROL
+        if appliance.encryption_key:
+            new_data[CONF_KEY_USE_ENCRYPTION] = True
+            new_data[CONF_PASSWORD] = appliance.encryption_key
+        if appliance.mac_address:
+            new_data[CONF_KEY_MAC_ADDRESS] = appliance.mac_address
+        if appliance.appliance_model:
+            new_data[CONF_KEY_DEVICE_MODEL] = appliance.appliance_model
+        if appliance.serial_number:
+            new_data[CONF_KEY_SERIAL_NUMBER] = appliance.serial_number
+        new_data[CONF_KEY_PROGRAMS] = appliance.programs
+
+        self.hass.config_entries.async_update_entry(self.config_entry, data=new_data)
+        self.hass.async_create_task(
+            self.hass.config_entries.async_reload(self.config_entry.entry_id)
+        )
+        return self.async_create_entry(data={})
+
+
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
     """Handle a config flow for Candy."""
 
     VERSION = 1
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
+
+    @staticmethod
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> OptionsFlowHandler:
+        """Return the options flow handler."""
+        return OptionsFlowHandler()
 
     def __init__(self) -> None:
         """Initialise config flow."""

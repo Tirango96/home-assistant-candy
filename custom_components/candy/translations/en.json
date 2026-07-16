@@ -30,7 +30,7 @@
       },
       "cloud": {
         "title": "Simply-Fi account",
-        "description": "Enter your Simply-Fi / hOn credentials. They will be used once to fetch your appliance settings and will not be stored.",
+        "description": "Enter your Simply-Fi / hOn credentials.\n\nCredentials are only used to download the machine data, then discarded. Your machine should be already registered with the Candy Simply-Fi service.",
         "data": {
           "email": "Email",
           "password": "Password"
@@ -38,12 +38,27 @@
       },
       "reconfigure": {
         "title": "Upgrade to Full Control",
-        "description": "Enter your Simply-Fi / hOn credentials to fetch your appliance settings. They will be used once and will not be stored.",
+        "description": "Enter your Simply-Fi / hOn credentials.\n\nCredentials are only used to download the machine data, then discarded. Your machine should be already registered with the Candy Simply-Fi service.",
         "data": {
           "email": "Email",
           "password": "Password"
         }
       }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Simply-Fi account",
+        "description": "Enter your Simply-Fi / hOn credentials.\n\nCredentials are only used to download the machine data, then discarded. Your machine should be already registered with the Candy Simply-Fi service.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cloud_auth": "Failed to connect to Simply-Fi cloud. Check your credentials and try again."
     }
   },
   "entity": {
