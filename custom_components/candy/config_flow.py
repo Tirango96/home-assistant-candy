@@ -11,6 +11,11 @@ from homeassistant.components.network import async_get_source_ip
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.selector import (
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+)
 import voluptuous as vol
 
 from .client import detect_encryption, discover_devices
@@ -62,14 +67,41 @@ def _get_local_subnet(hass_ip: str) -> str:
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
-    """Handle the options flow for upgrading to Full Control via the COG icon."""
+    """Handle the options flow for the COG icon."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Show Simply-Fi credentials form and upgrade to Full Control on submit."""
+        """Branch based on current mode."""
+        if self.config_entry.data.get(CONF_KEY_MODE) == MODE_FULL_CONTROL:
+            if user_input is not None:
+                if user_input["next_step"] == "switch_to_read_only":
+                    return await self.async_step_switch_to_read_only()
+                return await self.async_step_update_cloud_data()
+            return self.async_show_form(
+                step_id="init",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required("next_step"): SelectSelector(
+                            SelectSelectorConfig(
+                                options=["update_cloud_data", "switch_to_read_only"],
+                                mode=SelectSelectorMode.LIST,
+                                translation_key="next_step",
+                            )
+                        )
+                    }
+                ),
+            )
+        return await self.async_step_update_cloud_data()
+
+    async def async_step_update_cloud_data(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Show Simply-Fi credentials form and upgrade/refresh Full Control on submit."""
         if user_input is None:
-            return self.async_show_form(step_id="init", data_schema=CLOUD_SCHEMA)
+            return self.async_show_form(
+                step_id="update_cloud_data", data_schema=CLOUD_SCHEMA
+            )
 
         errors: dict[str, str] = {}
         try:
@@ -84,13 +116,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             _LOGGER.warning("Simply-Fi cloud fetch failed in options flow: %s", err)
             errors["base"] = "cloud_auth"
             return self.async_show_form(
-                step_id="init", data_schema=CLOUD_SCHEMA, errors=errors
+                step_id="update_cloud_data", data_schema=CLOUD_SCHEMA, errors=errors
             )
         except Exception:  # pylint: disable=broad-except
             _LOGGER.exception("Unexpected error in options flow cloud fetch")
             errors["base"] = "cloud_auth"
             return self.async_show_form(
-                step_id="init", data_schema=CLOUD_SCHEMA, errors=errors
+                step_id="update_cloud_data", data_schema=CLOUD_SCHEMA, errors=errors
             )
 
         new_data = dict(self.config_entry.data)
@@ -105,6 +137,25 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         if appliance.serial_number:
             new_data[CONF_KEY_SERIAL_NUMBER] = appliance.serial_number
         new_data[CONF_KEY_PROGRAMS] = appliance.programs
+
+        self.hass.config_entries.async_update_entry(self.config_entry, data=new_data)
+        self.hass.async_create_task(
+            self.hass.config_entries.async_reload(self.config_entry.entry_id)
+        )
+        return self.async_create_entry(data={})
+
+    async def async_step_switch_to_read_only(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Downgrade to Read-Only: remove write entities and clear cloud data."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="switch_to_read_only", data_schema=vol.Schema({})
+            )
+
+        new_data = dict(self.config_entry.data)
+        new_data[CONF_KEY_MODE] = MODE_READ_ONLY
+        new_data.pop(CONF_KEY_PROGRAMS, None)
 
         self.hass.config_entries.async_update_entry(self.config_entry, data=new_data)
         self.hass.async_create_task(

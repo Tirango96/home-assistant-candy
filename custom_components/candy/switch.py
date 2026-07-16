@@ -4,9 +4,10 @@ from typing import cast
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -78,6 +79,23 @@ class WashSteamSwitch(CoordinatorEntity, SwitchEntity):
     @property
     def unique_id(self) -> str:
         return UNIQUE_ID_WASH_STEAM_SWITCH.format(self.config_id)
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        registry = er.async_get(self.hass)
+        entity_id = registry.async_get_entity_id(
+            "select", DOMAIN, UNIQUE_ID_WASH_PROGRAM_SELECT.format(self.config_id)
+        )
+        if entity_id is not None:
+            self.async_on_remove(
+                async_track_state_change_event(
+                    self.hass, [entity_id], self._on_program_changed
+                )
+            )
+
+    @callback
+    def _on_program_changed(self, event) -> None:
+        self.async_write_ha_state()
 
     @property
     def device_info(self) -> DeviceInfo:

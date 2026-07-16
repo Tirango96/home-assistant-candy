@@ -236,6 +236,7 @@ class OvenStatus:
 @dataclass
 class WashingMachineWashProgram:
     position: int
+    selector_position: int
     name: str
     pr_code: int
     max_temperature: int
@@ -271,6 +272,7 @@ class WashingMachineWashProgram:
 
         return cls(
             position=int(p["position"]),
+            selector_position=_int("selector_position"),
             name=raw_name,
             pr_code=_int("pr_code"),
             max_temperature=_int("maximum_temperature"),

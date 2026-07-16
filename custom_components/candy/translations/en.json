@@ -49,12 +49,23 @@
   "options": {
     "step": {
       "init": {
+        "title": "Integration settings",
+        "description": "Choose an action.",
+        "data": {
+          "next_step": "Action"
+        }
+      },
+      "update_cloud_data": {
         "title": "Simply-Fi account",
         "description": "Enter your Simply-Fi / hOn credentials.\n\nCredentials are only used to download the machine data, then discarded. Your machine should be already registered with the Candy Simply-Fi service.",
         "data": {
           "email": "Email",
           "password": "Password"
         }
+      },
+      "switch_to_read_only": {
+        "title": "Switch to Read-Only",
+        "description": "This will remove all write controls (program select, start/stop, steam, delay). The integration will continue to monitor your device.\n\nClick Submit to confirm."
       }
     },
     "error": {
@@ -169,6 +180,14 @@
       },
       "wash_stop_button": {
         "name": "Stop wash"
+      }
+    }
+  },
+  "selector": {
+    "next_step": {
+      "options": {
+        "update_cloud_data": "Update cloud data",
+        "switch_to_read_only": "Switch to Read-Only"
       }
     }
   },

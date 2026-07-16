@@ -50,9 +50,9 @@ async def async_setup_entry(
 
 class WashDelayNumber(CoordinatorEntity, NumberEntity):
     _attr_native_min_value = 0
-    _attr_native_max_value = 8
-    _attr_native_step = 1
-    _attr_native_unit_of_measurement = UnitOfTime.HOURS
+    _attr_native_max_value = 480
+    _attr_native_step = 30
+    _attr_native_unit_of_measurement = UnitOfTime.MINUTES
     _attr_mode = NumberMode.BOX
     _attr_icon = "mdi:timer-outline"
     _attr_name = "Wash delay"
@@ -68,7 +68,7 @@ class WashDelayNumber(CoordinatorEntity, NumberEntity):
         self.config_entry = config_entry
         self.config_id = config_entry.entry_id
         self._client = client
-        self._delay_hours: float = 0
+        self._delay_minutes: int = 0
 
     @property
     def unique_id(self) -> str:
@@ -105,8 +105,8 @@ class WashDelayNumber(CoordinatorEntity, NumberEntity):
 
     @property
     def native_value(self) -> float:
-        return self._delay_hours
+        return self._delay_minutes
 
     async def async_set_native_value(self, value: float) -> None:
-        self._delay_hours = value
+        self._delay_minutes = int(value)
         self.async_write_ha_state()

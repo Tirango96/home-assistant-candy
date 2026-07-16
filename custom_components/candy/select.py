@@ -113,7 +113,7 @@ class CandyWashSelectBase(CoordinatorEntity, SelectEntity):
     def _current_program(self) -> WashingMachineWashProgram | None:
         status = cast(WashingMachineStatus, self.coordinator.data)
         for p in self._programs:
-            if p.position == status.program:
+            if p.selector_position == status.program:
                 return p
         return None
 
@@ -229,7 +229,7 @@ class WashTempSelect(CandyWashSelectBase):
             return self._current_program
         status = cast(WashingMachineStatus, self.coordinator.data)
         for p in self._programs:
-            if p.position == status.program:
+            if p.selector_position == status.program:
                 return p
         return None
 
@@ -288,7 +288,7 @@ class WashSpinSelect(CandyWashSelectBase):
             return self._current_program
         status = cast(WashingMachineStatus, self.coordinator.data)
         for p in self._programs:
-            if p.position == status.program:
+            if p.selector_position == status.program:
                 return p
         return None
 
@@ -356,7 +356,7 @@ class WashSoilSelect(CandyWashSelectBase):
             return self._current_program
         status = cast(WashingMachineStatus, self.coordinator.data)
         for p in self._programs:
-            if p.position == status.program:
+            if p.selector_position == status.program:
                 return p
         return None
 

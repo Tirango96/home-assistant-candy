@@ -35,12 +35,13 @@ from .common import TEST_IP
 # Minimal program catalog used across all tests
 # ---------------------------------------------------------------------------
 
-# COTTON: pos=1, supports temp/spin/soil selection, supports steam
+# COTTON: pos=1, sel=1, supports temp/spin/soil selection, supports steam
 _COTTON = {
     "program": {
         "position": 1,
         "name": "DUAL_WM_WD_PROGRAM_NAME_COTTON",
         "command_parameters": [
+            {"command_parameter": {"name": "selector_position", "validation": "1"}},
             {"command_parameter": {"name": "pr_code", "validation": "136"}},
             {"command_parameter": {"name": "maximum_temperature", "validation": "90"}},
             {"command_parameter": {"name": "default_temperature", "validation": "40"}},
@@ -54,12 +55,13 @@ _COTTON = {
     }
 }
 
-# RAPID: pos=2, temp and spin fixed (255 = not selectable), soil fixed, no steam
+# RAPID: pos=2, sel=2, temp and spin fixed (255 = not selectable), soil fixed, no steam
 _RAPID = {
     "program": {
         "position": 2,
         "name": "DUAL_WM_WD_PROGRAM_NAME_RAPID",
         "command_parameters": [
+            {"command_parameter": {"name": "selector_position", "validation": "2"}},
             {"command_parameter": {"name": "pr_code", "validation": "5"}},
             {"command_parameter": {"name": "maximum_temperature", "validation": "255"}},
             {"command_parameter": {"name": "default_temperature", "validation": "30"}},
