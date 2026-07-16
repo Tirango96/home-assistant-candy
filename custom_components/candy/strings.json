@@ -90,6 +90,9 @@
       "wash_total_cycles": {
         "name": "Wash total cycles"
       },
+      "wash_soil_level": {
+        "name": "Wash soil level"
+      },
       "tumble_dryer": {
         "name": "Tumble dryer"
       },

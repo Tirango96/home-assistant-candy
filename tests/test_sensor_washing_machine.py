@@ -408,3 +408,33 @@ async def test_check_up_sensor_shows_cached_value_after_offline_startup(
     state = hass.states.get(checkup_entry.entity_id)
     assert state is not None
     assert state.state == "Ok"
+
+
+async def test_soil_level_sensor_idle(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    await init_integration(
+        hass, aioclient_mock, load_fixture("washing_machine/idle.json")
+    )
+
+    state = hass.states.get("sensor.wash_soil_level")
+
+    assert state
+    assert state.state == "0"
+    assert state.attributes == {
+        "friendly_name": "Wash soil level",
+        "icon": "mdi:water-opacity",
+    }
+
+
+async def test_soil_level_sensor_running(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    await init_integration(
+        hass, aioclient_mock, load_fixture("washing_machine/running_wash.json")
+    )
+
+    state = hass.states.get("sensor.wash_soil_level")
+
+    assert state
+    assert state.state == "2"

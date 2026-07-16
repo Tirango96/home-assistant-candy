@@ -71,6 +71,7 @@ from .const import (
     UNIQUE_ID_WASH_NTC_WATER,
     UNIQUE_ID_WASH_PROGRAM,
     UNIQUE_ID_WASH_REMAINING_TIME,
+    UNIQUE_ID_WASH_SOIL_LEVEL,
     UNIQUE_ID_WASH_SPIN_SPEED,
     UNIQUE_ID_WASH_TEMPERATURE,
     UNIQUE_ID_WASH_TOTAL_CYCLES,
@@ -125,6 +126,8 @@ async def async_setup_entry(
             UNIQUE_ID_WASH_CHECK_UP
         ):
             entities.append(CandyWashCheckUpSensor(coordinator, config_entry))
+        if status.soil_level is not None or _was_registered(UNIQUE_ID_WASH_SOIL_LEVEL):
+            entities.append(CandyWashSoilLevelSensor(coordinator, config_entry))
         stats_coordinator = hass.data[DOMAIN][config_id].get(DATA_KEY_STATS_COORDINATOR)
         if stats_coordinator is not None:
             entities.append(CandyWashTotalCyclesSensor(stats_coordinator, config_entry))
@@ -615,6 +618,31 @@ class CandyWashCheckUpSensor(CandyBaseSensor, RestoreSensor):
     @property
     def icon(self) -> str:
         return "mdi:wrench-check"
+
+
+class CandyWashSoilLevelSensor(CandyBaseSensor):
+    """Current soil level reported by the washing machine (0–4)."""
+
+    _attr_translation_key = "wash_soil_level"
+    _attr_name = "Wash soil level"
+
+    def device_name(self) -> str:
+        return DEVICE_NAME_WASHING_MACHINE
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_BATHROOM
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_SOIL_LEVEL.format(self.config_id)
+
+    @property
+    def native_value(self) -> StateType:
+        return cast(WashingMachineStatus, self.coordinator.data).soil_level
+
+    @property
+    def icon(self) -> str:
+        return "mdi:water-opacity"
 
 
 class CandyWashTotalCyclesSensor(CandyBaseSensor, RestoreSensor):

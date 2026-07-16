@@ -69,6 +69,7 @@ class WashingMachineStatus:
     unbalance_count: int | None  # unbC — unbalance count
     fault_count: int | None  # numF — total fault count
     check_up_state: int | None  # CheckUpState — 0 = ok, non-zero = service due
+    soil_level: int | None  # SLevel — 0–4 soil level setting
 
     @classmethod
     def from_json(cls, json):
@@ -94,6 +95,7 @@ class WashingMachineStatus:
             check_up_state=int(json["CheckUpState"])
             if "CheckUpState" in json
             else None,
+            soil_level=int(json["SLevel"]) if "SLevel" in json else None,
         )
 
 

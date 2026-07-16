@@ -271,6 +271,18 @@ async def test_soil_select_available_for_cotton_idle(
     assert state.attributes["options"] == ["1", "2", "3"]
 
 
+async def test_soil_select_reflects_device_slevel(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    # SLevel=1 in the fixture, Cotton default_soil_level=2 — they differ, so the fallback
+    # must read the live device value, not the program default.
+    slevel_idle = _IDLE_JSON.replace('"SLevel": "0"', '"SLevel": "1"')
+    entry = await _init_full_control(hass, aioclient_mock, slevel_idle)
+    state = _state(hass, entry, "select", UNIQUE_ID_WASH_SOIL_SELECT)
+    assert state is not None
+    assert state.state == "1"
+
+
 async def test_soil_select_unavailable_for_rapid_idle(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):

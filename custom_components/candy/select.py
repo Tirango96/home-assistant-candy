@@ -332,6 +332,12 @@ class WashSoilSelect(CandyWashSelectBase):
         prog = self._active_program()
         if prog is None or prog.min_soil_level >= prog.max_soil_level:
             return None
+        status = cast(WashingMachineStatus, self.coordinator.data)
+        if (
+            status.soil_level is not None
+            and prog.min_soil_level <= status.soil_level <= prog.max_soil_level
+        ):
+            return str(status.soil_level)
         return str(prog.default_soil_level)
 
     def update_for_program(self, program: WashingMachineWashProgram) -> None:
