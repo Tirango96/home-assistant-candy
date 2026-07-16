@@ -225,7 +225,7 @@ async def test_check_up_sensor_ok(
     }
 
 
-async def test_check_up_sensor_service_due(
+async def test_check_up_sensor_in_progress(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
     service_due_fixture = load_fixture("washing_machine/idle.json").replace(
@@ -236,7 +236,21 @@ async def test_check_up_sensor_service_due(
     state = hass.states.get("sensor.wash_maintenance")
 
     assert state
-    assert state.state == "Service due"
+    assert state.state == "In progress"
+
+
+async def test_check_up_sensor_healthy(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    healthy_fixture = load_fixture("washing_machine/idle.json").replace(
+        '"CheckUpState": "0"', '"CheckUpState": "2"'
+    )
+    await init_integration(hass, aioclient_mock, healthy_fixture)
+
+    state = hass.states.get("sensor.wash_maintenance")
+
+    assert state
+    assert state.state == "Ok"
 
 
 async def test_total_cycles_sensor(

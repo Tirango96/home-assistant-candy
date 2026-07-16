@@ -630,7 +630,7 @@ class CandyWashCheckUpSensor(CandyBaseSensor, RestoreSensor):
     def native_value(self) -> StateType:
         state = cast(WashingMachineStatus, self.coordinator.data).check_up_state
         if state is not None:
-            return "Ok" if state == 0 else "Service due"
+            return str(state)
         return self._restored_state
 
     @property
