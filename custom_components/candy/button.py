@@ -33,6 +33,7 @@ from .const import (
     MODE_FULL_CONTROL,
     SUGGESTED_AREA_BATHROOM,
     UNIQUE_ID_WASH_DELAY_NUMBER,
+    UNIQUE_ID_WASH_PAUSE_BUTTON,
     UNIQUE_ID_WASH_PROGRAM_SELECT,
     UNIQUE_ID_WASH_SOIL_SELECT,
     UNIQUE_ID_WASH_SPIN_SELECT,
@@ -63,6 +64,7 @@ async def async_setup_entry(
     async_add_entities(
         [
             WashStartButton(coordinator, config_entry, client, programs),
+            WashPauseButton(coordinator, config_entry, client),
             WashStopButton(coordinator, config_entry, client),
         ]
     )
@@ -227,6 +229,29 @@ class WashStartButton(CandyWashButtonBase):
             "DispTestOn": 1,
         }
         await self._client.send_command(urlencode(params))
+
+
+class WashPauseButton(CandyWashButtonBase):
+    _attr_name = "Pause wash"
+    _attr_translation_key = "wash_pause_button"
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_PAUSE_BUTTON.format(self.config_id)
+
+    @property
+    def icon(self) -> str:
+        return "mdi:pause-circle-outline"
+
+    @property
+    def available(self) -> bool:
+        if not super().available:
+            return False
+        status = cast(WashingMachineStatus, self.coordinator.data)
+        return status.machine_state == MachineState.RUNNING
+
+    async def async_press(self) -> None:
+        await self._client.send_command("Pa=1")
 
 
 class WashStopButton(CandyWashButtonBase):

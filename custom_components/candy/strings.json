@@ -178,6 +178,9 @@
       "wash_start_button": {
         "name": "Start wash"
       },
+      "wash_pause_button": {
+        "name": "Pause wash"
+      },
       "wash_stop_button": {
         "name": "Stop wash"
       }

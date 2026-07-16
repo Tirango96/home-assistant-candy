@@ -26,7 +26,7 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 
-from .client import WashingMachineStatus
+from .client import WashingMachineStatus, parse_wash_programs
 from .client.model import (
     DishwasherState,
     DishwasherStatus,
@@ -40,6 +40,7 @@ from .const import (
     CONF_KEY_DEVICE_MODEL,
     CONF_KEY_MAC_ADDRESS,
     CONF_KEY_MODE,
+    CONF_KEY_PROGRAMS,
     CONF_KEY_SERIAL_NUMBER,
     DATA_KEY_COORDINATOR,
     DATA_KEY_STATS_COORDINATOR,
@@ -261,6 +262,14 @@ class CandyWashProgramSensor(CandyBaseSensor):
     @property
     def native_value(self) -> StateType:
         status = cast(WashingMachineStatus, self.coordinator.data)
+        raw = self.config_entry.data.get(CONF_KEY_PROGRAMS)
+        if raw:
+            programs = parse_wash_programs(raw)
+            match = next(
+                (p for p in programs if p.selector_position == status.program), None
+            )
+            if match is not None:
+                return match.display_name
         return status.program
 
     @property

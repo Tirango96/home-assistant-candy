@@ -23,7 +23,7 @@
       },
       "mode": {
         "title": "Integration mode",
-        "description": "Choose **Read-Only** to monitor your device without any cloud connection.\n\nChoose **Full Control** to also start/stop programs. This requires your Simply-Fi account credentials once — they are used only to download your appliance settings and are never stored.",
+        "description": "Choose **Read-Only** to monitor your device without any cloud connection.\n\nChoose **Full Control** to also start/stop programs. This requires your Simply-Fi account credentials once \u00e2\u20ac\u201d they are used only to download your appliance settings and are never stored.",
         "data": {
           "mode": "Mode"
         }
@@ -177,6 +177,9 @@
     "button": {
       "wash_start_button": {
         "name": "Start wash"
+      },
+      "wash_pause_button": {
+        "name": "Pause wash"
       },
       "wash_stop_button": {
         "name": "Stop wash"

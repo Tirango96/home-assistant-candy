@@ -43,6 +43,7 @@ UNIQUE_ID_WASH_SPIN_SELECT = "{0}-wash_spin_select"
 UNIQUE_ID_WASH_SOIL_SELECT = "{0}-wash_soil_select"
 UNIQUE_ID_WASH_DELAY_NUMBER = "{0}-wash_delay_number"
 UNIQUE_ID_WASH_START_BUTTON = "{0}-wash_start_button"
+UNIQUE_ID_WASH_PAUSE_BUTTON = "{0}-wash_pause_button"
 UNIQUE_ID_WASH_STOP_BUTTON = "{0}-wash_stop_button"
 UNIQUE_ID_WASH_STEAM_SWITCH = "{0}-wash_steam_switch"
 

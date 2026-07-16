@@ -155,6 +155,6 @@ class WashSteamSwitch(CoordinatorEntity, SwitchEntity):
                 )
         status = cast(WashingMachineStatus, self.coordinator.data)
         for p in self._programs:
-            if p.position == status.program:
+            if p.selector_position == status.program:
                 return p
         return None
