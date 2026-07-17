@@ -24,6 +24,7 @@ from .const import (
     CONF_KEY_DEVICE_MODEL,
     CONF_KEY_MAC_ADDRESS,
     CONF_KEY_MODE,
+    CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
     CONF_KEY_SERIAL_NUMBER,
     DATA_KEY_CLIENT,
@@ -153,7 +154,12 @@ class WashSteamSwitch(CoordinatorEntity, SwitchEntity):
                     (
                         p
                         for p in self._programs
-                        if p.localized_name(self.hass.config.language) == state.state
+                        if p.localized_name(
+                            self.config_entry.data.get(
+                                CONF_KEY_PROGRAM_LANGUAGE, self.hass.config.language
+                            )
+                        )
+                        == state.state
                     ),
                     None,
                 )

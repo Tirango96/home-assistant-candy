@@ -23,6 +23,7 @@ from .const import (
     CONF_KEY_DEVICE_MODEL,
     CONF_KEY_MAC_ADDRESS,
     CONF_KEY_MODE,
+    CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
     CONF_KEY_SERIAL_NUMBER,
     DATA_KEY_CLIENT,
@@ -90,7 +91,10 @@ class CandyWashSelectBase(CoordinatorEntity, SelectEntity):
         self._programs = programs
 
     def _program_name(self, program: WashingMachineWashProgram) -> str:
-        return program.localized_name(self.hass.config.language)
+        lang = self.config_entry.data.get(
+            CONF_KEY_PROGRAM_LANGUAGE, self.hass.config.language
+        )
+        return program.localized_name(lang)
 
     @property
     def device_info(self) -> DeviceInfo:

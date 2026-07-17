@@ -12,6 +12,7 @@ from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
+    SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
@@ -26,12 +27,14 @@ from .const import (
     CONF_KEY_DEVICE_MODEL,
     CONF_KEY_MAC_ADDRESS,
     CONF_KEY_MODE,
+    CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
     CONF_KEY_SERIAL_NUMBER,
     CONF_KEY_USE_ENCRYPTION,
     DOMAIN,
     MODE_FULL_CONTROL,
     MODE_READ_ONLY,
+    PROGRAM_LANGUAGES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -60,6 +63,22 @@ CLOUD_SCHEMA = vol.Schema(
 MANUAL_IP_OPTION = "manual"
 
 
+def _language_schema(default: str) -> vol.Schema:
+    return vol.Schema(
+        {
+            vol.Required(CONF_KEY_PROGRAM_LANGUAGE, default=default): SelectSelector(
+                SelectSelectorConfig(
+                    options=[
+                        SelectOptionDict(value=code, label=name)
+                        for code, name in PROGRAM_LANGUAGES.items()
+                    ],
+                    mode=SelectSelectorMode.LIST,
+                )
+            )
+        }
+    )
+
+
 def _get_local_subnet(hass_ip: str) -> str:
     """Return the /24 subnet string for the given IP (e.g. '192.168.1.1' → '192.168.1.0')."""
     parts = hass_ip.split(".")[:3]
@@ -68,6 +87,9 @@ def _get_local_subnet(hass_ip: str) -> str:
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
     """Handle the options flow for the COG icon."""
+
+    def __init__(self) -> None:
+        self._pending_data: dict[str, Any] = {}
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -138,7 +160,29 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             new_data[CONF_KEY_SERIAL_NUMBER] = appliance.serial_number
         new_data[CONF_KEY_PROGRAMS] = appliance.programs
 
-        self.hass.config_entries.async_update_entry(self.config_entry, data=new_data)
+        self._pending_data = new_data
+        return await self.async_step_language()
+
+    async def async_step_language(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask which language to use for program names."""
+        if user_input is None:
+            current = self._pending_data.get(
+                CONF_KEY_PROGRAM_LANGUAGE,
+                self.config_entry.data.get(CONF_KEY_PROGRAM_LANGUAGE, "en"),
+            )
+            return self.async_show_form(
+                step_id="language",
+                data_schema=_language_schema(current),
+            )
+
+        self._pending_data[CONF_KEY_PROGRAM_LANGUAGE] = user_input[
+            CONF_KEY_PROGRAM_LANGUAGE
+        ]
+        self.hass.config_entries.async_update_entry(
+            self.config_entry, data=self._pending_data
+        )
         self.hass.async_create_task(
             self.hass.config_entries.async_reload(self.config_entry.entry_id)
         )
@@ -182,6 +226,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
         self._discovered: dict[str, str] = {}  # ip -> device type label
         self._ip_address: str = ""
         self._config_data: dict[str, Any] = {}  # accumulated config entry data
+        self._is_reconfigure: bool = False
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -331,6 +376,31 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
             self._config_data[CONF_KEY_SERIAL_NUMBER] = appliance.serial_number
         self._config_data[CONF_KEY_PROGRAMS] = appliance.programs
 
+        return await self.async_step_language()
+
+    async def async_step_language(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask which language to use for program names."""
+        if user_input is None:
+            existing = self._config_data.get(CONF_KEY_PROGRAM_LANGUAGE)
+            default = existing or (
+                self.hass.config.language
+                if self.hass.config.language in PROGRAM_LANGUAGES
+                else "en"
+            )
+            return self.async_show_form(
+                step_id="language",
+                data_schema=_language_schema(default),
+            )
+
+        self._config_data[CONF_KEY_PROGRAM_LANGUAGE] = user_input[
+            CONF_KEY_PROGRAM_LANGUAGE
+        ]
+        if self._is_reconfigure:
+            return self.async_update_reload_and_abort(
+                self._get_reconfigure_entry(), data=self._config_data
+            )
         return self.async_create_entry(
             title=CONF_INTEGRATION_TITLE, data=self._config_data
         )
@@ -349,6 +419,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
         entry = self._get_reconfigure_entry()
         self._ip_address = entry.data[CONF_IP_ADDRESS]
         self._config_data = dict(entry.data)
+        self._is_reconfigure = True
 
         errors: dict[str, str] = {}
         try:
@@ -384,4 +455,4 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
             self._config_data[CONF_KEY_SERIAL_NUMBER] = appliance.serial_number
         self._config_data[CONF_KEY_PROGRAMS] = appliance.programs
 
-        return self.async_update_reload_and_abort(entry, data=self._config_data)
+        return await self.async_step_language()

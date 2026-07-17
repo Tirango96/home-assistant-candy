@@ -12,6 +12,7 @@ from custom_components.candy.config_flow import MANUAL_IP_OPTION
 from custom_components.candy.const import (
     CONF_KEY_DEVICE_MODEL,
     CONF_KEY_MODE,
+    CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
     CONF_KEY_SERIAL_NUMBER,
     MODE_FULL_CONTROL,
@@ -408,6 +409,13 @@ async def test_full_control_flow(
         result["flow_id"], user_input={"email": "user@example.com", "password": "pass"}
     )
 
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "language"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_PROGRAM_LANGUAGE: "en"}
+    )
+
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     data = result["data"]
     assert data[CONF_KEY_MODE] == MODE_FULL_CONTROL
@@ -416,6 +424,7 @@ async def test_full_control_flow(
     assert data[CONF_KEY_DEVICE_MODEL] == "RO41274DWMSE/1-S"
     assert data[CONF_KEY_SERIAL_NUMBER] == "1234567890123456"
     assert len(data[CONF_KEY_PROGRAMS]) == 1
+    assert data[CONF_KEY_PROGRAM_LANGUAGE] == "en"
     # Credentials must NOT be stored
     assert "email" not in data
     assert "password_plain" not in data
@@ -476,6 +485,13 @@ async def test_reconfigure_to_full_control(hass, mock_cloud_success):
         result["flow_id"], user_input={"email": "user@example.com", "password": "pass"}
     )
 
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "language"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_PROGRAM_LANGUAGE: "it"}
+    )
+
     assert result["type"] == data_entry_flow.FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
 
@@ -483,6 +499,7 @@ async def test_reconfigure_to_full_control(hass, mock_cloud_success):
     assert updated.data[CONF_KEY_MODE] == MODE_FULL_CONTROL
     assert updated.data[CONF_KEY_DEVICE_MODEL] == "RO41274DWMSE/1-S"
     assert len(updated.data[CONF_KEY_PROGRAMS]) == 1
+    assert updated.data[CONF_KEY_PROGRAM_LANGUAGE] == "it"
 
 
 async def test_reconfigure_cloud_error(hass, mock_cloud_error):

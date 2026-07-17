@@ -34,6 +34,13 @@
           "email": "Correu electrònic",
           "password": "Contrasenya"
         }
+      },
+      "language": {
+        "title": "Idioma dels programes",
+        "description": "Trieu l'idioma per als noms dels programes a la interfície. Pot ser diferent de l'idioma de Home Assistant.",
+        "data": {
+          "program_language": "Idioma"
+        }
       }
     }
   },

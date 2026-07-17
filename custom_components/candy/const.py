@@ -21,6 +21,28 @@ CONF_KEY_MAC_ADDRESS = "mac_address"
 CONF_KEY_PROGRAMS = "simply_fi_programs"
 CONF_KEY_DEVICE_MODEL = "device_model"
 CONF_KEY_SERIAL_NUMBER = "serial_number"
+CONF_KEY_PROGRAM_LANGUAGE = "program_language"
+
+PROGRAM_LANGUAGES: dict[str, str] = {
+    "bg": "Български",
+    "cs": "Čeština",
+    "de": "Deutsch",
+    "el": "Ελληνικά",
+    "en": "English",
+    "es": "Español",
+    "fr": "Français",
+    "hr": "Hrvatski",
+    "it": "Italiano",
+    "nl": "Nederlands",
+    "pl": "Polski",
+    "pt": "Português",
+    "ro": "Română",
+    "ru": "Русский",
+    "sk": "Slovenčina",
+    "sl": "Slovenščina",
+    "sr": "Српски",
+    "tr": "Türkçe",
+}
 
 UNIQUE_ID_WASHING_MACHINE = "{0}-washing_machine"
 UNIQUE_ID_WASH_PROGRAM = "{0}-wash_program"

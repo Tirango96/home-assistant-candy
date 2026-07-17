@@ -34,6 +34,13 @@
           "email": "Correo electrónico",
           "password": "Contraseña"
         }
+      },
+      "language": {
+        "title": "Idioma de los programas",
+        "description": "Elige el idioma para los nombres de programas en la interfaz. Puede diferir del idioma de Home Assistant.",
+        "data": {
+          "program_language": "Idioma"
+        }
       }
     }
   },

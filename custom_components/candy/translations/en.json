@@ -36,6 +36,13 @@
           "password": "Password"
         }
       },
+      "language": {
+        "title": "Program language",
+        "description": "Choose which language to use for program names in the UI. This can differ from your Home Assistant language.",
+        "data": {
+          "program_language": "Language"
+        }
+      },
       "reconfigure": {
         "title": "Upgrade to Full Control",
         "description": "Enter your Simply-Fi / hOn credentials.\n\nCredentials are only used to download the machine data, then discarded. Your machine should be already registered with the Candy Simply-Fi service.",
@@ -66,6 +73,13 @@
       "switch_to_read_only": {
         "title": "Switch to Read-Only",
         "description": "This will remove all write controls (program select, start/stop, steam, delay). The integration will continue to monitor your device.\n\nClick Submit to confirm."
+      },
+      "language": {
+        "title": "Program language",
+        "description": "Choose which language to use for program names in the UI. This can differ from your Home Assistant language.",
+        "data": {
+          "program_language": "Language"
+        }
       }
     },
     "error": {
