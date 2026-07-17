@@ -280,7 +280,7 @@ class CandyWashProgramSensor(CandyBaseSensor):
                 (p for p in programs if p.selector_position == status.program), None
             )
             if match is not None:
-                return match.display_name
+                return match.localized_name(self.hass.config.language)
         return status.program
 
     @property
@@ -767,7 +767,12 @@ class CandyWashEstimatedDurationSensor(CandyBaseSensor):
             "unknown",
         ):
             program = next(
-                (p for p in self._programs if p.display_name == prog_state.state), None
+                (
+                    p
+                    for p in self._programs
+                    if p.localized_name(self.hass.config.language) == prog_state.state
+                ),
+                None,
             )
         else:
             status = cast(WashingMachineStatus, self.coordinator.data)

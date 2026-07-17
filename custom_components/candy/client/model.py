@@ -1,5 +1,11 @@
 from dataclasses import dataclass
 from enum import Enum
+import json
+from pathlib import Path
+
+_PROGRAM_NAMES: dict[str, dict[str, str]] = json.loads(
+    (Path(__file__).parent / "program_names.json").read_text(encoding="utf-8")
+)
 
 
 class StatusCode(Enum):
@@ -301,7 +307,19 @@ class WashingMachineWashProgram:
 
     @property
     def display_name(self) -> str:
-        return self.name.replace("_", " ").title()
+        return self.localized_name("en")
+
+    def localized_name(self, language: str) -> str:
+        """Return the program name in the given BCP-47 language code.
+
+        Falls back to English, then to title-casing the raw key.
+        """
+        translations = _PROGRAM_NAMES.get(self.name, {})
+        return (
+            translations.get(language)
+            or translations.get("en")
+            or self.name.replace("_", " ").title()
+        )
 
 
 @dataclass

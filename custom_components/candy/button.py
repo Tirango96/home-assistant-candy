@@ -176,7 +176,12 @@ class WashStartButton(CandyWashButtonBase):
 
         program_name = _get_state(UNIQUE_ID_WASH_PROGRAM_SELECT)
         program = next(
-            (p for p in self._programs if p.display_name == program_name), None
+            (
+                p
+                for p in self._programs
+                if p.localized_name(self.hass.config.language) == program_name
+            ),
+            None,
         )
         if program is None:
             raise ValueError(

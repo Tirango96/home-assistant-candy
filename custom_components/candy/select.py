@@ -89,6 +89,9 @@ class CandyWashSelectBase(CoordinatorEntity, SelectEntity):
         self._client = client
         self._programs = programs
 
+    def _program_name(self, program: WashingMachineWashProgram) -> str:
+        return program.localized_name(self.hass.config.language)
+
     @property
     def device_info(self) -> DeviceInfo:
         info = DeviceInfo(
@@ -157,18 +160,20 @@ class WashProgramSelect(CandyWashSelectBase):
 
     @property
     def options(self) -> list[str]:
-        return [p.display_name for p in self._programs]
+        return [self._program_name(p) for p in self._programs]
 
     @property
     def current_option(self) -> str | None:
         if self._current_option is not None:
             return self._current_option
         prog = self._current_program()
-        return prog.display_name if prog else None
+        return self._program_name(prog) if prog else None
 
     async def async_select_option(self, option: str) -> None:
         self._current_option = option
-        selected = next((p for p in self._programs if p.display_name == option), None)
+        selected = next(
+            (p for p in self._programs if self._program_name(p) == option), None
+        )
         if selected is None:
             return
         self._temp_select.update_for_program(selected)
