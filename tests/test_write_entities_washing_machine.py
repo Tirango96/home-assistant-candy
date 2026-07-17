@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import datetime
 from unittest.mock import AsyncMock, patch
 
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
@@ -22,6 +23,8 @@ from custom_components.candy.const import (
     UNIQUE_ID_WASH_DELAY_NUMBER,
     UNIQUE_ID_WASH_ESTIMATED_DURATION,
     UNIQUE_ID_WASH_PROGRAM_SELECT,
+    UNIQUE_ID_WASH_SCHEDULED_FINISH,
+    UNIQUE_ID_WASH_SCHEDULED_START,
     UNIQUE_ID_WASH_SOIL_SELECT,
     UNIQUE_ID_WASH_SPIN_SELECT,
     UNIQUE_ID_WASH_START_BUTTON,
@@ -729,3 +732,141 @@ async def test_estimated_duration_not_registered_in_read_only(
         )
         is None
     )
+
+
+# ---------------------------------------------------------------------------
+# Scheduled start / finish sensors
+# ---------------------------------------------------------------------------
+
+_IDLE_DELAY_JSON = """{
+  "statusLavatrice": {
+    "WiFiStatus": "1", "Err": "0", "MachMd": "1", "Pr": "1", "PrPh": "0",
+    "PrCode": "136", "SLevel": "2", "Temp": "40", "SpinSp": "8",
+    "DelVal": "60", "RemTime": "0", "FillR": "0", "CheckUpState": "0"
+  }
+}"""
+
+_RUNNING_45_JSON = """{
+  "statusLavatrice": {
+    "WiFiStatus": "1", "Err": "0", "MachMd": "2", "Pr": "1", "PrPh": "2",
+    "PrCode": "136", "SLevel": "0", "Temp": "40", "SpinSp": "8",
+    "DelVal": "0", "RemTime": "2700", "FillR": "50", "CheckUpState": "0"
+  }
+}"""
+
+
+async def test_scheduled_start_unavailable_when_no_delay(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control(hass, aioclient_mock, _IDLE_JSON)
+    state = _state(hass, entry, "sensor", UNIQUE_ID_WASH_SCHEDULED_START)
+    assert state is not None
+    assert state.state == "unavailable"
+
+
+async def test_scheduled_start_shows_offset_timestamp(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control(hass, aioclient_mock, _IDLE_DELAY_JSON)
+
+    # Simulate the user having set the delay slider to 60 min
+    registry = er.async_get(hass)
+    delay_eid = registry.async_get_entity_id(
+        "number", DOMAIN, UNIQUE_ID_WASH_DELAY_NUMBER.format(entry.entry_id)
+    )
+    assert delay_eid is not None
+    await hass.services.async_call(
+        "number", "set_value", {"entity_id": delay_eid, "value": 60}, blocking=True
+    )
+
+    fixed_now = datetime.datetime(2025, 1, 1, 12, 0, 0, tzinfo=datetime.UTC)
+    with patch("homeassistant.util.dt.now", return_value=fixed_now):
+        hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR].async_set_updated_data(
+            hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR].data
+        )
+        await hass.async_block_till_done()
+        state = _state(hass, entry, "sensor", UNIQUE_ID_WASH_SCHEDULED_START)
+    assert state is not None
+    assert state.state not in ("unavailable", "unknown")
+    # 60 min delay → scheduled start at 13:00
+    assert "2025-01-01T13:00:00" in state.state
+
+
+async def test_scheduled_finish_running(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    # RemTime=2700s → remaining_minutes=45
+    entry = await _init_full_control(hass, aioclient_mock, _RUNNING_45_JSON)
+    fixed_now = datetime.datetime(2025, 1, 1, 12, 0, 0, tzinfo=datetime.UTC)
+    with patch("homeassistant.util.dt.now", return_value=fixed_now):
+        hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR].async_set_updated_data(
+            hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR].data
+        )
+        await hass.async_block_till_done()
+        state = _state(hass, entry, "sensor", UNIQUE_ID_WASH_SCHEDULED_FINISH)
+    assert state is not None
+    assert state.state not in ("unavailable", "unknown")
+    # remaining=45min → finish ≈ 12:45
+    assert "2025-01-01T12:45:00" in state.state
+
+
+async def test_scheduled_finish_idle_with_delay_and_duration(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    # Cotton/normal soil → estimated_duration=90; user sets delay to 60 → finish in 150min
+    entry = await _init_full_control(hass, aioclient_mock, _IDLE_DELAY_JSON)
+
+    # Simulate the user having set the delay slider to 60 min
+    registry = er.async_get(hass)
+    delay_eid = registry.async_get_entity_id(
+        "number", DOMAIN, UNIQUE_ID_WASH_DELAY_NUMBER.format(entry.entry_id)
+    )
+    assert delay_eid is not None
+    await hass.services.async_call(
+        "number", "set_value", {"entity_id": delay_eid, "value": 60}, blocking=True
+    )
+
+    fixed_now = datetime.datetime(2025, 1, 1, 12, 0, 0, tzinfo=datetime.UTC)
+    with patch("homeassistant.util.dt.now", return_value=fixed_now):
+        hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR].async_set_updated_data(
+            hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR].data
+        )
+        await hass.async_block_till_done()
+        state = _state(hass, entry, "sensor", UNIQUE_ID_WASH_SCHEDULED_FINISH)
+    assert state is not None
+    assert state.state not in ("unavailable", "unknown")
+    # 60min delay + 90min duration = 150min → 14:30
+    assert "2025-01-01T14:30:00" in state.state
+
+
+async def test_scheduled_sensors_absent_or_unavailable_in_read_only_mode(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="test-read-only-sched",
+        data={
+            CONF_IP_ADDRESS: TEST_IP,
+            CONF_KEY_USE_ENCRYPTION: False,
+            CONF_PASSWORD: "",
+            CONF_KEY_MODE: MODE_READ_ONLY,
+        },
+    )
+    aioclient_mock.get(f"http://{TEST_IP}/http-read.json?encrypted=0", text=_IDLE_JSON)
+    _add_stats_mocks(aioclient_mock)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    registry = er.async_get(hass)
+    # Scheduled start: not registered in read-only (no programs)
+    assert (
+        registry.async_get_entity_id(
+            "sensor", DOMAIN, UNIQUE_ID_WASH_SCHEDULED_START.format(entry.entry_id)
+        )
+        is None
+    )
+    # Scheduled finish: registered but unavailable when idle (no estimated duration)
+    finish_state = _state(hass, entry, "sensor", UNIQUE_ID_WASH_SCHEDULED_FINISH)
+    assert finish_state is not None
+    assert finish_state.state == "unavailable"

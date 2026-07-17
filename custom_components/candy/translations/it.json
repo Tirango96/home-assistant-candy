@@ -111,6 +111,12 @@
       },
       "dishwasher_program": {
         "name": "Programma lavastoviglie"
+      },
+      "wash_scheduled_start": {
+        "name": "Wash scheduled start"
+      },
+      "wash_scheduled_finish": {
+        "name": "Wash scheduled finish"
       }
     },
     "select": {

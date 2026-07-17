@@ -138,6 +138,12 @@
       "wash_estimated_duration": {
         "name": "Estimated cycle duration"
       },
+      "wash_scheduled_start": {
+        "name": "Wash scheduled start"
+      },
+      "wash_scheduled_finish": {
+        "name": "Wash scheduled finish"
+      },
       "wash_program": {
         "name": "Wash program"
       },

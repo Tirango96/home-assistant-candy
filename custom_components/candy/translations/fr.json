@@ -45,6 +45,14 @@
     }
   },
   "entity": {
+    "sensor": {
+      "wash_scheduled_start": {
+        "name": "Wash scheduled start"
+      },
+      "wash_scheduled_finish": {
+        "name": "Wash scheduled finish"
+      }
+    },
     "select": {
       "wash_program_select": {
         "name": "Programme de lavage"

@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from collections.abc import Mapping
 import contextlib
+import datetime
 from typing import Any, cast
 
 from homeassistant.components.sensor import (
@@ -26,6 +27,7 @@ from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
 )
+from homeassistant.util import dt as dt_util
 
 from .client import WashingMachineStatus, WashingMachineWashProgram, parse_wash_programs
 from .client.model import (
@@ -70,6 +72,7 @@ from .const import (
     UNIQUE_ID_WASH_CHECK_UP,
     UNIQUE_ID_WASH_CYCLE_STATUS,
     UNIQUE_ID_WASH_DELAY,
+    UNIQUE_ID_WASH_DELAY_NUMBER,
     UNIQUE_ID_WASH_ERROR,
     UNIQUE_ID_WASH_ESTIMATED_DURATION,
     UNIQUE_ID_WASH_FILL_PERCENT,
@@ -79,6 +82,8 @@ from .const import (
     UNIQUE_ID_WASH_PROGRAM,
     UNIQUE_ID_WASH_PROGRAM_SELECT,
     UNIQUE_ID_WASH_REMAINING_TIME,
+    UNIQUE_ID_WASH_SCHEDULED_FINISH,
+    UNIQUE_ID_WASH_SCHEDULED_START,
     UNIQUE_ID_WASH_SOIL_LEVEL,
     UNIQUE_ID_WASH_SOIL_SELECT,
     UNIQUE_ID_WASH_SPIN_SPEED,
@@ -142,6 +147,9 @@ async def async_setup_entry(
             entities.append(
                 CandyWashEstimatedDurationSensor(coordinator, config_entry, programs)
             )
+        entities.append(CandyWashScheduledFinishSensor(coordinator, config_entry))
+        if programs:
+            entities.append(CandyWashScheduledStartSensor(coordinator, config_entry))
         stats_coordinator = hass.data[DOMAIN][config_id].get(DATA_KEY_STATS_COORDINATOR)
         if stats_coordinator is not None:
             entities.append(CandyWashTotalCyclesSensor(stats_coordinator, config_entry))
@@ -853,6 +861,174 @@ class CandyWashEstimatedDurationSensor(CandyBaseSensor):
     @property
     def icon(self) -> str:
         return "mdi:timer-outline"
+
+
+def _read_delay_minutes(hass, config_id) -> int:
+    """Return the current delay in minutes from WashDelayNumber entity, falling back to coordinator data."""
+    registry = er.async_get(hass)
+    eid = registry.async_get_entity_id(
+        "number", DOMAIN, UNIQUE_ID_WASH_DELAY_NUMBER.format(config_id)
+    )
+    state = hass.states.get(eid) if eid else None
+    if state is not None and state.state not in ("unavailable", "unknown"):
+        return int(float(state.state))
+    status = cast(
+        WashingMachineStatus,
+        hass.data[DOMAIN][config_id][DATA_KEY_COORDINATOR].data,
+    )
+    return status.delay_value or 0
+
+
+class CandyWashScheduledStartSensor(CandyBaseSensor):
+    """Scheduled start: now + delay. Only available when delay > 0 and machine is idle."""
+
+    _attr_translation_key = "wash_scheduled_start"
+    _attr_name = "Wash scheduled start"
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        registry = er.async_get(self.hass)
+        eid = registry.async_get_entity_id(
+            "number", DOMAIN, UNIQUE_ID_WASH_DELAY_NUMBER.format(self.config_id)
+        )
+        if eid:
+            self.async_on_remove(
+                async_track_state_change_event(self.hass, [eid], self._on_dep_changed)
+            )
+
+    @callback
+    def _on_dep_changed(self, event) -> None:
+        self.async_write_ha_state()
+
+    @property
+    def available(self) -> bool:
+        if not super().available:
+            return False
+        status = cast(WashingMachineStatus, self.coordinator.data)
+        if status.machine_state not in (
+            MachineState.IDLE,
+            MachineState.DELAYED_START_SELECTION,
+            MachineState.DELAYED_START_PROGRAMMED,
+        ):
+            return False
+        return _read_delay_minutes(self.hass, self.config_id) > 0
+
+    @property
+    def native_value(self) -> datetime.datetime | None:
+        delay = _read_delay_minutes(self.hass, self.config_id)
+        if delay <= 0:
+            return None
+        return dt_util.now() + datetime.timedelta(minutes=delay)
+
+    @property
+    def device_class(self) -> SensorDeviceClass:
+        return SensorDeviceClass.TIMESTAMP
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_SCHEDULED_START.format(self.config_id)
+
+    def device_name(self) -> str:
+        return DEVICE_NAME_WASHING_MACHINE
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_BATHROOM
+
+    @property
+    def icon(self) -> str:
+        return "mdi:clock-start"
+
+
+class CandyWashScheduledFinishSensor(CandyBaseSensor):
+    """Scheduled finish: now + remaining (RUNNING/PAUSED) or now + delay + duration (IDLE)."""
+
+    _attr_translation_key = "wash_scheduled_finish"
+    _attr_name = "Wash scheduled finish"
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        registry = er.async_get(self.hass)
+        watch_ids = []
+        domain_uid_pairs = [
+            ("number", UNIQUE_ID_WASH_DELAY_NUMBER),
+            ("select", UNIQUE_ID_WASH_PROGRAM_SELECT),
+            ("select", UNIQUE_ID_WASH_SOIL_SELECT),
+        ]
+        for domain, uid in domain_uid_pairs:
+            eid = registry.async_get_entity_id(
+                domain, DOMAIN, uid.format(self.config_id)
+            )
+            if eid:
+                watch_ids.append(eid)
+        if watch_ids:
+            self.async_on_remove(
+                async_track_state_change_event(
+                    self.hass, watch_ids, self._on_dep_changed
+                )
+            )
+
+    @callback
+    def _on_dep_changed(self, event) -> None:
+        self.async_write_ha_state()
+
+    def _estimated_duration_minutes(self) -> int | None:
+        """Return the current value of the estimated duration sensor, or None."""
+        registry = er.async_get(self.hass)
+        eid = registry.async_get_entity_id(
+            "sensor", DOMAIN, UNIQUE_ID_WASH_ESTIMATED_DURATION.format(self.config_id)
+        )
+        state = self.hass.states.get(eid) if eid else None
+        if state is not None and state.state not in ("unavailable", "unknown"):
+            with contextlib.suppress(ValueError):
+                minutes = int(float(state.state))
+                if minutes > 0:
+                    return minutes
+        return None
+
+    @property
+    def available(self) -> bool:
+        if not super().available:
+            return False
+        status = cast(WashingMachineStatus, self.coordinator.data)
+        if status.machine_state in (MachineState.RUNNING, MachineState.PAUSED):
+            return (status.remaining_minutes or 0) > 0
+        if status.machine_state == MachineState.IDLE:
+            return self._estimated_duration_minutes() is not None
+        return False
+
+    @property
+    def native_value(self) -> datetime.datetime | None:
+        status = cast(WashingMachineStatus, self.coordinator.data)
+        if status.machine_state in (MachineState.RUNNING, MachineState.PAUSED):
+            remaining = status.remaining_minutes or 0
+            if remaining <= 0:
+                return None
+            return dt_util.now() + datetime.timedelta(minutes=remaining)
+        if status.machine_state == MachineState.IDLE:
+            estimated = self._estimated_duration_minutes()
+            if estimated is None:
+                return None
+            delay = _read_delay_minutes(self.hass, self.config_id)
+            return dt_util.now() + datetime.timedelta(minutes=delay + estimated)
+        return None
+
+    @property
+    def device_class(self) -> SensorDeviceClass:
+        return SensorDeviceClass.TIMESTAMP
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_SCHEDULED_FINISH.format(self.config_id)
+
+    def device_name(self) -> str:
+        return DEVICE_NAME_WASHING_MACHINE
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_BATHROOM
+
+    @property
+    def icon(self) -> str:
+        return "mdi:clock-end"
 
 
 class CandyTumbleDryerSensor(CandyBaseSensor):
