@@ -46,6 +46,7 @@ from .const import (
     CONF_KEY_SERIAL_NUMBER,
     DATA_KEY_COORDINATOR,
     DATA_KEY_STATS_COORDINATOR,
+    DATA_KEY_WRITE_PENDING,
     DEVICE_NAME_DISHWASHER,
     DEVICE_NAME_OVEN,
     DEVICE_NAME_TUMBLE_DRYER,
@@ -227,6 +228,8 @@ class CandyWashingMachineSensor(CandyBaseSensor):
 
     @property
     def native_value(self) -> StateType:
+        if self.hass.data[DOMAIN][self.config_id].get(DATA_KEY_WRITE_PENDING, False):
+            return "Sending command"
         status = cast(WashingMachineStatus, self.coordinator.data)
         return str(status.machine_state)
 
