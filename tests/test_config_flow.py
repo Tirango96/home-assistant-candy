@@ -8,6 +8,12 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.candy import CONF_KEY_USE_ENCRYPTION, DOMAIN
 from custom_components.candy.client import Encryption
 from custom_components.candy.client.cloud import CloudApplianceData, SimplyFiCloudError
+from custom_components.candy.client.model import (
+    CheckUpState,
+    MachineState,
+    WashingMachineStatus,
+    WashProgramState,
+)
 from custom_components.candy.config_flow import MANUAL_IP_OPTION
 from custom_components.candy.const import (
     CONF_KEY_DEVICE_MODEL,
@@ -17,6 +23,29 @@ from custom_components.candy.const import (
     CONF_KEY_SERIAL_NUMBER,
     MODE_FULL_CONTROL,
     MODE_READ_ONLY,
+)
+
+_IDLE_WASHING_MACHINE = WashingMachineStatus(
+    machine_state=MachineState.IDLE,
+    program_state=WashProgramState.STOPPED,
+    program=0,
+    program_code=None,
+    temp=0,
+    spin_speed=0,
+    remaining_minutes=0,
+    remote_control=False,
+    fill_percent=None,
+    error=None,
+    delay_value=None,
+    ntc_water=None,
+    ntc_drum=None,
+    motor_speed_freq=None,
+    motor_state=None,
+    unbalance_fault=None,
+    unbalance_count=None,
+    fault_count=None,
+    check_up_state=CheckUpState.IDLE,
+    soil_level=None,
 )
 
 # ---------------------------------------------------------------------------
@@ -30,6 +59,17 @@ def _bypass_setup_fixture():  # noqa: PT004
     with patch(
         "custom_components.candy.async_setup_entry",
         return_value=True,
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def _device_probe_washing_machine():  # noqa: PT004
+    """Make the device-type probe return a washing machine for all tests."""
+    with patch(
+        "custom_components.candy.config_flow.CandyClient.status",
+        new_callable=AsyncMock,
+        return_value=_IDLE_WASHING_MACHINE,
     ):
         yield
 

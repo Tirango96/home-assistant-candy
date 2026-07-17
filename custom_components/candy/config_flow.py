@@ -19,9 +19,10 @@ from homeassistant.helpers.selector import (
 )
 import voluptuous as vol
 
-from .client import detect_encryption, discover_devices
+from .client import CandyClient, detect_encryption, discover_devices
 from .client.cloud import SimplyFiCloudError, fetch_appliance_data
 from .client.decryption import Encryption
+from .client.model import WashingMachineStatus
 from .const import (
     CONF_INTEGRATION_TITLE,
     CONF_KEY_DEVICE_MODEL,
@@ -227,6 +228,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
         self._ip_address: str = ""
         self._config_data: dict[str, Any] = {}  # accumulated config entry data
         self._is_reconfigure: bool = False
+        self._is_washing_machine: bool = False
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -315,12 +317,32 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
             self._config_data[CONF_KEY_USE_ENCRYPTION] = True
             self._config_data[CONF_PASSWORD] = ""
 
+        try:
+            client = CandyClient(
+                session=async_get_clientsession(self.hass),
+                device_ip=ip,
+                encryption_key=self._config_data.get(CONF_PASSWORD, "") or "",
+                use_encryption=self._config_data.get(CONF_KEY_USE_ENCRYPTION, False),
+            )
+            async with async_timeout.timeout(10):
+                status = await client.status()
+            self._is_washing_machine = isinstance(status, WashingMachineStatus)
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.debug("Device type probe failed, assuming non-washing-machine")
+            self._is_washing_machine = False
+
         return await self.async_step_mode()
 
     async def async_step_mode(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Ask the user whether they want Read-Only or Full Control mode."""
+        if not self._is_washing_machine:
+            self._config_data[CONF_KEY_MODE] = MODE_READ_ONLY
+            return self.async_create_entry(
+                title=CONF_INTEGRATION_TITLE, data=self._config_data
+            )
+
         if user_input is None:
             return self.async_show_form(step_id="mode", data_schema=MODE_SCHEMA)
 
