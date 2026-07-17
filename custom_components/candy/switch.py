@@ -55,6 +55,9 @@ async def async_setup_entry(
     client: CandyClient = hass.data[DOMAIN][config_id][DATA_KEY_CLIENT]
     programs = parse_wash_programs(config_entry.data.get(CONF_KEY_PROGRAMS, []))
 
+    if not any(p.steam for p in programs):
+        return
+
     async_add_entities([WashSteamSwitch(coordinator, config_entry, client, programs)])
 
 
