@@ -37,6 +37,9 @@ UNIQUE_ID_WASH_MOTOR_FREQ = "{0}-wash_motor_freq"
 UNIQUE_ID_WASH_TOTAL_CYCLES = "{0}-wash_total_cycles"
 UNIQUE_ID_WASH_CHECK_UP = "{0}-wash_check_up"
 UNIQUE_ID_WASH_SOIL_LEVEL = "{0}-wash_soil_level"
+
+SOIL_LABELS: dict[int, str] = {1: "low", 2: "normal", 3: "high"}
+SOIL_LABELS_REVERSE: dict[str, int] = {v: k for k, v in SOIL_LABELS.items()}
 UNIQUE_ID_WASH_ESTIMATED_DURATION = "{0}-wash_estimated_duration"
 
 UNIQUE_ID_WASH_PROGRAM_SELECT = "{0}-wash_program_select"

@@ -309,7 +309,7 @@ async def test_soil_select_available_for_cotton_idle(
     state = _state(hass, entry, "select", UNIQUE_ID_WASH_SOIL_SELECT)
     assert state is not None
     assert state.state not in ("unavailable", "unknown")
-    assert state.attributes["options"] == ["1", "2", "3"]
+    assert state.attributes["options"] == ["low", "normal", "high"]
 
 
 async def test_soil_select_reflects_device_slevel(
@@ -321,7 +321,7 @@ async def test_soil_select_reflects_device_slevel(
     entry = await _init_full_control(hass, aioclient_mock, slevel_idle)
     state = _state(hass, entry, "select", UNIQUE_ID_WASH_SOIL_SELECT)
     assert state is not None
-    assert state.state == "1"
+    assert state.state == "low"
 
 
 async def test_soil_select_unavailable_for_rapid_idle(

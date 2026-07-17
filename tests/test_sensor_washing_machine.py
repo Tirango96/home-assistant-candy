@@ -435,13 +435,15 @@ async def test_soil_level_sensor_idle(
         hass, aioclient_mock, load_fixture("washing_machine/idle.json")
     )
 
-    state = hass.states.get("sensor.wash_soil_level")
+    state = hass.states.get("sensor.wash_stain_level")
 
     assert state
-    assert state.state == "0"
+    assert state.state == "unknown"  # SLevel=0 has no label
     assert state.attributes == {
-        "friendly_name": "Wash soil level",
+        "friendly_name": "Wash stain level",
         "icon": "mdi:water-opacity",
+        "options": ["low", "normal", "high"],
+        "device_class": "enum",
     }
 
 
@@ -452,10 +454,10 @@ async def test_soil_level_sensor_running(
         hass, aioclient_mock, load_fixture("washing_machine/running_wash.json")
     )
 
-    state = hass.states.get("sensor.wash_soil_level")
+    state = hass.states.get("sensor.wash_stain_level")
 
     assert state
-    assert state.state == "2"
+    assert state.state == "normal"  # SLevel=2
 
 
 async def test_statistics_not_fetched_when_machine_is_off(

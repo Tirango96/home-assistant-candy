@@ -117,7 +117,12 @@
         "name": "Wash total cycles"
       },
       "wash_soil_level": {
-        "name": "Wash soil level"
+        "name": "Wash stain level",
+        "state": {
+          "low": "Low",
+          "normal": "Normal",
+          "high": "High"
+        }
       },
       "wash_estimated_duration": {
         "name": "Estimated cycle duration"
@@ -164,7 +169,12 @@
         "name": "Wash spin speed"
       },
       "wash_soil_select": {
-        "name": "Wash soil level"
+        "name": "Wash stain level",
+        "state": {
+          "low": "Low",
+          "normal": "Normal",
+          "high": "High"
+        }
       }
     },
     "number": {

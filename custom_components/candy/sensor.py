@@ -51,6 +51,8 @@ from .const import (
     DEVICE_NAME_WASHING_MACHINE,
     DOMAIN,
     MODE_FULL_CONTROL,
+    SOIL_LABELS,
+    SOIL_LABELS_REVERSE,
     SUGGESTED_AREA_BATHROOM,
     SUGGESTED_AREA_KITCHEN,
     UNIQUE_ID_DISHWASHER,
@@ -639,10 +641,12 @@ class CandyWashCheckUpSensor(CandyBaseSensor, RestoreSensor):
 
 
 class CandyWashSoilLevelSensor(CandyBaseSensor):
-    """Current soil level reported by the washing machine (0–4)."""
+    """Current stain level reported by the washing machine."""
 
     _attr_translation_key = "wash_soil_level"
-    _attr_name = "Wash soil level"
+    _attr_name = "Wash stain level"
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = list(SOIL_LABELS.values())
 
     def device_name(self) -> str:
         return DEVICE_NAME_WASHING_MACHINE
@@ -656,7 +660,8 @@ class CandyWashSoilLevelSensor(CandyBaseSensor):
 
     @property
     def native_value(self) -> StateType:
-        return cast(WashingMachineStatus, self.coordinator.data).soil_level
+        level = cast(WashingMachineStatus, self.coordinator.data).soil_level
+        return SOIL_LABELS.get(level) if level is not None else None
 
     @property
     def icon(self) -> str:
@@ -784,8 +789,8 @@ class CandyWashEstimatedDurationSensor(CandyBaseSensor):
                 "unknown",
             ):
                 try:
-                    soil = int(soil_state.state)
-                except (ValueError, TypeError):
+                    soil = SOIL_LABELS_REVERSE[soil_state.state]
+                except KeyError:
                     soil = program.default_soil_level
             else:
                 device_status = cast(WashingMachineStatus, self.coordinator.data)

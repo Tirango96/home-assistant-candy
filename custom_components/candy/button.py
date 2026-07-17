@@ -33,6 +33,7 @@ from .const import (
     DEVICE_NAME_WASHING_MACHINE,
     DOMAIN,
     MODE_FULL_CONTROL,
+    SOIL_LABELS_REVERSE,
     SUGGESTED_AREA_BATHROOM,
     UNIQUE_ID_WASH_DELAY_NUMBER,
     UNIQUE_ID_WASH_PAUSE_BUTTON,
@@ -208,11 +209,11 @@ class WashStartButton(CandyWashButtonBase):
         if program.min_soil_level < program.max_soil_level:
             try:
                 soil = (
-                    int(soil_str)
+                    SOIL_LABELS_REVERSE[soil_str]
                     if soil_str not in (None, "unavailable", "unknown")
                     else program.default_soil_level
                 )
-            except (ValueError, TypeError):
+            except KeyError:
                 soil = program.default_soil_level
         else:
             soil = program.default_soil_level

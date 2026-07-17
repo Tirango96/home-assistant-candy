@@ -30,6 +30,7 @@ from .const import (
     DEVICE_NAME_WASHING_MACHINE,
     DOMAIN,
     MODE_FULL_CONTROL,
+    SOIL_LABELS,
     SUGGESTED_AREA_BATHROOM,
     UNIQUE_ID_WASH_PROGRAM_SELECT,
     UNIQUE_ID_WASH_SOIL_SELECT,
@@ -298,7 +299,7 @@ class WashSpinSelect(CandyWashSelectBase):
 
 
 class WashSoilSelect(CandyWashSelectBase):
-    _attr_name = "Wash soil level"
+    _attr_name = "Wash stain level"
     _attr_translation_key = "wash_soil_select"
     _current_option: str | None = None
     _current_program: WashingMachineWashProgram | None = None  # type: ignore[assignment]
@@ -327,7 +328,11 @@ class WashSoilSelect(CandyWashSelectBase):
         prog = self._active_program()
         if prog is None or prog.min_soil_level >= prog.max_soil_level:
             return []
-        return [str(i) for i in range(prog.min_soil_level, prog.max_soil_level + 1)]
+        return [
+            SOIL_LABELS[i]
+            for i in range(prog.min_soil_level, prog.max_soil_level + 1)
+            if i in SOIL_LABELS
+        ]
 
     @property
     def current_option(self) -> str | None:
@@ -341,13 +346,13 @@ class WashSoilSelect(CandyWashSelectBase):
             status.soil_level is not None
             and prog.min_soil_level <= status.soil_level <= prog.max_soil_level
         ):
-            return str(status.soil_level)
-        return str(prog.default_soil_level)
+            return SOIL_LABELS.get(status.soil_level)
+        return SOIL_LABELS.get(prog.default_soil_level)
 
     def update_for_program(self, program: WashingMachineWashProgram) -> None:
         self._current_program = program
         if program.min_soil_level < program.max_soil_level:
-            self._current_option = str(program.default_soil_level)
+            self._current_option = SOIL_LABELS.get(program.default_soil_level)
         else:
             self._current_option = None
 
