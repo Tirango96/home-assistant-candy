@@ -12,11 +12,13 @@ import backoff
 from .decryption import Encryption, decrypt, find_key
 from .model import (
     DishwasherStatus,
+    NfcProgram as NfcProgram,
     OvenStatus,
     TumbleDryerStatus,
     WashingMachineStatistics,
     WashingMachineStatus,
     WashingMachineWashProgram as WashingMachineWashProgram,
+    load_nfc_programs as load_nfc_programs,
 )
 
 _LOGGER = logging.getLogger(__name__)

@@ -16,8 +16,10 @@ from homeassistant.helpers.update_coordinator import (
 
 from .client import (
     CandyClient,
+    NfcProgram,
     WashingMachineStatus,
     WashingMachineWashProgram,
+    load_nfc_programs,
     parse_wash_programs,
 )
 from .client.model import MachineState
@@ -28,12 +30,14 @@ from .const import (
     CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
     CONF_KEY_SERIAL_NUMBER,
+    CONF_KEY_SHOW_SPECIAL_PROGRAMS,
     DATA_KEY_CLIENT,
     DATA_KEY_COORDINATOR,
     DATA_KEY_WRITE_PENDING,
     DEVICE_NAME_WASHING_MACHINE,
     DOMAIN,
     MODE_FULL_CONTROL,
+    NFC_CLUSTER_TO_PROGRAM,
     SOIL_LABELS_REVERSE,
     SUGGESTED_AREA_BATHROOM,
     UNIQUE_ID_WASH_DELAY_NUMBER,
@@ -66,13 +70,33 @@ async def async_setup_entry(
     client: CandyClient = hass.data[DOMAIN][config_id][DATA_KEY_CLIENT]
     programs = parse_wash_programs(config_entry.data.get(CONF_KEY_PROGRAMS, []))
 
+    nfc_entries: list[tuple[NfcProgram, WashingMachineWashProgram]] = []
+    if config_entry.data.get(CONF_KEY_SHOW_SPECIAL_PROGRAMS, False):
+        nfc_entries = _resolve_nfc_programs(load_nfc_programs(), programs)
+
     async_add_entities(
         [
-            WashStartButton(coordinator, config_entry, client, programs),
+            WashStartButton(coordinator, config_entry, client, programs, nfc_entries),
             WashPauseButton(coordinator, config_entry, client),
             WashStopButton(coordinator, config_entry, client),
         ]
     )
+
+
+def _resolve_nfc_programs(
+    nfc_list: list[NfcProgram],
+    standard_programs: list[WashingMachineWashProgram],
+) -> list[tuple[NfcProgram, WashingMachineWashProgram]]:
+    result = []
+    for nfc in nfc_list:
+        patterns = NFC_CLUSTER_TO_PROGRAM.get(nfc.output_cluster, [])
+        base = next(
+            (p for pattern in patterns for p in standard_programs if pattern in p.name),
+            None,
+        )
+        if base is not None:
+            result.append((nfc, base))
+    return result
 
 
 class CandyWashButtonBase(CoordinatorEntity, ButtonEntity):
@@ -133,9 +157,11 @@ class WashStartButton(CandyWashButtonBase):
         config_entry: ConfigEntry,
         client: CandyClient,
         programs: list[WashingMachineWashProgram],
+        nfc_entries: list[tuple[NfcProgram, WashingMachineWashProgram]],
     ) -> None:
         super().__init__(coordinator, config_entry, client)
         self._programs = programs
+        self._nfc_entries = nfc_entries
 
     @property
     def unique_id(self) -> str:
@@ -177,23 +203,64 @@ class WashStartButton(CandyWashButtonBase):
                 return 0
 
         program_name = _get_state(UNIQUE_ID_WASH_PROGRAM_SELECT)
+        lang = self.config_entry.data.get(
+            CONF_KEY_PROGRAM_LANGUAGE, self.hass.config.language
+        )
         program = next(
-            (
-                p
-                for p in self._programs
-                if p.localized_name(
-                    self.config_entry.data.get(
-                        CONF_KEY_PROGRAM_LANGUAGE, self.hass.config.language
-                    )
-                )
-                == program_name
-            ),
+            (p for p in self._programs if p.localized_name(lang) == program_name),
             None,
         )
+
         if program is None:
-            raise ValueError(
-                f"Cannot start: program '{program_name}' not found in catalog"
+            nfc_match = next(
+                (
+                    (nfc, base)
+                    for nfc, base in self._nfc_entries
+                    if nfc.category_prefixed(lang) == program_name
+                ),
+                None,
             )
+            if nfc_match is None:
+                raise ValueError(
+                    f"Cannot start: program '{program_name}' not found in catalog"
+                )
+            nfc, base = nfc_match
+            delay = int(_get_number(UNIQUE_ID_WASH_DELAY_NUMBER))
+            opt_mask = 0
+            for bitmask, _translation_key, uid_suffix in WASH_OPTIONS:
+                switch_entity_id = registry.async_get_entity_id(
+                    "switch", DOMAIN, f"{self.config_id}-{uid_suffix}"
+                )
+                switch_state = (
+                    self.hass.states.get(switch_entity_id) if switch_entity_id else None
+                )
+                if switch_state and switch_state.state == "on":
+                    opt_mask |= bitmask
+            params = {
+                "Write": 1,
+                "StSt": 1,
+                "DelVl": delay // 20,
+                "PrNm": base.selector_position,
+                "PrCode": base.pr_code,
+                "PrStr": base.name,
+                "TmpTgt": nfc.temperature,
+                "SLevTgt": nfc.soil_level
+                if nfc.soil_level > 0
+                else base.default_soil_level,
+                "SpdTgt": nfc.spin_speed // 100,
+                "OptMsk1": nfc.avopt1 | opt_mask,
+                "OptMsk2": 0,
+                "Lang": 0,
+                "Stm": 0,
+                "Dry": 0,
+                "ED": 0,
+                "RecipeId": 0,
+                "StartCheckUp": 0,
+                "DispTestOn": 1,
+            }
+            await self._client.send_command(urlencode(params))
+            await self._post_command_refresh()
+            return
 
         temp_str = _get_state(UNIQUE_ID_WASH_TEMP_SELECT)
         spin_str = _get_state(UNIQUE_ID_WASH_SPIN_SELECT)

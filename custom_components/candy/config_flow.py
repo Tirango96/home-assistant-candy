@@ -12,6 +12,7 @@ from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
@@ -31,6 +32,7 @@ from .const import (
     CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
     CONF_KEY_SERIAL_NUMBER,
+    CONF_KEY_SHOW_SPECIAL_PROGRAMS,
     CONF_KEY_USE_ENCRYPTION,
     DOMAIN,
     MODE_FULL_CONTROL,
@@ -64,18 +66,23 @@ CLOUD_SCHEMA = vol.Schema(
 MANUAL_IP_OPTION = "manual"
 
 
-def _language_schema(default: str) -> vol.Schema:
+def _language_schema(default_lang: str, default_show_special: bool) -> vol.Schema:
     return vol.Schema(
         {
-            vol.Required(CONF_KEY_PROGRAM_LANGUAGE, default=default): SelectSelector(
+            vol.Required(
+                CONF_KEY_PROGRAM_LANGUAGE, default=default_lang
+            ): SelectSelector(
                 SelectSelectorConfig(
                     options=[
-                        SelectOptionDict(value=code, label=name)
-                        for code, name in PROGRAM_LANGUAGES.items()
+                        SelectOptionDict(value=code, label=label)
+                        for code, label in PROGRAM_LANGUAGES.items()
                     ],
-                    mode=SelectSelectorMode.LIST,
+                    mode=SelectSelectorMode.DROPDOWN,
                 )
-            )
+            ),
+            vol.Required(
+                CONF_KEY_SHOW_SPECIAL_PROGRAMS, default=default_show_special
+            ): BooleanSelector(),
         }
     )
 
@@ -169,17 +176,24 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     ) -> ConfigFlowResult:
         """Ask which language to use for program names."""
         if user_input is None:
-            current = self._pending_data.get(
+            current_lang = self._pending_data.get(
                 CONF_KEY_PROGRAM_LANGUAGE,
                 self.config_entry.data.get(CONF_KEY_PROGRAM_LANGUAGE, "en"),
             )
+            current_special = self._pending_data.get(
+                CONF_KEY_SHOW_SPECIAL_PROGRAMS,
+                self.config_entry.data.get(CONF_KEY_SHOW_SPECIAL_PROGRAMS, False),
+            )
             return self.async_show_form(
                 step_id="language",
-                data_schema=_language_schema(current),
+                data_schema=_language_schema(current_lang, current_special),
             )
 
         self._pending_data[CONF_KEY_PROGRAM_LANGUAGE] = user_input[
             CONF_KEY_PROGRAM_LANGUAGE
+        ]
+        self._pending_data[CONF_KEY_SHOW_SPECIAL_PROGRAMS] = user_input[
+            CONF_KEY_SHOW_SPECIAL_PROGRAMS
         ]
         self.hass.config_entries.async_update_entry(
             self.config_entry, data=self._pending_data
@@ -406,18 +420,24 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
         """Ask which language to use for program names."""
         if user_input is None:
             existing = self._config_data.get(CONF_KEY_PROGRAM_LANGUAGE)
-            default = existing or (
+            default_lang = existing or (
                 self.hass.config.language
                 if self.hass.config.language in PROGRAM_LANGUAGES
                 else "en"
             )
+            default_special = self._config_data.get(
+                CONF_KEY_SHOW_SPECIAL_PROGRAMS, False
+            )
             return self.async_show_form(
                 step_id="language",
-                data_schema=_language_schema(default),
+                data_schema=_language_schema(default_lang, default_special),
             )
 
         self._config_data[CONF_KEY_PROGRAM_LANGUAGE] = user_input[
             CONF_KEY_PROGRAM_LANGUAGE
+        ]
+        self._config_data[CONF_KEY_SHOW_SPECIAL_PROGRAMS] = user_input[
+            CONF_KEY_SHOW_SPECIAL_PROGRAMS
         ]
         if self._is_reconfigure:
             return self.async_update_reload_and_abort(

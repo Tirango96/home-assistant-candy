@@ -7,6 +7,10 @@ _PROGRAM_NAMES: dict[str, dict[str, str]] = json.loads(
     (Path(__file__).parent / "program_names.json").read_text(encoding="utf-8")
 )
 
+_NFC_PROGRAMS_RAW: list[dict] = json.loads(
+    (Path(__file__).parent / "nfc_programs.json").read_text(encoding="utf-8")
+)
+
 
 class StatusCode(Enum):
     def __init__(self, code: int, label: str):
@@ -337,6 +341,45 @@ class WashingMachineWashProgram:
             or translations.get("en")
             or self.name.replace("_", " ").title()
         )
+
+
+@dataclass
+class NfcProgram:
+    name: str
+    translations: dict[str, str]
+    category_translations: dict[str, str]
+    output_cluster: int
+    temperature: int
+    spin_speed: int
+    soil_level: int
+    avopt1: int
+
+    def display_name(self, lang: str) -> str:
+        return self.translations.get(lang) or self.translations.get("en", self.name)
+
+    def category_name(self, lang: str) -> str:
+        return self.category_translations.get(lang) or self.category_translations.get(
+            "en", ""
+        )
+
+    def category_prefixed(self, lang: str) -> str:
+        return f"{self.category_name(lang)} - {self.display_name(lang)}"
+
+
+def load_nfc_programs() -> list["NfcProgram"]:
+    return [
+        NfcProgram(
+            name=e["name"],
+            translations=e["translations"],
+            category_translations=e["category_translations"],
+            output_cluster=e["output_cluster"],
+            temperature=e["temperature"],
+            spin_speed=e["spin_speed"],
+            soil_level=e["soil_level"],
+            avopt1=e["avopt1"],
+        )
+        for e in _NFC_PROGRAMS_RAW
+    ]
 
 
 @dataclass

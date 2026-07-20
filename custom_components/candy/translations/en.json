@@ -40,7 +40,11 @@
         "title": "Program language",
         "description": "Choose which language to use for program names in the UI. This can differ from your Home Assistant language.",
         "data": {
-          "program_language": "Language"
+          "program_language": "Language",
+          "show_special_programs": "Show special programs"
+        },
+        "data_description": {
+          "show_special_programs": "Add NFC preset programs (e.g. Cashmere, Bathrobe) to the program selector"
         }
       },
       "reconfigure": {
@@ -78,7 +82,11 @@
         "title": "Program language",
         "description": "Choose which language to use for program names in the UI. This can differ from your Home Assistant language.",
         "data": {
-          "program_language": "Language"
+          "program_language": "Language",
+          "show_special_programs": "Show special programs"
+        },
+        "data_description": {
+          "show_special_programs": "Add NFC preset programs (e.g. Cashmere, Bathrobe) to the program selector"
         }
       }
     },

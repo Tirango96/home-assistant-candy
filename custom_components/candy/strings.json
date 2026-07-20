@@ -66,6 +66,17 @@
       "switch_to_read_only": {
         "title": "Switch to Read-Only",
         "description": "This will remove all write controls (program select, start/stop, steam, delay). The integration will continue to monitor your device.\n\nClick Submit to confirm."
+      },
+      "language": {
+        "title": "Program language",
+        "description": "Choose which language to use for program names in the UI. This can differ from your Home Assistant language.",
+        "data": {
+          "program_language": "Language",
+          "show_special_programs": "Show special programs"
+        },
+        "data_description": {
+          "show_special_programs": "Add NFC preset programs (e.g. Cashmere, Bathrobe) to the program selector"
+        }
       }
     },
     "error": {
