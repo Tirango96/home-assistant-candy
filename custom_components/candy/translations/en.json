@@ -263,6 +263,7 @@
   "selector": {
     "next_step": {
       "options": {
+        "program_settings": "Program settings",
         "update_cloud_data": "Update cloud data",
         "switch_to_read_only": "Switch to Read-Only"
       }
