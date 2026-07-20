@@ -263,6 +263,9 @@ class WashingMachineWashProgram:
     duration_soil_max: int
     duration_soil_medium: int
     duration_soil_min: int
+    liquid_detergent_dose: int | None  # 1–4 dose level, or None if not applicable
+    powder_detergent_dose: int | None  # 1–4 dose level, or None if not applicable
+    max_cycle_capacity: int | None  # kg
 
     @classmethod
     def from_dict(cls, program_dict: dict) -> "WashingMachineWashProgram":
@@ -279,6 +282,15 @@ class WashingMachineWashProgram:
                 return int(val)
             except (ValueError, TypeError):
                 return fallback
+
+        def _int_or_none(key: str) -> int | None:
+            val = params.get(key, "")
+            try:
+                result = int(val)
+            except (ValueError, TypeError):
+                return None
+            else:
+                return result if result > 0 else None
 
         raw_name: str = p.get("name", "")
         for prefix in ("DUAL_WM_WD_PROGRAM_NAME_", "DUAL_WM_WD_"):
@@ -303,6 +315,9 @@ class WashingMachineWashProgram:
             duration_soil_max=_int("remaining_time_soil_max"),
             duration_soil_medium=_int("remaining_time_soil_medium"),
             duration_soil_min=_int("remaining_time_soil_min"),
+            liquid_detergent_dose=_int_or_none("liquid_detergent_dose"),
+            powder_detergent_dose=_int_or_none("powder_detergent_dose"),
+            max_cycle_capacity=_int_or_none("max_cycle_capacity"),
         )
 
     @property

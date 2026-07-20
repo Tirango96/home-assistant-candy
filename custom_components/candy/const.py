@@ -65,6 +65,9 @@ SOIL_LABELS_REVERSE: dict[str, int] = {v: k for k, v in SOIL_LABELS.items()}
 UNIQUE_ID_WASH_ESTIMATED_DURATION = "{0}-wash_estimated_duration"
 UNIQUE_ID_WASH_SCHEDULED_START = "{0}-wash_scheduled_start"
 UNIQUE_ID_WASH_SCHEDULED_FINISH = "{0}-wash_scheduled_finish"
+UNIQUE_ID_WASH_LIQUID_DETERGENT = "{0}-wash_liquid_detergent"
+UNIQUE_ID_WASH_POWDER_DETERGENT = "{0}-wash_powder_detergent"
+UNIQUE_ID_WASH_CYCLE_CAPACITY = "{0}-wash_cycle_capacity"
 
 UNIQUE_ID_WASH_PROGRAM_SELECT = "{0}-wash_program_select"
 UNIQUE_ID_WASH_TEMP_SELECT = "{0}-wash_temp_select"

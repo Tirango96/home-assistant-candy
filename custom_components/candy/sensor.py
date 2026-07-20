@@ -70,15 +70,18 @@ from .const import (
     UNIQUE_ID_TUMBLE_PROGRAM,
     UNIQUE_ID_TUMBLE_REMAINING_TIME,
     UNIQUE_ID_WASH_CHECK_UP,
+    UNIQUE_ID_WASH_CYCLE_CAPACITY,
     UNIQUE_ID_WASH_CYCLE_STATUS,
     UNIQUE_ID_WASH_DELAY,
     UNIQUE_ID_WASH_DELAY_NUMBER,
     UNIQUE_ID_WASH_ERROR,
     UNIQUE_ID_WASH_ESTIMATED_DURATION,
     UNIQUE_ID_WASH_FILL_PERCENT,
+    UNIQUE_ID_WASH_LIQUID_DETERGENT,
     UNIQUE_ID_WASH_MOTOR_FREQ,
     UNIQUE_ID_WASH_NTC_DRUM,
     UNIQUE_ID_WASH_NTC_WATER,
+    UNIQUE_ID_WASH_POWDER_DETERGENT,
     UNIQUE_ID_WASH_PROGRAM,
     UNIQUE_ID_WASH_PROGRAM_SELECT,
     UNIQUE_ID_WASH_REMAINING_TIME,
@@ -146,6 +149,15 @@ async def async_setup_entry(
         if programs:
             entities.append(
                 CandyWashEstimatedDurationSensor(coordinator, config_entry, programs)
+            )
+            entities.append(
+                CandyWashLiquidDetergentSensor(coordinator, config_entry, programs)
+            )
+            entities.append(
+                CandyWashPowderDetergentSensor(coordinator, config_entry, programs)
+            )
+            entities.append(
+                CandyWashCycleCapacitySensor(coordinator, config_entry, programs)
             )
         entities.append(CandyWashScheduledFinishSensor(coordinator, config_entry))
         if programs:
@@ -767,7 +779,11 @@ class CandyWashEstimatedDurationSensor(CandyBaseSensor):
         if not super().available:
             return False
         status = cast(WashingMachineStatus, self.coordinator.data)
-        return status.machine_state == MachineState.IDLE
+        return status.machine_state in (
+            MachineState.IDLE,
+            MachineState.DELAYED_START_SELECTION,
+            MachineState.DELAYED_START_PROGRAMMED,
+        )
 
     @property
     def native_value(self) -> StateType:
@@ -992,7 +1008,11 @@ class CandyWashScheduledFinishSensor(CandyBaseSensor):
         status = cast(WashingMachineStatus, self.coordinator.data)
         if status.machine_state in (MachineState.RUNNING, MachineState.PAUSED):
             return (status.remaining_minutes or 0) > 0
-        if status.machine_state == MachineState.IDLE:
+        if status.machine_state in (
+            MachineState.IDLE,
+            MachineState.DELAYED_START_SELECTION,
+            MachineState.DELAYED_START_PROGRAMMED,
+        ):
             return self._estimated_duration_minutes() is not None
         return False
 
@@ -1004,7 +1024,11 @@ class CandyWashScheduledFinishSensor(CandyBaseSensor):
             if remaining <= 0:
                 return None
             return dt_util.now() + datetime.timedelta(minutes=remaining)
-        if status.machine_state == MachineState.IDLE:
+        if status.machine_state in (
+            MachineState.IDLE,
+            MachineState.DELAYED_START_SELECTION,
+            MachineState.DELAYED_START_PROGRAMMED,
+        ):
             estimated = self._estimated_duration_minutes()
             if estimated is None:
                 return None
@@ -1029,6 +1053,136 @@ class CandyWashScheduledFinishSensor(CandyBaseSensor):
     @property
     def icon(self) -> str:
         return "mdi:clock-end"
+
+
+def _resolve_program_from_select(
+    hass,
+    config_entry: ConfigEntry,
+    programs: list[WashingMachineWashProgram],
+) -> WashingMachineWashProgram | None:
+    """Return the currently selected program, preferring the program-select entity state."""
+    registry = er.async_get(hass)
+    config_id = config_entry.entry_id
+    lang = config_entry.data.get(CONF_KEY_PROGRAM_LANGUAGE, hass.config.language)
+
+    prog_eid = registry.async_get_entity_id(
+        "select", DOMAIN, UNIQUE_ID_WASH_PROGRAM_SELECT.format(config_id)
+    )
+    prog_state = hass.states.get(prog_eid) if prog_eid else None
+    if prog_state is not None and prog_state.state not in ("unavailable", "unknown"):
+        return next(
+            (p for p in programs if p.localized_name(lang) == prog_state.state),
+            None,
+        )
+    status = cast(
+        WashingMachineStatus, hass.data[DOMAIN][config_id][DATA_KEY_COORDINATOR].data
+    )
+    return next(
+        (p for p in programs if p.selector_position == status.program),
+        None,
+    )
+
+
+class _CandyWashProgramAttributeSensor(CandyBaseSensor):
+    """Base for sensors that track a per-program attribute from the Simply-Fi catalog."""
+
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        programs: list[WashingMachineWashProgram],
+    ) -> None:
+        super().__init__(coordinator, config_entry)
+        self._programs = programs
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        registry = er.async_get(self.hass)
+        eid = registry.async_get_entity_id(
+            "select", DOMAIN, UNIQUE_ID_WASH_PROGRAM_SELECT.format(self.config_id)
+        )
+        if eid:
+            self.async_on_remove(
+                async_track_state_change_event(
+                    self.hass, [eid], self._on_program_changed
+                )
+            )
+
+    @callback
+    def _on_program_changed(self, event) -> None:
+        self.async_write_ha_state()
+
+    def device_name(self) -> str:
+        return DEVICE_NAME_WASHING_MACHINE
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_BATHROOM
+
+    def _current_program(self) -> WashingMachineWashProgram | None:
+        return _resolve_program_from_select(
+            self.hass, self.config_entry, self._programs
+        )
+
+
+class CandyWashLiquidDetergentSensor(_CandyWashProgramAttributeSensor):
+    """Suggested liquid detergent dose for the selected program (1–4 scale)."""
+
+    _attr_translation_key = "wash_liquid_detergent"
+    _attr_name = "Wash liquid detergent dose"
+    _attr_icon = "mdi:bottle-tonic"
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_LIQUID_DETERGENT.format(self.config_id)
+
+    @property
+    def native_value(self) -> StateType:
+        program = self._current_program()
+        if program is None or program.liquid_detergent_dose is None:
+            return None
+        return f"{program.liquid_detergent_dose}/4"
+
+
+class CandyWashPowderDetergentSensor(_CandyWashProgramAttributeSensor):
+    """Suggested powder detergent dose for the selected program (1–4 scale)."""
+
+    _attr_translation_key = "wash_powder_detergent"
+    _attr_name = "Wash powder detergent dose"
+    _attr_icon = "mdi:shaker-outline"
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_POWDER_DETERGENT.format(self.config_id)
+
+    @property
+    def native_value(self) -> StateType:
+        program = self._current_program()
+        if program is None or program.powder_detergent_dose is None:
+            return None
+        return f"{program.powder_detergent_dose}/4"
+
+
+class CandyWashCycleCapacitySensor(_CandyWashProgramAttributeSensor):
+    """Maximum recommended load in kg for the selected program."""
+
+    _attr_translation_key = "wash_cycle_capacity"
+    _attr_name = "Wash max cycle capacity"
+    _attr_icon = "mdi:weight-kilogram"
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_CYCLE_CAPACITY.format(self.config_id)
+
+    @property
+    def native_value(self) -> StateType:
+        program = self._current_program()
+        if program is None or program.max_cycle_capacity is None:
+            return None
+        return program.max_cycle_capacity
+
+    @property
+    def native_unit_of_measurement(self) -> str:
+        return "kg"
 
 
 class CandyTumbleDryerSensor(CandyBaseSensor):

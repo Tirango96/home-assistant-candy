@@ -144,6 +144,15 @@
       "wash_scheduled_finish": {
         "name": "Wash scheduled finish"
       },
+      "wash_liquid_detergent": {
+        "name": "Wash liquid detergent dose"
+      },
+      "wash_powder_detergent": {
+        "name": "Wash powder detergent dose"
+      },
+      "wash_cycle_capacity": {
+        "name": "Wash max cycle capacity"
+      },
       "wash_program": {
         "name": "Wash program"
       },
