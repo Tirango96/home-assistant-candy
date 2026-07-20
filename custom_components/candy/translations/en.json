@@ -223,6 +223,9 @@
       "wash_steam_switch": {
         "name": "Wash steam"
       },
+      "wash_nfc_switch": {
+        "name": "Special programs"
+      },
       "wash_option_prewash": {
         "name": "Prewash"
       },

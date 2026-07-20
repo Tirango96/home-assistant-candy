@@ -35,6 +35,7 @@ from .const import (
     DOMAIN,
     MODE_FULL_CONTROL,
     SUGGESTED_AREA_BATHROOM,
+    UNIQUE_ID_WASH_NFC_SWITCH,
     UNIQUE_ID_WASH_PROGRAM_SELECT,
     UNIQUE_ID_WASH_STEAM_SWITCH,
     WASH_OPTIONS,
@@ -62,6 +63,10 @@ async def async_setup_entry(
 
     if any(p.steam for p in programs):
         entities.append(WashSteamSwitch(coordinator, config_entry, client, programs))
+
+    entities.append(
+        NfcSpecialProgramsSwitch(coordinator, config_entry, client, programs)
+    )
 
     appliance_options = functools.reduce(
         operator.or_, (p.available_options for p in programs), 0
@@ -210,6 +215,44 @@ class WashSteamSwitch(_WashSwitchBase):
     async def async_turn_off(self, **kwargs) -> None:
         self._steam_on = False
         self.async_write_ha_state()
+
+
+class NfcSpecialProgramsSwitch(_WashSwitchBase):
+    _attr_name = "Special programs"
+    _attr_translation_key = "wash_nfc_switch"
+    _attr_icon = "mdi:nfc"
+
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        client: CandyClient,
+        programs: list[WashingMachineWashProgram],
+    ) -> None:
+        super().__init__(coordinator, config_entry, client, programs)
+        self._is_on: bool = False
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_NFC_SWITCH.format(self.config_id)
+
+    @property
+    def available(self) -> bool:
+        return super().available
+
+    @property
+    def is_on(self) -> bool:
+        return self._is_on
+
+    async def async_turn_on(self, **kwargs) -> None:
+        self._is_on = True
+        self.async_write_ha_state()
+        self.coordinator.async_update_listeners()
+
+    async def async_turn_off(self, **kwargs) -> None:
+        self._is_on = False
+        self.async_write_ha_state()
+        self.coordinator.async_update_listeners()
 
 
 class WashOptionSwitch(_WashSwitchBase):

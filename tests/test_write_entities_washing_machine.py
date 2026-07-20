@@ -18,12 +18,12 @@ from custom_components.candy.client.model import MachineState, NfcProgram
 from custom_components.candy.const import (
     CONF_KEY_MODE,
     CONF_KEY_PROGRAMS,
-    CONF_KEY_SHOW_SPECIAL_PROGRAMS,
     DATA_KEY_COORDINATOR,
     MODE_FULL_CONTROL,
     MODE_READ_ONLY,
     UNIQUE_ID_WASH_DELAY_NUMBER,
     UNIQUE_ID_WASH_ESTIMATED_DURATION,
+    UNIQUE_ID_WASH_NFC_SWITCH,
     UNIQUE_ID_WASH_OPTION_GOODNIGHT,
     UNIQUE_ID_WASH_OPTION_HYGIENE,
     UNIQUE_ID_WASH_OPTION_PREWASH,
@@ -916,7 +916,7 @@ _NFC_PROGRAMS = [_NFC_BATHROBE, _NFC_NEW_CLOTHES]
 async def _init_full_control_nfc(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker, status_json: str
 ) -> MockConfigEntry:
-    """Init Full Control with CONF_KEY_SHOW_SPECIAL_PROGRAMS=True and two NFC test programs."""
+    """Init Full Control with NFC switch turned on and two NFC test programs."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         unique_id="test-full-control-nfc",
@@ -926,7 +926,6 @@ async def _init_full_control_nfc(
             CONF_PASSWORD: "",
             CONF_KEY_MODE: MODE_FULL_CONTROL,
             CONF_KEY_PROGRAMS: _PROGRAMS,
-            CONF_KEY_SHOW_SPECIAL_PROGRAMS: True,
         },
     )
     aioclient_mock.get(f"http://{TEST_IP}/http-read.json?encrypted=0", text=status_json)
@@ -944,6 +943,18 @@ async def _init_full_control_nfc(
     ):
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
+
+    # Turn the NFC switch on so special programs appear in the program selector
+    registry = er.async_get(hass)
+    nfc_switch_eid = registry.async_get_entity_id(
+        "switch", DOMAIN, UNIQUE_ID_WASH_NFC_SWITCH.format(entry.entry_id)
+    )
+    assert nfc_switch_eid is not None
+    await hass.services.async_call(
+        "switch", "turn_on", {"entity_id": nfc_switch_eid}, blocking=True
+    )
+    await hass.async_block_till_done()
+
     return entry
 
 
@@ -1005,7 +1016,7 @@ async def test_nfc_program_options_appear_in_select(
 async def test_nfc_program_options_absent_when_toggle_off(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    # Default init_full_control does not set CONF_KEY_SHOW_SPECIAL_PROGRAMS
+    # NFC switch is off by default — special programs must not appear in the selector
     entry = await _init_full_control(hass, aioclient_mock, _IDLE_JSON)
     state = _state(hass, entry, "select", UNIQUE_ID_WASH_PROGRAM_SELECT)
     assert state is not None

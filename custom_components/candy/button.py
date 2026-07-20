@@ -30,7 +30,6 @@ from .const import (
     CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
     CONF_KEY_SERIAL_NUMBER,
-    CONF_KEY_SHOW_SPECIAL_PROGRAMS,
     DATA_KEY_CLIENT,
     DATA_KEY_COORDINATOR,
     DATA_KEY_WRITE_PENDING,
@@ -41,6 +40,7 @@ from .const import (
     SOIL_LABELS_REVERSE,
     SUGGESTED_AREA_BATHROOM,
     UNIQUE_ID_WASH_DELAY_NUMBER,
+    UNIQUE_ID_WASH_NFC_SWITCH,
     UNIQUE_ID_WASH_PAUSE_BUTTON,
     UNIQUE_ID_WASH_PROGRAM_SELECT,
     UNIQUE_ID_WASH_SOIL_SELECT,
@@ -69,10 +69,7 @@ async def async_setup_entry(
 
     client: CandyClient = hass.data[DOMAIN][config_id][DATA_KEY_CLIENT]
     programs = parse_wash_programs(config_entry.data.get(CONF_KEY_PROGRAMS, []))
-
-    nfc_entries: list[tuple[NfcProgram, WashingMachineWashProgram]] = []
-    if config_entry.data.get(CONF_KEY_SHOW_SPECIAL_PROGRAMS, False):
-        nfc_entries = _resolve_nfc_programs(load_nfc_programs(), programs)
+    nfc_entries = _resolve_nfc_programs(load_nfc_programs(), programs)
 
     async_add_entities(
         [
@@ -212,11 +209,18 @@ class WashStartButton(CandyWashButtonBase):
         )
 
         if program is None:
+            nfc_switch_id = registry.async_get_entity_id(
+                "switch", DOMAIN, UNIQUE_ID_WASH_NFC_SWITCH.format(self.config_id)
+            )
+            nfc_switch_state = (
+                self.hass.states.get(nfc_switch_id) if nfc_switch_id else None
+            )
+            nfc_active = nfc_switch_state is not None and nfc_switch_state.state == "on"
             nfc_match = next(
                 (
                     (nfc, base)
                     for nfc, base in self._nfc_entries
-                    if nfc.category_prefixed(lang) == program_name
+                    if nfc_active and nfc.category_prefixed(lang) == program_name
                 ),
                 None,
             )

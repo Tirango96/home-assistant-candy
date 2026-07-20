@@ -5,7 +5,7 @@ from typing import cast
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
@@ -28,7 +28,6 @@ from .const import (
     CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
     CONF_KEY_SERIAL_NUMBER,
-    CONF_KEY_SHOW_SPECIAL_PROGRAMS,
     DATA_KEY_CLIENT,
     DATA_KEY_COORDINATOR,
     DEVICE_NAME_WASHING_MACHINE,
@@ -37,6 +36,7 @@ from .const import (
     NFC_CLUSTER_TO_PROGRAM,
     SOIL_LABELS,
     SUGGESTED_AREA_BATHROOM,
+    UNIQUE_ID_WASH_NFC_SWITCH,
     UNIQUE_ID_WASH_PROGRAM_SELECT,
     UNIQUE_ID_WASH_SOIL_SELECT,
     UNIQUE_ID_WASH_SPIN_SELECT,
@@ -80,9 +80,7 @@ async def async_setup_entry(
     client: CandyClient = hass.data[DOMAIN][config_id][DATA_KEY_CLIENT]
     programs = parse_wash_programs(config_entry.data.get(CONF_KEY_PROGRAMS, []))
 
-    nfc_entries: list[tuple[NfcProgram, WashingMachineWashProgram]] = []
-    if config_entry.data.get(CONF_KEY_SHOW_SPECIAL_PROGRAMS, False):
-        nfc_entries = _resolve_nfc_programs(load_nfc_programs(), programs)
+    nfc_entries = _resolve_nfc_programs(load_nfc_programs(), programs)
 
     temp_select = WashTempSelect(coordinator, config_entry, client, programs)
     spin_select = WashSpinSelect(coordinator, config_entry, client, programs)
@@ -177,6 +175,16 @@ class WashProgramSelect(CandyWashSelectBase):
         self._nfc_entries = nfc_entries
         self._current_option: str | None = None
 
+    def _nfc_enabled(self) -> bool:
+        registry = er.async_get(self.hass)
+        nfc_switch_id = registry.async_get_entity_id(
+            "switch", DOMAIN, UNIQUE_ID_WASH_NFC_SWITCH.format(self.config_id)
+        )
+        if nfc_switch_id is None:
+            return False
+        state = self.hass.states.get(nfc_switch_id)
+        return state is not None and state.state == "on"
+
     @property
     def unique_id(self) -> str:
         return UNIQUE_ID_WASH_PROGRAM_SELECT.format(self.config_id)
@@ -195,6 +203,8 @@ class WashProgramSelect(CandyWashSelectBase):
             CONF_KEY_PROGRAM_LANGUAGE, self.hass.config.language
         )
         standard = [self._program_name(p) for p in self._programs]
+        if not self._nfc_enabled():
+            return standard
         nfc = [nfc.category_prefixed(lang) for nfc, _ in self._nfc_entries]
         return standard + nfc
 
@@ -219,7 +229,6 @@ class WashProgramSelect(CandyWashSelectBase):
             None,
         )
         if nfc_match is not None:
-            # NFC program selected: preset values are fixed, disable sub-selects
             self._temp_select.update_for_program(None)
             self._spin_select.update_for_program(None)
             self._soil_select.update_for_program(None)
