@@ -24,6 +24,11 @@ from custom_components.candy.const import (
     MODE_READ_ONLY,
     UNIQUE_ID_WASH_DELAY_NUMBER,
     UNIQUE_ID_WASH_ESTIMATED_DURATION,
+    UNIQUE_ID_WASH_OPTION_GOODNIGHT,
+    UNIQUE_ID_WASH_OPTION_HYGIENE,
+    UNIQUE_ID_WASH_OPTION_PREWASH,
+    UNIQUE_ID_WASH_OPTION_RINSE_1,
+    UNIQUE_ID_WASH_PAUSE_BUTTON,
     UNIQUE_ID_WASH_PROGRAM_SELECT,
     UNIQUE_ID_WASH_SCHEDULED_FINISH,
     UNIQUE_ID_WASH_SCHEDULED_START,
@@ -1152,3 +1157,295 @@ async def test_start_button_nfc_soil_fallback_to_base_default(
     assert "TmpTgt=20" in qs
     assert "SpdTgt=12" in qs  # 1200 // 100
     assert "SLevTgt=0" in qs  # soil fallback: base.default_soil_level = 0
+
+
+# ---------------------------------------------------------------------------
+# Wash option switches (Prewash, Extra Rinse +1, …)
+# ---------------------------------------------------------------------------
+
+# COTTON variant with available_options=17: prewash(1) | rinse+1(16).
+# RAPID keeps available_options=0 (absent from fixture → defaults to 0).
+_COTTON_WITH_OPTIONS = {
+    "program": {
+        "position": 1,
+        "name": "DUAL_WM_WD_PROGRAM_NAME_COTTON",
+        "command_parameters": [
+            {"command_parameter": {"name": "selector_position", "validation": "1"}},
+            {"command_parameter": {"name": "pr_code", "validation": "136"}},
+            {"command_parameter": {"name": "maximum_temperature", "validation": "90"}},
+            {"command_parameter": {"name": "default_temperature", "validation": "40"}},
+            {"command_parameter": {"name": "maximum_spin_speed", "validation": "1400"}},
+            {"command_parameter": {"name": "default_spin_speed", "validation": "800"}},
+            {"command_parameter": {"name": "minimum_soil_level", "validation": "1"}},
+            {"command_parameter": {"name": "maximum_soil_level", "validation": "3"}},
+            {"command_parameter": {"name": "default_soil_level", "validation": "2"}},
+            {"command_parameter": {"name": "steam", "validation": "5"}},
+            {"command_parameter": {"name": "default_duration", "validation": "90"}},
+            {
+                "command_parameter": {
+                    "name": "remaining_time_soil_max",
+                    "validation": "120",
+                }
+            },
+            {
+                "command_parameter": {
+                    "name": "remaining_time_soil_medium",
+                    "validation": "90",
+                }
+            },
+            {
+                "command_parameter": {
+                    "name": "remaining_time_soil_min",
+                    "validation": "60",
+                }
+            },
+            {"command_parameter": {"name": "available_options", "validation": "17"}},
+        ],
+    }
+}
+
+_PROGRAMS_WITH_OPTIONS = [_COTTON_WITH_OPTIONS, _RAPID]
+
+
+async def _init_full_control_with_options(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker, status_json: str
+) -> MockConfigEntry:
+    """Init Full Control using the program catalog that includes available_options."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="test-full-control-options",
+        data={
+            CONF_IP_ADDRESS: TEST_IP,
+            CONF_KEY_USE_ENCRYPTION: False,
+            CONF_PASSWORD: "",
+            CONF_KEY_MODE: MODE_FULL_CONTROL,
+            CONF_KEY_PROGRAMS: _PROGRAMS_WITH_OPTIONS,
+        },
+    )
+    aioclient_mock.get(f"http://{TEST_IP}/http-read.json?encrypted=0", text=status_json)
+    _add_stats_mocks(aioclient_mock)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    return entry
+
+
+async def test_wash_option_prewash_registered(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control_with_options(hass, aioclient_mock, _IDLE_JSON)
+    state = _state(hass, entry, "switch", UNIQUE_ID_WASH_OPTION_PREWASH)
+    assert state is not None
+
+
+async def test_wash_option_rinse1_registered(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control_with_options(hass, aioclient_mock, _IDLE_JSON)
+    state = _state(hass, entry, "switch", UNIQUE_ID_WASH_OPTION_RINSE_1)
+    assert state is not None
+
+
+async def test_wash_option_not_registered_when_not_supported(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    # available_options=17 means neither hygiene(2) nor goodnight(8) are supported;
+    # their switches must not be registered.
+    entry = await _init_full_control_with_options(hass, aioclient_mock, _IDLE_JSON)
+    registry = er.async_get(hass)
+    assert (
+        registry.async_get_entity_id(
+            "switch", DOMAIN, UNIQUE_ID_WASH_OPTION_HYGIENE.format(entry.entry_id)
+        )
+        is None
+    )
+    assert (
+        registry.async_get_entity_id(
+            "switch", DOMAIN, UNIQUE_ID_WASH_OPTION_GOODNIGHT.format(entry.entry_id)
+        )
+        is None
+    )
+
+
+async def test_wash_option_available_cotton_idle(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control_with_options(hass, aioclient_mock, _IDLE_JSON)
+    state = _state(hass, entry, "switch", UNIQUE_ID_WASH_OPTION_PREWASH)
+    assert state is not None
+    assert state.state not in ("unavailable", "unknown")
+
+
+async def test_wash_option_unavailable_when_running(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control_with_options(hass, aioclient_mock, _RUNNING_JSON)
+    state = _state(hass, entry, "switch", UNIQUE_ID_WASH_OPTION_PREWASH)
+    assert state is not None
+    assert state.state == "unavailable"
+
+
+async def test_wash_option_unavailable_when_program_unsupported(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    # Start with Rapid active: it has available_options=0, so prewash must be unavailable.
+    rapid_idle = _IDLE_JSON.replace('"Pr": "1"', '"Pr": "2"').replace(
+        '"PrCode": "136"', '"PrCode": "5"'
+    )
+    entry = await _init_full_control_with_options(hass, aioclient_mock, rapid_idle)
+    state = _state(hass, entry, "switch", UNIQUE_ID_WASH_OPTION_PREWASH)
+    assert state is not None
+    assert state.state == "unavailable"
+
+
+async def test_wash_option_turn_on_off(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control_with_options(hass, aioclient_mock, _IDLE_JSON)
+    registry = er.async_get(hass)
+    prewash_eid = registry.async_get_entity_id(
+        "switch", DOMAIN, UNIQUE_ID_WASH_OPTION_PREWASH.format(entry.entry_id)
+    )
+    assert prewash_eid is not None
+
+    await hass.services.async_call(
+        "switch", "turn_on", {"entity_id": prewash_eid}, blocking=True
+    )
+    assert hass.states.get(prewash_eid).state == "on"
+
+    await hass.services.async_call(
+        "switch", "turn_off", {"entity_id": prewash_eid}, blocking=True
+    )
+    assert hass.states.get(prewash_eid).state == "off"
+
+
+async def test_start_button_includes_option_mask(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    # Turn on both prewash(1) and rinse+1(16) → OptMsk1=17.
+    entry = await _init_full_control_with_options(hass, aioclient_mock, _IDLE_JSON)
+    registry = er.async_get(hass)
+
+    prewash_eid = registry.async_get_entity_id(
+        "switch", DOMAIN, UNIQUE_ID_WASH_OPTION_PREWASH.format(entry.entry_id)
+    )
+    rinse_eid = registry.async_get_entity_id(
+        "switch", DOMAIN, UNIQUE_ID_WASH_OPTION_RINSE_1.format(entry.entry_id)
+    )
+    await hass.services.async_call(
+        "switch", "turn_on", {"entity_id": prewash_eid}, blocking=True
+    )
+    await hass.services.async_call(
+        "switch", "turn_on", {"entity_id": rinse_eid}, blocking=True
+    )
+
+    start_eid = registry.async_get_entity_id(
+        "button", DOMAIN, UNIQUE_ID_WASH_START_BUTTON.format(entry.entry_id)
+    )
+    with patch(
+        "custom_components.candy.client.CandyClient.send_command",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        await hass.services.async_call(
+            "button", "press", {"entity_id": start_eid}, blocking=True
+        )
+
+    qs: str = mock_send.call_args[0][0]
+    assert "OptMsk1=17" in qs
+
+
+async def test_start_button_no_options_by_default(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control_with_options(hass, aioclient_mock, _IDLE_JSON)
+    registry = er.async_get(hass)
+    start_eid = registry.async_get_entity_id(
+        "button", DOMAIN, UNIQUE_ID_WASH_START_BUTTON.format(entry.entry_id)
+    )
+
+    with patch(
+        "custom_components.candy.client.CandyClient.send_command",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        await hass.services.async_call(
+            "button", "press", {"entity_id": start_eid}, blocking=True
+        )
+
+    qs: str = mock_send.call_args[0][0]
+    assert "OptMsk1=0" in qs
+
+
+async def test_wash_option_resets_on_program_change(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    # Turn on prewash while Cotton is active, then change to Rapid.
+    # The program-change event must reset _is_on to False.
+    # (Rapid doesn't support prewash so available=False, confirming the reset fired.)
+    entry = await _init_full_control_with_options(hass, aioclient_mock, _IDLE_JSON)
+    registry = er.async_get(hass)
+
+    prewash_eid = registry.async_get_entity_id(
+        "switch", DOMAIN, UNIQUE_ID_WASH_OPTION_PREWASH.format(entry.entry_id)
+    )
+    await hass.services.async_call(
+        "switch", "turn_on", {"entity_id": prewash_eid}, blocking=True
+    )
+    assert hass.states.get(prewash_eid).state == "on"
+
+    program_eid = registry.async_get_entity_id(
+        "select", DOMAIN, UNIQUE_ID_WASH_PROGRAM_SELECT.format(entry.entry_id)
+    )
+    await hass.services.async_call(
+        "select",
+        "select_option",
+        {"entity_id": program_eid, "option": "Rapid"},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+
+    # Switch is unavailable on Rapid, which means _on_program_changed fired and reset it.
+    assert hass.states.get(prewash_eid).state == "unavailable"
+
+
+# ---------------------------------------------------------------------------
+# Pause button
+# ---------------------------------------------------------------------------
+
+
+async def test_pause_button_available_when_running(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control(hass, aioclient_mock, _RUNNING_JSON)
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_PAUSE_BUTTON)
+    assert state is not None
+    assert state.state != "unavailable"
+
+
+async def test_pause_button_unavailable_when_idle(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control(hass, aioclient_mock, _IDLE_JSON)
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_PAUSE_BUTTON)
+    assert state is not None
+    assert state.state == "unavailable"
+
+
+async def test_pause_button_sends_command(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control(hass, aioclient_mock, _RUNNING_JSON)
+    registry = er.async_get(hass)
+    entity_id = registry.async_get_entity_id(
+        "button", DOMAIN, UNIQUE_ID_WASH_PAUSE_BUTTON.format(entry.entry_id)
+    )
+    assert entity_id is not None
+
+    with patch(
+        "custom_components.candy.client.CandyClient.send_command",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        await hass.services.async_call(
+            "button", "press", {"entity_id": entity_id}, blocking=True
+        )
+
+    mock_send.assert_called_once_with("Pa=1")
