@@ -220,7 +220,7 @@ class WashSteamSwitch(_WashSwitchBase):
 class NfcSpecialProgramsSwitch(_WashSwitchBase):
     _attr_name = "Special programs"
     _attr_translation_key = "wash_nfc_switch"
-    _attr_icon = "mdi:nfc"
+    _attr_icon = "mdi:folder-star"
 
     def __init__(
         self,
