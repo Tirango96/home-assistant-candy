@@ -107,9 +107,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             if user_input is not None:
                 if user_input["next_step"] == "switch_to_read_only":
                     return await self.async_step_switch_to_read_only()
-                if user_input["next_step"] == "program_settings":
-                    self._pending_data = dict(self.config_entry.data)
-                    return await self.async_step_language()
                 return await self.async_step_update_cloud_data()
             return self.async_show_form(
                 step_id="init",
@@ -117,11 +114,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     {
                         vol.Required("next_step"): SelectSelector(
                             SelectSelectorConfig(
-                                options=[
-                                    "program_settings",
-                                    "update_cloud_data",
-                                    "switch_to_read_only",
-                                ],
+                                options=["update_cloud_data", "switch_to_read_only"],
                                 mode=SelectSelectorMode.LIST,
                                 translation_key="next_step",
                             )
