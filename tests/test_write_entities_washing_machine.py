@@ -13,10 +13,12 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.candy import CONF_KEY_USE_ENCRYPTION, DOMAIN
-from custom_components.candy.client.model import MachineState
+from custom_components.candy.client import parse_wash_programs
+from custom_components.candy.client.model import MachineState, NfcProgram
 from custom_components.candy.const import (
     CONF_KEY_MODE,
     CONF_KEY_PROGRAMS,
+    CONF_KEY_SHOW_SPECIAL_PROGRAMS,
     DATA_KEY_COORDINATOR,
     MODE_FULL_CONTROL,
     MODE_READ_ONLY,
@@ -32,6 +34,7 @@ from custom_components.candy.const import (
     UNIQUE_ID_WASH_STOP_BUTTON,
     UNIQUE_ID_WASH_TEMP_SELECT,
 )
+from custom_components.candy.select import _resolve_nfc_programs
 
 from .common import TEST_IP
 
@@ -870,3 +873,282 @@ async def test_scheduled_sensors_absent_or_unavailable_in_read_only_mode(
     finish_state = _state(hass, entry, "sensor", UNIQUE_ID_WASH_SCHEDULED_FINISH)
     assert finish_state is not None
     assert finish_state.state == "unavailable"
+
+
+# ---------------------------------------------------------------------------
+# NFC special programs
+# ---------------------------------------------------------------------------
+
+# A COTTON-compatible NFC program: output_cluster=1 maps to COTTON via NFC_CLUSTER_TO_PROGRAM.
+# Category "Home Care", display name "Bathrobe". soil_level=2 (non-zero → used directly).
+_NFC_BATHROBE = NfcProgram(
+    name="NFC_PROGRAM_NAME_BATHROBE",
+    translations={"en": "Bathrobe"},
+    category_translations={"en": "Home Care"},
+    output_cluster=1,
+    temperature=40,
+    spin_speed=1400,
+    soil_level=2,
+    avopt1=0,
+)
+
+# A RAPID-compatible NFC program: output_cluster=8 maps to RAPID. soil_level=0 → fallback to
+# base.default_soil_level.
+_NFC_NEW_CLOTHES = NfcProgram(
+    name="NFC_PROGRAM_NAME_NEW_CLOTHES",
+    translations={"en": "New Clothes"},
+    category_translations={"en": "Special"},
+    output_cluster=8,
+    temperature=20,
+    spin_speed=1200,
+    soil_level=0,
+    avopt1=0,
+)
+
+_NFC_PROGRAMS = [_NFC_BATHROBE, _NFC_NEW_CLOTHES]
+
+
+async def _init_full_control_nfc(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker, status_json: str
+) -> MockConfigEntry:
+    """Init Full Control with CONF_KEY_SHOW_SPECIAL_PROGRAMS=True and two NFC test programs."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="test-full-control-nfc",
+        data={
+            CONF_IP_ADDRESS: TEST_IP,
+            CONF_KEY_USE_ENCRYPTION: False,
+            CONF_PASSWORD: "",
+            CONF_KEY_MODE: MODE_FULL_CONTROL,
+            CONF_KEY_PROGRAMS: _PROGRAMS,
+            CONF_KEY_SHOW_SPECIAL_PROGRAMS: True,
+        },
+    )
+    aioclient_mock.get(f"http://{TEST_IP}/http-read.json?encrypted=0", text=status_json)
+    _add_stats_mocks(aioclient_mock)
+    entry.add_to_hass(hass)
+    with (
+        patch(
+            "custom_components.candy.select.load_nfc_programs",
+            return_value=_NFC_PROGRAMS,
+        ),
+        patch(
+            "custom_components.candy.button.load_nfc_programs",
+            return_value=_NFC_PROGRAMS,
+        ),
+    ):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+    return entry
+
+
+# --- _resolve_nfc_programs unit tests ---
+
+
+def test_resolve_nfc_programs_matches_cotton():
+    programs = parse_wash_programs(_PROGRAMS)
+    resolved = _resolve_nfc_programs([_NFC_BATHROBE], programs)
+    assert len(resolved) == 1
+    nfc, base = resolved[0]
+    assert nfc.name == "NFC_PROGRAM_NAME_BATHROBE"
+    assert base.name == "COTTON"
+
+
+def test_resolve_nfc_programs_matches_rapid():
+    programs = parse_wash_programs(_PROGRAMS)
+    resolved = _resolve_nfc_programs([_NFC_NEW_CLOTHES], programs)
+    assert len(resolved) == 1
+    nfc, base = resolved[0]
+    assert nfc.name == "NFC_PROGRAM_NAME_NEW_CLOTHES"
+    assert base.name == "RAPID"
+
+
+def test_resolve_nfc_programs_skips_unresolvable():
+    unknown = NfcProgram(
+        name="UNKNOWN",
+        translations={"en": "Unknown"},
+        category_translations={"en": "Cat"},
+        output_cluster=99,
+        temperature=30,
+        spin_speed=600,
+        soil_level=0,
+        avopt1=0,
+    )
+    programs = parse_wash_programs(_PROGRAMS)
+    resolved = _resolve_nfc_programs([unknown], programs)
+    assert resolved == []
+
+
+# --- Integration tests ---
+
+
+async def test_nfc_program_options_appear_in_select(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control_nfc(hass, aioclient_mock, _IDLE_JSON)
+    state = _state(hass, entry, "select", UNIQUE_ID_WASH_PROGRAM_SELECT)
+    assert state is not None
+    options = state.attributes["options"]
+    # Standard programs still present
+    assert "Cotton" in options
+    assert "Rapid" in options
+    # NFC programs appended with category prefix
+    assert "Home Care - Bathrobe" in options
+    assert "Special - New Clothes" in options
+
+
+async def test_nfc_program_options_absent_when_toggle_off(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    # Default init_full_control does not set CONF_KEY_SHOW_SPECIAL_PROGRAMS
+    entry = await _init_full_control(hass, aioclient_mock, _IDLE_JSON)
+    state = _state(hass, entry, "select", UNIQUE_ID_WASH_PROGRAM_SELECT)
+    assert state is not None
+    options = state.attributes["options"]
+    assert not any(" - " in opt for opt in options)
+
+
+async def test_nfc_select_disables_sub_selects(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control_nfc(hass, aioclient_mock, _IDLE_JSON)
+    registry = er.async_get(hass)
+    program_eid = registry.async_get_entity_id(
+        "select", DOMAIN, UNIQUE_ID_WASH_PROGRAM_SELECT.format(entry.entry_id)
+    )
+    assert program_eid is not None
+
+    await hass.services.async_call(
+        "select",
+        "select_option",
+        {"entity_id": program_eid, "option": "Home Care - Bathrobe"},
+        blocking=True,
+    )
+
+    assert (
+        _state(hass, entry, "select", UNIQUE_ID_WASH_TEMP_SELECT).state == "unavailable"
+    )
+    assert (
+        _state(hass, entry, "select", UNIQUE_ID_WASH_SPIN_SELECT).state == "unavailable"
+    )
+    assert (
+        _state(hass, entry, "select", UNIQUE_ID_WASH_SOIL_SELECT).state == "unavailable"
+    )
+
+
+async def test_standard_select_after_nfc_re_enables_sub_selects(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control_nfc(hass, aioclient_mock, _IDLE_JSON)
+    registry = er.async_get(hass)
+    program_eid = registry.async_get_entity_id(
+        "select", DOMAIN, UNIQUE_ID_WASH_PROGRAM_SELECT.format(entry.entry_id)
+    )
+
+    # First select an NFC program
+    await hass.services.async_call(
+        "select",
+        "select_option",
+        {"entity_id": program_eid, "option": "Home Care - Bathrobe"},
+        blocking=True,
+    )
+    assert (
+        _state(hass, entry, "select", UNIQUE_ID_WASH_TEMP_SELECT).state == "unavailable"
+    )
+
+    # Then switch back to a standard program — sub-selects must re-enable
+    await hass.services.async_call(
+        "select",
+        "select_option",
+        {"entity_id": program_eid, "option": "Cotton"},
+        blocking=True,
+    )
+    assert (
+        _state(hass, entry, "select", UNIQUE_ID_WASH_TEMP_SELECT).state != "unavailable"
+    )
+    assert (
+        _state(hass, entry, "select", UNIQUE_ID_WASH_SPIN_SELECT).state != "unavailable"
+    )
+    assert (
+        _state(hass, entry, "select", UNIQUE_ID_WASH_SOIL_SELECT).state != "unavailable"
+    )
+
+
+async def test_start_button_sends_nfc_command(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    # Bathrobe: output_cluster=1 → base=COTTON (PrNm=1, PrCode=136)
+    # temp=40, spin_speed=1400 → SpdTgt=14, soil_level=2 → SLevTgt=2, Stm=0
+    entry = await _init_full_control_nfc(hass, aioclient_mock, _IDLE_JSON)
+    registry = er.async_get(hass)
+
+    program_eid = registry.async_get_entity_id(
+        "select", DOMAIN, UNIQUE_ID_WASH_PROGRAM_SELECT.format(entry.entry_id)
+    )
+    await hass.services.async_call(
+        "select",
+        "select_option",
+        {"entity_id": program_eid, "option": "Home Care - Bathrobe"},
+        blocking=True,
+    )
+
+    start_eid = registry.async_get_entity_id(
+        "button", DOMAIN, UNIQUE_ID_WASH_START_BUTTON.format(entry.entry_id)
+    )
+    with patch(
+        "custom_components.candy.client.CandyClient.send_command",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        await hass.services.async_call(
+            "button", "press", {"entity_id": start_eid}, blocking=True
+        )
+
+    mock_send.assert_called_once()
+    qs: str = mock_send.call_args[0][0]
+    assert "Write=1" in qs
+    assert "StSt=1" in qs
+    assert "PrNm=1" in qs  # COTTON selector_position
+    assert "PrCode=136" in qs  # COTTON pr_code
+    assert "PrStr=COTTON" in qs
+    assert "TmpTgt=40" in qs
+    assert "SpdTgt=14" in qs  # 1400 // 100
+    assert "SLevTgt=2" in qs  # nfc.soil_level=2 (non-zero, used directly)
+    assert "Stm=0" in qs
+
+
+async def test_start_button_nfc_soil_fallback_to_base_default(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    # New Clothes: output_cluster=8 → base=RAPID, soil_level=0 → falls back to RAPID
+    # default_soil_level=0. RAPID selector_position=2, PrCode=5.
+    entry = await _init_full_control_nfc(hass, aioclient_mock, _IDLE_JSON)
+    registry = er.async_get(hass)
+
+    program_eid = registry.async_get_entity_id(
+        "select", DOMAIN, UNIQUE_ID_WASH_PROGRAM_SELECT.format(entry.entry_id)
+    )
+    await hass.services.async_call(
+        "select",
+        "select_option",
+        {"entity_id": program_eid, "option": "Special - New Clothes"},
+        blocking=True,
+    )
+
+    start_eid = registry.async_get_entity_id(
+        "button", DOMAIN, UNIQUE_ID_WASH_START_BUTTON.format(entry.entry_id)
+    )
+    with patch(
+        "custom_components.candy.client.CandyClient.send_command",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        await hass.services.async_call(
+            "button", "press", {"entity_id": start_eid}, blocking=True
+        )
+
+    qs: str = mock_send.call_args[0][0]
+    assert "PrNm=2" in qs  # RAPID selector_position
+    assert "PrCode=5" in qs
+    assert "PrStr=RAPID" in qs
+    assert "TmpTgt=20" in qs
+    assert "SpdTgt=12" in qs  # 1200 // 100
+    assert "SLevTgt=0" in qs  # soil fallback: base.default_soil_level = 0
