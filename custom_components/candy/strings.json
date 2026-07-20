@@ -196,6 +196,30 @@
     "switch": {
       "wash_steam_switch": {
         "name": "Wash steam"
+      },
+      "wash_option_prewash": {
+        "name": "Prewash"
+      },
+      "wash_option_hygiene": {
+        "name": "Hygiene"
+      },
+      "wash_option_anticrease": {
+        "name": "Anti-crease"
+      },
+      "wash_option_goodnight": {
+        "name": "Good Night"
+      },
+      "wash_option_rinse_1": {
+        "name": "Extra rinse +1"
+      },
+      "wash_option_rinse_2": {
+        "name": "Extra rinse +2"
+      },
+      "wash_option_rinse_3": {
+        "name": "Extra rinse +3"
+      },
+      "wash_option_acquaplus": {
+        "name": "AquaPlus"
       }
     },
     "button": {

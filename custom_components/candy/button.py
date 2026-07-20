@@ -227,7 +227,7 @@ class WashStartButton(CandyWashButtonBase):
             nfc, base = nfc_match
             delay = int(_get_number(UNIQUE_ID_WASH_DELAY_NUMBER))
             opt_mask = 0
-            for bitmask, _translation_key, uid_suffix in WASH_OPTIONS:
+            for bitmask, _translation_key, uid_suffix, _name in WASH_OPTIONS:
                 switch_entity_id = registry.async_get_entity_id(
                     "switch", DOMAIN, f"{self.config_id}-{uid_suffix}"
                 )
@@ -304,7 +304,7 @@ class WashStartButton(CandyWashButtonBase):
         steam = steam_state.state == "on" if steam_state else False
 
         opt_mask = 0
-        for bitmask, _translation_key, uid_suffix in WASH_OPTIONS:
+        for bitmask, _translation_key, uid_suffix, _name in WASH_OPTIONS:
             switch_entity_id = registry.async_get_entity_id(
                 "switch", DOMAIN, f"{self.config_id}-{uid_suffix}"
             )

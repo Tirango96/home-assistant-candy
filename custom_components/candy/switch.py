@@ -66,7 +66,7 @@ async def async_setup_entry(
     appliance_options = functools.reduce(
         operator.or_, (p.available_options for p in programs), 0
     )
-    for bitmask, translation_key, uid_suffix in WASH_OPTIONS:
+    for bitmask, translation_key, uid_suffix, name in WASH_OPTIONS:
         if appliance_options & bitmask:
             entities.append(
                 WashOptionSwitch(
@@ -77,6 +77,7 @@ async def async_setup_entry(
                     bitmask,
                     translation_key,
                     uid_suffix,
+                    name,
                 )
             )
 
@@ -223,10 +224,12 @@ class WashOptionSwitch(_WashSwitchBase):
         bitmask: int,
         translation_key: str,
         uid_suffix: str,
+        name: str,
     ) -> None:
         super().__init__(coordinator, config_entry, client, programs)
         self._bitmask = bitmask
         self._attr_translation_key = translation_key
+        self._attr_name = name
         self._uid_suffix = uid_suffix
         self._is_on: bool = False
 
