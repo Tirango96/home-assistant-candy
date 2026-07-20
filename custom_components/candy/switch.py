@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools
+import operator
 from typing import cast
 
 from homeassistant.components.switch import SwitchEntity
@@ -35,6 +37,7 @@ from .const import (
     SUGGESTED_AREA_BATHROOM,
     UNIQUE_ID_WASH_PROGRAM_SELECT,
     UNIQUE_ID_WASH_STEAM_SWITCH,
+    WASH_OPTIONS,
 )
 
 
@@ -55,17 +58,32 @@ async def async_setup_entry(
     client: CandyClient = hass.data[DOMAIN][config_id][DATA_KEY_CLIENT]
     programs = parse_wash_programs(config_entry.data.get(CONF_KEY_PROGRAMS, []))
 
-    if not any(p.steam for p in programs):
-        return
+    entities: list[_WashSwitchBase] = []
 
-    async_add_entities([WashSteamSwitch(coordinator, config_entry, client, programs)])
+    if any(p.steam for p in programs):
+        entities.append(WashSteamSwitch(coordinator, config_entry, client, programs))
+
+    appliance_options = functools.reduce(
+        operator.or_, (p.available_options for p in programs), 0
+    )
+    for bitmask, translation_key, uid_suffix in WASH_OPTIONS:
+        if appliance_options & bitmask:
+            entities.append(
+                WashOptionSwitch(
+                    coordinator,
+                    config_entry,
+                    client,
+                    programs,
+                    bitmask,
+                    translation_key,
+                    uid_suffix,
+                )
+            )
+
+    async_add_entities(entities)
 
 
-class WashSteamSwitch(CoordinatorEntity, SwitchEntity):
-    _attr_name = "Wash steam"
-    _attr_translation_key = "wash_steam_switch"
-    _attr_icon = "mdi:weather-fog"
-
+class _WashSwitchBase(CoordinatorEntity, SwitchEntity):
     def __init__(
         self,
         coordinator: DataUpdateCoordinator,
@@ -78,11 +96,6 @@ class WashSteamSwitch(CoordinatorEntity, SwitchEntity):
         self.config_id = config_entry.entry_id
         self._client = client
         self._programs = programs
-        self._steam_on: bool = False
-
-    @property
-    def unique_id(self) -> str:
-        return UNIQUE_ID_WASH_STEAM_SWITCH.format(self.config_id)
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -123,28 +136,6 @@ class WashSteamSwitch(CoordinatorEntity, SwitchEntity):
                 info["serial_number"] = self.config_entry.data[CONF_KEY_SERIAL_NUMBER]
         return info
 
-    @property
-    def available(self) -> bool:
-        if not super().available:
-            return False
-        status = cast(WashingMachineStatus, self.coordinator.data)
-        if status.machine_state not in {MachineState.IDLE, MachineState.OFF}:
-            return False
-        prog = self._active_program()
-        return prog is not None and prog.steam
-
-    @property
-    def is_on(self) -> bool:
-        return self._steam_on
-
-    async def async_turn_on(self, **kwargs) -> None:
-        self._steam_on = True
-        self.async_write_ha_state()
-
-    async def async_turn_off(self, **kwargs) -> None:
-        self._steam_on = False
-        self.async_write_ha_state()
-
     def _active_program(self) -> WashingMachineWashProgram | None:
         registry = er.async_get(self.hass)
         entity_id = registry.async_get_entity_id(
@@ -171,3 +162,101 @@ class WashSteamSwitch(CoordinatorEntity, SwitchEntity):
             if p.selector_position == status.program:
                 return p
         return None
+
+
+class WashSteamSwitch(_WashSwitchBase):
+    _attr_name = "Wash steam"
+    _attr_translation_key = "wash_steam_switch"
+    _attr_icon = "mdi:weather-fog"
+
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        client: CandyClient,
+        programs: list[WashingMachineWashProgram],
+    ) -> None:
+        super().__init__(coordinator, config_entry, client, programs)
+        self._steam_on: bool = False
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_STEAM_SWITCH.format(self.config_id)
+
+    @callback
+    def _on_program_changed(self, event) -> None:
+        self._steam_on = False
+        self.async_write_ha_state()
+
+    @property
+    def available(self) -> bool:
+        if not super().available:
+            return False
+        status = cast(WashingMachineStatus, self.coordinator.data)
+        if status.machine_state not in {MachineState.IDLE, MachineState.OFF}:
+            return False
+        prog = self._active_program()
+        return prog is not None and prog.steam
+
+    @property
+    def is_on(self) -> bool:
+        return self._steam_on
+
+    async def async_turn_on(self, **kwargs) -> None:
+        self._steam_on = True
+        self.async_write_ha_state()
+
+    async def async_turn_off(self, **kwargs) -> None:
+        self._steam_on = False
+        self.async_write_ha_state()
+
+
+class WashOptionSwitch(_WashSwitchBase):
+    _attr_icon = "mdi:washing-machine"
+
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        client: CandyClient,
+        programs: list[WashingMachineWashProgram],
+        bitmask: int,
+        translation_key: str,
+        uid_suffix: str,
+    ) -> None:
+        super().__init__(coordinator, config_entry, client, programs)
+        self._bitmask = bitmask
+        self._attr_translation_key = translation_key
+        self._uid_suffix = uid_suffix
+        self._is_on: bool = False
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self.config_id}-{self._uid_suffix}"
+
+    @callback
+    def _on_program_changed(self, event) -> None:
+        self._is_on = False
+        self.async_write_ha_state()
+
+    @property
+    def available(self) -> bool:
+        if not super().available:
+            return False
+        status = cast(WashingMachineStatus, self.coordinator.data)
+        if status.machine_state not in {MachineState.IDLE, MachineState.OFF}:
+            return False
+        prog = self._active_program()
+        return prog is not None and bool(prog.available_options & self._bitmask)
+
+    @property
+    def is_on(self) -> bool:
+        return self._is_on
+
+    async def async_turn_on(self, **kwargs) -> None:
+        self._is_on = True
+        self.async_write_ha_state()
+
+    async def async_turn_off(self, **kwargs) -> None:
+        self._is_on = False
+        self.async_write_ha_state()

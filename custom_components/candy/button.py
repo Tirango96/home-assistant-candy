@@ -45,6 +45,7 @@ from .const import (
     UNIQUE_ID_WASH_STEAM_SWITCH,
     UNIQUE_ID_WASH_STOP_BUTTON,
     UNIQUE_ID_WASH_TEMP_SELECT,
+    WASH_OPTIONS,
 )
 
 
@@ -235,6 +236,17 @@ class WashStartButton(CandyWashButtonBase):
         steam_state = self.hass.states.get(steam_entity_id) if steam_entity_id else None
         steam = steam_state.state == "on" if steam_state else False
 
+        opt_mask = 0
+        for bitmask, _translation_key, uid_suffix in WASH_OPTIONS:
+            switch_entity_id = registry.async_get_entity_id(
+                "switch", DOMAIN, f"{self.config_id}-{uid_suffix}"
+            )
+            switch_state = (
+                self.hass.states.get(switch_entity_id) if switch_entity_id else None
+            )
+            if switch_state and switch_state.state == "on":
+                opt_mask |= bitmask
+
         params = {
             "Write": 1,
             "StSt": 1,
@@ -245,7 +257,7 @@ class WashStartButton(CandyWashButtonBase):
             "TmpTgt": temp,
             "SLevTgt": soil,
             "SpdTgt": spin // 100,
-            "OptMsk1": 0,
+            "OptMsk1": opt_mask,
             "OptMsk2": 0,
             "Lang": 0,
             "Stm": 1 if steam else 0,

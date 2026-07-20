@@ -78,6 +78,26 @@ UNIQUE_ID_WASH_START_BUTTON = "{0}-wash_start_button"
 UNIQUE_ID_WASH_PAUSE_BUTTON = "{0}-wash_pause_button"
 UNIQUE_ID_WASH_STOP_BUTTON = "{0}-wash_stop_button"
 UNIQUE_ID_WASH_STEAM_SWITCH = "{0}-wash_steam_switch"
+UNIQUE_ID_WASH_OPTION_PREWASH = "{0}-wash_option_prewash"
+UNIQUE_ID_WASH_OPTION_HYGIENE = "{0}-wash_option_hygiene"
+UNIQUE_ID_WASH_OPTION_ANTICREASE = "{0}-wash_option_anticrease"
+UNIQUE_ID_WASH_OPTION_GOODNIGHT = "{0}-wash_option_goodnight"
+UNIQUE_ID_WASH_OPTION_RINSE_1 = "{0}-wash_option_rinse_1"
+UNIQUE_ID_WASH_OPTION_RINSE_2 = "{0}-wash_option_rinse_2"
+UNIQUE_ID_WASH_OPTION_RINSE_3 = "{0}-wash_option_rinse_3"
+UNIQUE_ID_WASH_OPTION_ACQUAPLUS = "{0}-wash_option_acquaplus"
+
+# (bitmask, translation_key, unique_id_suffix)
+WASH_OPTIONS: list[tuple[int, str, str]] = [
+    (1, "wash_option_prewash", "wash_option_prewash"),
+    (2, "wash_option_hygiene", "wash_option_hygiene"),
+    (4, "wash_option_anticrease", "wash_option_anticrease"),
+    (8, "wash_option_goodnight", "wash_option_goodnight"),
+    (16, "wash_option_rinse_1", "wash_option_rinse_1"),
+    (32, "wash_option_rinse_2", "wash_option_rinse_2"),
+    (64, "wash_option_rinse_3", "wash_option_rinse_3"),
+    (128, "wash_option_acquaplus", "wash_option_acquaplus"),
+]
 
 UNIQUE_ID_TUMBLE_DRYER = "{0}-tumble_dryer"
 UNIQUE_ID_TUMBLE_PROGRAM = "{0}-tumble_program"

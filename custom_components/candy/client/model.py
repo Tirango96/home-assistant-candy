@@ -266,6 +266,7 @@ class WashingMachineWashProgram:
     liquid_detergent_dose: int | None  # 1–4 dose level, or None if not applicable
     powder_detergent_dose: int | None  # 1–4 dose level, or None if not applicable
     max_cycle_capacity: int | None  # kg
+    available_options: int  # OptMsk1 bitmask of valid options for this program
 
     @classmethod
     def from_dict(cls, program_dict: dict) -> "WashingMachineWashProgram":
@@ -318,6 +319,7 @@ class WashingMachineWashProgram:
             liquid_detergent_dose=_int_or_none("liquid_detergent_dose"),
             powder_detergent_dose=_int_or_none("powder_detergent_dose"),
             max_cycle_capacity=_int_or_none("max_cycle_capacity"),
+            available_options=_int("available_options"),
         )
 
     @property
