@@ -59,6 +59,7 @@ def _resolve_nfc_programs(
             None,
         )
         if base is not None:
+            nfc.duration = base.default_duration
             result.append((nfc, base))
     return result
 
@@ -214,6 +215,26 @@ class WashProgramSelect(CandyWashSelectBase):
             return self._current_option
         prog = self._current_program()
         return self._program_name(prog) if prog else None
+
+    @property
+    def extra_state_attributes(self) -> dict | None:
+        option = self.current_option
+        if option is None:
+            return None
+        lang = self.config_entry.data.get(
+            CONF_KEY_PROGRAM_LANGUAGE, self.hass.config.language
+        )
+        nfc_match = next(
+            (
+                nfc
+                for nfc, _ in self._nfc_entries
+                if nfc.category_prefixed(lang) == option
+            ),
+            None,
+        )
+        if nfc_match is not None and nfc_match.duration is not None:
+            return {"duration_minutes": nfc_match.duration}
+        return None
 
     async def async_select_option(self, option: str) -> None:
         self._current_option = option

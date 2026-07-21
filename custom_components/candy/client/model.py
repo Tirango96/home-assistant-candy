@@ -353,6 +353,7 @@ class NfcProgram:
     spin_speed: int
     soil_level: int
     avopt1: int
+    duration: int | None = None  # minutes; resolved from base program at runtime
 
     def display_name(self, lang: str) -> str:
         return self.translations.get(lang) or self.translations.get("en", self.name)
@@ -377,6 +378,7 @@ def load_nfc_programs() -> list["NfcProgram"]:
             spin_speed=e["spin_speed"],
             soil_level=e["soil_level"],
             avopt1=e["avopt1"],
+            duration=e["duration"],
         )
         for e in _NFC_PROGRAMS_RAW
     ]

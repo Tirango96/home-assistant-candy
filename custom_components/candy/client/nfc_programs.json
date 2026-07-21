@@ -43,7 +43,9 @@
     "temperature": 20,
     "spin_speed": 0,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_LINGERIE",
@@ -89,7 +91,8 @@
     "temperature": 30,
     "spin_speed": 400,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_DOWN_JACKETS",
@@ -135,7 +138,8 @@
     "temperature": 30,
     "spin_speed": 400,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_SILK",
@@ -181,7 +185,8 @@
     "temperature": 30,
     "spin_speed": 400,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_BATHROBE",
@@ -227,7 +232,8 @@
     "temperature": 40,
     "spin_speed": 1400,
     "soil_level": 2,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_COLORED_ANTI_STAIN",
@@ -273,7 +279,8 @@
     "temperature": 40,
     "spin_speed": 1200,
     "soil_level": 3,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_BED_LINEN",
@@ -319,7 +326,8 @@
     "temperature": 40,
     "spin_speed": 1400,
     "soil_level": 2,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_RESISTANT_ANTI_STAIN",
@@ -365,7 +373,8 @@
     "temperature": 60,
     "spin_speed": 1200,
     "soil_level": 3,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_DUVET_N_QUILTS",
@@ -411,7 +420,8 @@
     "temperature": 40,
     "spin_speed": 400,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_MATS",
@@ -457,7 +467,8 @@
     "temperature": 40,
     "spin_speed": 1200,
     "soil_level": 2,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_CURTAINS",
@@ -503,7 +514,8 @@
     "temperature": 30,
     "spin_speed": 400,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_TABLECLOTHS",
@@ -549,7 +561,8 @@
     "temperature": 40,
     "spin_speed": 1200,
     "soil_level": 3,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_ANTI_MITES",
@@ -595,7 +608,8 @@
     "temperature": 60,
     "spin_speed": 1200,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_DELICATE_ANTIALLERGY",
@@ -641,7 +655,8 @@
     "temperature": 40,
     "spin_speed": 400,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_BLEACHING",
@@ -687,7 +702,8 @@
     "temperature": 0,
     "spin_speed": 1200,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_BABY_SANITIZER",
@@ -733,7 +749,8 @@
     "temperature": 60,
     "spin_speed": 1200,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_CUDDLY_TOYS",
@@ -779,7 +796,8 @@
     "temperature": 30,
     "spin_speed": 400,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_MASK_REFRESH",
@@ -825,7 +843,8 @@
     "temperature": 40,
     "spin_speed": 1200,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_MASK_SANIFICATION",
@@ -871,7 +890,8 @@
     "temperature": 60,
     "spin_speed": 1200,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_SHIRTS",
@@ -917,7 +937,8 @@
     "temperature": 30,
     "spin_speed": 1200,
     "soil_level": 1,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_NEW_CLOTHES",
@@ -963,7 +984,8 @@
     "temperature": 20,
     "spin_speed": 1200,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_DARK",
@@ -1009,7 +1031,8 @@
     "temperature": 30,
     "spin_speed": 800,
     "soil_level": 1,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_DENIM_JEANS",
@@ -1055,7 +1078,8 @@
     "temperature": 40,
     "spin_speed": 1200,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_MEN_S_TROUSERS",
@@ -1101,7 +1125,8 @@
     "temperature": 30,
     "spin_speed": 800,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_SWIMSUITS_AND_BIKINIS",
@@ -1147,7 +1172,8 @@
     "temperature": 30,
     "spin_speed": 800,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_TECHNICAL_JACKETS",
@@ -1193,7 +1219,8 @@
     "temperature": 30,
     "spin_speed": 800,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_GYM_FIT",
@@ -1239,7 +1266,8 @@
     "temperature": 30,
     "spin_speed": 800,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_TRAINERS",
@@ -1285,7 +1313,8 @@
     "temperature": 30,
     "spin_speed": 800,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   },
   {
     "name": "NFC_PROGRAM_NAME_BACKPACKS",
@@ -1331,6 +1360,7 @@
     "temperature": 30,
     "spin_speed": 800,
     "soil_level": 0,
-    "avopt1": 0
+    "avopt1": 0,
+    "duration": null
   }
 ]

@@ -92,6 +92,7 @@ def _resolve_nfc_programs(
             None,
         )
         if base is not None:
+            nfc.duration = base.default_duration
             result.append((nfc, base))
     return result
 

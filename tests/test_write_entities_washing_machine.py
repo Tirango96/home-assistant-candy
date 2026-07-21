@@ -895,6 +895,7 @@ _NFC_BATHROBE = NfcProgram(
     spin_speed=1400,
     soil_level=2,
     avopt1=0,
+    duration=90,  # COTTON.default_duration
 )
 
 # A RAPID-compatible NFC program: output_cluster=8 maps to RAPID. soil_level=0 → fallback to
@@ -908,6 +909,7 @@ _NFC_NEW_CLOTHES = NfcProgram(
     spin_speed=1200,
     soil_level=0,
     avopt1=0,
+    duration=14,  # RAPID.default_duration
 )
 
 _NFC_PROGRAMS = [_NFC_BATHROBE, _NFC_NEW_CLOTHES]
@@ -989,6 +991,7 @@ def test_resolve_nfc_programs_skips_unresolvable():
         spin_speed=600,
         soil_level=0,
         avopt1=0,
+        duration=None,
     )
     programs = parse_wash_programs(_PROGRAMS)
     resolved = _resolve_nfc_programs([unknown], programs)
@@ -1022,6 +1025,38 @@ async def test_nfc_program_options_absent_when_toggle_off(
     assert state is not None
     options = state.attributes["options"]
     assert not any(" - " in opt for opt in options)
+
+
+async def test_nfc_program_duration_attribute(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control_nfc(hass, aioclient_mock, _IDLE_JSON)
+    registry = er.async_get(hass)
+    program_eid = registry.async_get_entity_id(
+        "select", DOMAIN, UNIQUE_ID_WASH_PROGRAM_SELECT.format(entry.entry_id)
+    )
+
+    # Select NFC program — duration attribute should be present
+    await hass.services.async_call(
+        "select",
+        "select_option",
+        {"entity_id": program_eid, "option": "Home Care - Bathrobe"},
+        blocking=True,
+    )
+    state = _state(hass, entry, "select", UNIQUE_ID_WASH_PROGRAM_SELECT)
+    assert state is not None
+    assert state.attributes.get("duration_minutes") == 90
+
+    # Switch to standard program — duration attribute should be absent
+    await hass.services.async_call(
+        "select",
+        "select_option",
+        {"entity_id": program_eid, "option": "Cotton"},
+        blocking=True,
+    )
+    state = _state(hass, entry, "select", UNIQUE_ID_WASH_PROGRAM_SELECT)
+    assert state is not None
+    assert state.attributes.get("duration_minutes") is None
 
 
 async def test_nfc_select_disables_sub_selects(
