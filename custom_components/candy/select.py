@@ -5,7 +5,7 @@ from typing import cast
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
@@ -19,50 +19,29 @@ from .client import (
     WashingMachineWashProgram,
     load_nfc_programs,
     parse_wash_programs,
+    resolve_nfc_programs,
 )
 from .client.model import MachineState
 from .const import (
-    CONF_KEY_DEVICE_MODEL,
-    CONF_KEY_MAC_ADDRESS,
     CONF_KEY_MODE,
     CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
-    CONF_KEY_SERIAL_NUMBER,
     DATA_KEY_CLIENT,
     DATA_KEY_COORDINATOR,
-    DEVICE_NAME_WASHING_MACHINE,
     DOMAIN,
     MODE_FULL_CONTROL,
     NFC_CLUSTER_TO_PROGRAM,
     SOIL_LABELS,
-    SUGGESTED_AREA_BATHROOM,
     UNIQUE_ID_WASH_NFC_SWITCH,
     UNIQUE_ID_WASH_PROGRAM_SELECT,
     UNIQUE_ID_WASH_SOIL_SELECT,
     UNIQUE_ID_WASH_SPIN_SELECT,
     UNIQUE_ID_WASH_TEMP_SELECT,
 )
+from .helpers import wash_device_info
 
 _TEMP_STEPS = [0, 20, 30, 40, 60, 90]
 _SPIN_STEPS = [0, 400, 600, 800, 1000, 1200, 1400]
-
-
-def _resolve_nfc_programs(
-    nfc_list: list[NfcProgram],
-    standard_programs: list[WashingMachineWashProgram],
-) -> list[tuple[NfcProgram, WashingMachineWashProgram]]:
-    result = []
-    for nfc in nfc_list:
-        patterns = NFC_CLUSTER_TO_PROGRAM.get(nfc.output_cluster, [])
-        base = next(
-            (p for pattern in patterns for p in standard_programs if pattern in p.name),
-            None,
-        )
-        if base is not None:
-            if base.default_duration > 0:
-                nfc.duration = base.default_duration
-            result.append((nfc, base))
-    return result
 
 
 async def async_setup_entry(
@@ -82,7 +61,9 @@ async def async_setup_entry(
     client: CandyClient = hass.data[DOMAIN][config_id][DATA_KEY_CLIENT]
     programs = parse_wash_programs(config_entry.data.get(CONF_KEY_PROGRAMS, []))
 
-    nfc_entries = _resolve_nfc_programs(load_nfc_programs(), programs)
+    nfc_entries = resolve_nfc_programs(
+        load_nfc_programs(), programs, NFC_CLUSTER_TO_PROGRAM
+    )
 
     temp_select = WashTempSelect(coordinator, config_entry, client, programs)
     spin_select = WashSpinSelect(coordinator, config_entry, client, programs)
@@ -123,25 +104,7 @@ class CandyWashSelectBase(CoordinatorEntity, SelectEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
-        info = DeviceInfo(
-            identifiers={(DOMAIN, self.config_id)},
-            name=DEVICE_NAME_WASHING_MACHINE,
-            manufacturer="Candy",
-            suggested_area=SUGGESTED_AREA_BATHROOM,
-        )
-        if self.config_entry.data.get(CONF_KEY_MAC_ADDRESS):
-            info["connections"] = {
-                (
-                    dr.CONNECTION_NETWORK_MAC,
-                    self.config_entry.data[CONF_KEY_MAC_ADDRESS],
-                )
-            }
-        if self.config_entry.data.get(CONF_KEY_MODE) == MODE_FULL_CONTROL:
-            if self.config_entry.data.get(CONF_KEY_DEVICE_MODEL):
-                info["model"] = self.config_entry.data[CONF_KEY_DEVICE_MODEL]
-            if self.config_entry.data.get(CONF_KEY_SERIAL_NUMBER):
-                info["serial_number"] = self.config_entry.data[CONF_KEY_SERIAL_NUMBER]
-        return info
+        return wash_device_info(self.config_entry)
 
     def _current_program(self) -> WashingMachineWashProgram | None:
         status = cast(WashingMachineStatus, self.coordinator.data)

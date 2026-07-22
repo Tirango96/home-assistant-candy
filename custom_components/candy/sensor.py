@@ -269,7 +269,7 @@ class CandyWashingMachineSensor(CandyBaseSensor):
 
     @property
     def native_value(self) -> StateType:
-        if self.hass.data[DOMAIN][self.config_id].get(DATA_KEY_WRITE_PENDING, False):
+        if self.hass.data[DOMAIN][self.config_id].get(DATA_KEY_WRITE_PENDING, 0):
             return "Sending command"
         status = cast(WashingMachineStatus, self.coordinator.data)
         return str(status.machine_state)

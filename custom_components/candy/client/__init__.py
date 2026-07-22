@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import replace
 import json
 from json import JSONDecodeError
 import logging
@@ -7,6 +8,7 @@ from typing import Union
 import aiohttp
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
+import async_timeout
 import backoff
 
 from .decryption import Encryption, decrypt, find_key
@@ -28,6 +30,28 @@ def parse_wash_programs(raw: list[dict]) -> list[WashingMachineWashProgram]:
     """Parse and filter the raw program list stored in a config entry."""
     programs = [WashingMachineWashProgram.from_dict(p) for p in raw]
     return [p for p in programs if p.position != 0]
+
+
+def resolve_nfc_programs(
+    nfc_list: list[NfcProgram],
+    standard_programs: list[WashingMachineWashProgram],
+    nfc_cluster_to_program: dict[int, list[str]],
+) -> list[tuple[NfcProgram, WashingMachineWashProgram]]:
+    result = []
+    for nfc in nfc_list:
+        patterns = nfc_cluster_to_program.get(nfc.output_cluster, [])
+        base = next(
+            (p for pattern in patterns for p in standard_programs if pattern in p.name),
+            None,
+        )
+        if base is not None:
+            resolved = (
+                replace(nfc, duration=base.default_duration)
+                if base.default_duration > 0
+                else nfc
+            )
+            result.append((resolved, base))
+    return result
 
 
 # Some devices reportedly can't handle too frequent requests and respond with BAD_REQUEST
@@ -110,7 +134,7 @@ class CandyClient:
         else:
             url = _write_url(self.device_ip, use_encryption=False, data=query_string)
 
-        async with _LIMITER, self.session.get(url) as resp:
+        async with async_timeout.timeout(5), _LIMITER, self.session.get(url) as resp:
             if resp.status != 200:
                 text = await resp.text()
                 raise ValueError(

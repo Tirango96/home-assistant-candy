@@ -13,7 +13,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.candy import CONF_KEY_USE_ENCRYPTION, DOMAIN
-from custom_components.candy.client import parse_wash_programs
+from custom_components.candy.client import parse_wash_programs, resolve_nfc_programs
 from custom_components.candy.client.model import MachineState, NfcProgram
 from custom_components.candy.const import (
     CONF_KEY_MODE,
@@ -21,6 +21,7 @@ from custom_components.candy.const import (
     DATA_KEY_COORDINATOR,
     MODE_FULL_CONTROL,
     MODE_READ_ONLY,
+    NFC_CLUSTER_TO_PROGRAM,
     UNIQUE_ID_WASH_DELAY_NUMBER,
     UNIQUE_ID_WASH_ESTIMATED_DURATION,
     UNIQUE_ID_WASH_NFC_SWITCH,
@@ -39,7 +40,6 @@ from custom_components.candy.const import (
     UNIQUE_ID_WASH_STOP_BUTTON,
     UNIQUE_ID_WASH_TEMP_SELECT,
 )
-from custom_components.candy.select import _resolve_nfc_programs
 
 from .common import TEST_IP
 
@@ -965,7 +965,7 @@ async def _init_full_control_nfc(
 
 def test_resolve_nfc_programs_matches_cotton():
     programs = parse_wash_programs(_PROGRAMS)
-    resolved = _resolve_nfc_programs([_NFC_BATHROBE], programs)
+    resolved = resolve_nfc_programs([_NFC_BATHROBE], programs, NFC_CLUSTER_TO_PROGRAM)
     assert len(resolved) == 1
     nfc, base = resolved[0]
     assert nfc.name == "NFC_PROGRAM_NAME_BATHROBE"
@@ -974,7 +974,9 @@ def test_resolve_nfc_programs_matches_cotton():
 
 def test_resolve_nfc_programs_matches_rapid():
     programs = parse_wash_programs(_PROGRAMS)
-    resolved = _resolve_nfc_programs([_NFC_NEW_CLOTHES], programs)
+    resolved = resolve_nfc_programs(
+        [_NFC_NEW_CLOTHES], programs, NFC_CLUSTER_TO_PROGRAM
+    )
     assert len(resolved) == 1
     nfc, base = resolved[0]
     assert nfc.name == "NFC_PROGRAM_NAME_NEW_CLOTHES"
@@ -994,7 +996,7 @@ def test_resolve_nfc_programs_skips_unresolvable():
         duration=None,
     )
     programs = parse_wash_programs(_PROGRAMS)
-    resolved = _resolve_nfc_programs([unknown], programs)
+    resolved = resolve_nfc_programs([unknown], programs, NFC_CLUSTER_TO_PROGRAM)
     assert resolved == []
 
 

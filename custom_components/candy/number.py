@@ -6,7 +6,6 @@ from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfTime
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
@@ -16,18 +15,14 @@ from homeassistant.helpers.update_coordinator import (
 from .client import CandyClient, WashingMachineStatus
 from .client.model import MachineState
 from .const import (
-    CONF_KEY_DEVICE_MODEL,
-    CONF_KEY_MAC_ADDRESS,
     CONF_KEY_MODE,
-    CONF_KEY_SERIAL_NUMBER,
     DATA_KEY_CLIENT,
     DATA_KEY_COORDINATOR,
-    DEVICE_NAME_WASHING_MACHINE,
     DOMAIN,
     MODE_FULL_CONTROL,
-    SUGGESTED_AREA_BATHROOM,
     UNIQUE_ID_WASH_DELAY_NUMBER,
 )
+from .helpers import wash_device_info
 
 
 async def async_setup_entry(
@@ -50,7 +45,7 @@ async def async_setup_entry(
 
 class WashDelayNumber(CoordinatorEntity, NumberEntity):
     _attr_native_min_value = 0
-    _attr_native_max_value = 1410
+    _attr_native_max_value = 1380
     _attr_native_step = 30
     _attr_native_unit_of_measurement = UnitOfTime.MINUTES
     _attr_mode = NumberMode.BOX
@@ -83,25 +78,7 @@ class WashDelayNumber(CoordinatorEntity, NumberEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
-        info = DeviceInfo(
-            identifiers={(DOMAIN, self.config_id)},
-            name=DEVICE_NAME_WASHING_MACHINE,
-            manufacturer="Candy",
-            suggested_area=SUGGESTED_AREA_BATHROOM,
-        )
-        if self.config_entry.data.get(CONF_KEY_MAC_ADDRESS):
-            info["connections"] = {
-                (
-                    dr.CONNECTION_NETWORK_MAC,
-                    self.config_entry.data[CONF_KEY_MAC_ADDRESS],
-                )
-            }
-        if self.config_entry.data.get(CONF_KEY_MODE) == MODE_FULL_CONTROL:
-            if self.config_entry.data.get(CONF_KEY_DEVICE_MODEL):
-                info["model"] = self.config_entry.data[CONF_KEY_DEVICE_MODEL]
-            if self.config_entry.data.get(CONF_KEY_SERIAL_NUMBER):
-                info["serial_number"] = self.config_entry.data[CONF_KEY_SERIAL_NUMBER]
-        return info
+        return wash_device_info(self.config_entry)
 
     @property
     def native_value(self) -> float:

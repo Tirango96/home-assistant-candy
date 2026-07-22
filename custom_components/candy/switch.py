@@ -7,7 +7,7 @@ from typing import cast
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.update_coordinator import (
@@ -23,23 +23,19 @@ from .client import (
 )
 from .client.model import MachineState
 from .const import (
-    CONF_KEY_DEVICE_MODEL,
-    CONF_KEY_MAC_ADDRESS,
     CONF_KEY_MODE,
     CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
-    CONF_KEY_SERIAL_NUMBER,
     DATA_KEY_CLIENT,
     DATA_KEY_COORDINATOR,
-    DEVICE_NAME_WASHING_MACHINE,
     DOMAIN,
     MODE_FULL_CONTROL,
-    SUGGESTED_AREA_BATHROOM,
     UNIQUE_ID_WASH_NFC_SWITCH,
     UNIQUE_ID_WASH_PROGRAM_SELECT,
     UNIQUE_ID_WASH_STEAM_SWITCH,
     WASH_OPTIONS,
 )
+from .helpers import wash_device_info
 
 
 async def async_setup_entry(
@@ -122,25 +118,7 @@ class _WashSwitchBase(CoordinatorEntity, SwitchEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
-        info = DeviceInfo(
-            identifiers={(DOMAIN, self.config_id)},
-            name=DEVICE_NAME_WASHING_MACHINE,
-            manufacturer="Candy",
-            suggested_area=SUGGESTED_AREA_BATHROOM,
-        )
-        if self.config_entry.data.get(CONF_KEY_MAC_ADDRESS):
-            info["connections"] = {
-                (
-                    dr.CONNECTION_NETWORK_MAC,
-                    self.config_entry.data[CONF_KEY_MAC_ADDRESS],
-                )
-            }
-        if self.config_entry.data.get(CONF_KEY_MODE) == MODE_FULL_CONTROL:
-            if self.config_entry.data.get(CONF_KEY_DEVICE_MODEL):
-                info["model"] = self.config_entry.data[CONF_KEY_DEVICE_MODEL]
-            if self.config_entry.data.get(CONF_KEY_SERIAL_NUMBER):
-                info["serial_number"] = self.config_entry.data[CONF_KEY_SERIAL_NUMBER]
-        return info
+        return wash_device_info(self.config_entry)
 
     def _active_program(self) -> WashingMachineWashProgram | None:
         registry = er.async_get(self.hass)

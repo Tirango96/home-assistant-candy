@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
@@ -21,24 +21,20 @@ from .client import (
     WashingMachineWashProgram,
     load_nfc_programs,
     parse_wash_programs,
+    resolve_nfc_programs,
 )
 from .client.model import MachineState
 from .const import (
-    CONF_KEY_DEVICE_MODEL,
-    CONF_KEY_MAC_ADDRESS,
     CONF_KEY_MODE,
     CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
-    CONF_KEY_SERIAL_NUMBER,
     DATA_KEY_CLIENT,
     DATA_KEY_COORDINATOR,
     DATA_KEY_WRITE_PENDING,
-    DEVICE_NAME_WASHING_MACHINE,
     DOMAIN,
     MODE_FULL_CONTROL,
     NFC_CLUSTER_TO_PROGRAM,
     SOIL_LABELS_REVERSE,
-    SUGGESTED_AREA_BATHROOM,
     UNIQUE_ID_WASH_DELAY_NUMBER,
     UNIQUE_ID_WASH_NFC_SWITCH,
     UNIQUE_ID_WASH_PAUSE_BUTTON,
@@ -51,6 +47,7 @@ from .const import (
     UNIQUE_ID_WASH_TEMP_SELECT,
     WASH_OPTIONS,
 )
+from .helpers import wash_device_info
 
 
 async def async_setup_entry(
@@ -69,7 +66,9 @@ async def async_setup_entry(
 
     client: CandyClient = hass.data[DOMAIN][config_id][DATA_KEY_CLIENT]
     programs = parse_wash_programs(config_entry.data.get(CONF_KEY_PROGRAMS, []))
-    nfc_entries = _resolve_nfc_programs(load_nfc_programs(), programs)
+    nfc_entries = resolve_nfc_programs(
+        load_nfc_programs(), programs, NFC_CLUSTER_TO_PROGRAM
+    )
 
     async_add_entities(
         [
@@ -78,24 +77,6 @@ async def async_setup_entry(
             WashStopButton(coordinator, config_entry, client),
         ]
     )
-
-
-def _resolve_nfc_programs(
-    nfc_list: list[NfcProgram],
-    standard_programs: list[WashingMachineWashProgram],
-) -> list[tuple[NfcProgram, WashingMachineWashProgram]]:
-    result = []
-    for nfc in nfc_list:
-        patterns = NFC_CLUSTER_TO_PROGRAM.get(nfc.output_cluster, [])
-        base = next(
-            (p for pattern in patterns for p in standard_programs if pattern in p.name),
-            None,
-        )
-        if base is not None:
-            if base.default_duration > 0:
-                nfc.duration = base.default_duration
-            result.append((nfc, base))
-    return result
 
 
 class CandyWashButtonBase(CoordinatorEntity, ButtonEntity):
@@ -112,38 +93,24 @@ class CandyWashButtonBase(CoordinatorEntity, ButtonEntity):
 
     @property
     def available(self) -> bool:
-        return not self.hass.data[DOMAIN][self.config_id].get(
-            DATA_KEY_WRITE_PENDING, False
+        return (
+            self.hass.data[DOMAIN][self.config_id].get(DATA_KEY_WRITE_PENDING, 0) == 0
         )
 
     async def _post_command_refresh(self) -> None:
-        self.hass.data[DOMAIN][self.config_id][DATA_KEY_WRITE_PENDING] = True
+        data = self.hass.data[DOMAIN][self.config_id]
+        data[DATA_KEY_WRITE_PENDING] = data.get(DATA_KEY_WRITE_PENDING, 0) + 1
         self.coordinator.async_update_listeners()
-        await asyncio.sleep(5)
-        self.hass.data[DOMAIN][self.config_id][DATA_KEY_WRITE_PENDING] = False
-        await self.coordinator.async_request_refresh()
+        try:
+            await asyncio.sleep(5)
+        finally:
+            data[DATA_KEY_WRITE_PENDING] -= 1
+            if data[DATA_KEY_WRITE_PENDING] == 0:
+                await self.coordinator.async_request_refresh()
 
     @property
     def device_info(self) -> DeviceInfo:
-        info = DeviceInfo(
-            identifiers={(DOMAIN, self.config_id)},
-            name=DEVICE_NAME_WASHING_MACHINE,
-            manufacturer="Candy",
-            suggested_area=SUGGESTED_AREA_BATHROOM,
-        )
-        if self.config_entry.data.get(CONF_KEY_MAC_ADDRESS):
-            info["connections"] = {
-                (
-                    dr.CONNECTION_NETWORK_MAC,
-                    self.config_entry.data[CONF_KEY_MAC_ADDRESS],
-                )
-            }
-        if self.config_entry.data.get(CONF_KEY_MODE) == MODE_FULL_CONTROL:
-            if self.config_entry.data.get(CONF_KEY_DEVICE_MODEL):
-                info["model"] = self.config_entry.data[CONF_KEY_DEVICE_MODEL]
-            if self.config_entry.data.get(CONF_KEY_SERIAL_NUMBER):
-                info["serial_number"] = self.config_entry.data[CONF_KEY_SERIAL_NUMBER]
-        return info
+        return wash_device_info(self.config_entry)
 
 
 class WashStartButton(CandyWashButtonBase):
@@ -242,6 +209,13 @@ class WashStartButton(CandyWashButtonBase):
                 )
                 if switch_state and switch_state.state == "on":
                     opt_mask |= bitmask
+            steam_entity_id = registry.async_get_entity_id(
+                "switch", DOMAIN, UNIQUE_ID_WASH_STEAM_SWITCH.format(self.config_id)
+            )
+            steam_state = (
+                self.hass.states.get(steam_entity_id) if steam_entity_id else None
+            )
+            steam = steam_state.state == "on" if steam_state else False
             params = {
                 "Write": 1,
                 "StSt": 1,
@@ -257,7 +231,7 @@ class WashStartButton(CandyWashButtonBase):
                 "OptMsk1": nfc.avopt1 | opt_mask,
                 "OptMsk2": 0,
                 "Lang": 0,
-                "Stm": 0,
+                "Stm": 1 if steam else 0,
                 "Dry": 0,
                 "ED": 0,
                 "RecipeId": 0,
