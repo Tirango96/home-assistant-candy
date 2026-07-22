@@ -152,50 +152,36 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         is_washing_machine = self.config_entry.data.get(
             CONF_KEY_IS_WASHING_MACHINE, False
         )
-        if self.config_entry.data.get(CONF_KEY_MODE) == MODE_FULL_CONTROL:
-            if user_input is not None:
-                if user_input["next_step"] == "switch_to_read_only":
-                    return await self.async_step_switch_to_read_only()
-                if user_input["next_step"] == "maintenance_settings":
-                    return await self.async_step_maintenance()
-                return await self.async_step_update_cloud_data()
-            next_step_options = ["update_cloud_data", "switch_to_read_only"]
-            if is_washing_machine:
-                next_step_options.append("maintenance_settings")
-            return self.async_show_form(
-                step_id="init",
-                data_schema=vol.Schema(
-                    {
-                        vol.Required("next_step"): SelectSelector(
-                            SelectSelectorConfig(
-                                options=next_step_options,
-                                mode=SelectSelectorMode.LIST,
-                                translation_key="next_step",
-                            )
+        if not is_washing_machine:
+            return self.async_create_entry(data={})
+
+        if self.config_entry.data.get(CONF_KEY_MODE) != MODE_FULL_CONTROL:
+            return await self.async_step_maintenance()
+
+        if user_input is not None:
+            if user_input["next_step"] == "switch_to_read_only":
+                return await self.async_step_switch_to_read_only()
+            if user_input["next_step"] == "maintenance_settings":
+                return await self.async_step_maintenance()
+            return await self.async_step_update_cloud_data()
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("next_step"): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[
+                                "update_cloud_data",
+                                "switch_to_read_only",
+                                "maintenance_settings",
+                            ],
+                            mode=SelectSelectorMode.LIST,
+                            translation_key="next_step",
                         )
-                    }
-                ),
-            )
-        if is_washing_machine:
-            if user_input is not None:
-                if user_input["next_step"] == "maintenance_settings":
-                    return await self.async_step_maintenance()
-                return await self.async_step_update_cloud_data()
-            return self.async_show_form(
-                step_id="init",
-                data_schema=vol.Schema(
-                    {
-                        vol.Required("next_step"): SelectSelector(
-                            SelectSelectorConfig(
-                                options=["update_cloud_data", "maintenance_settings"],
-                                mode=SelectSelectorMode.LIST,
-                                translation_key="next_step",
-                            )
-                        )
-                    }
-                ),
-            )
-        return await self.async_step_update_cloud_data()
+                    )
+                }
+            ),
+        )
 
     async def async_step_maintenance(
         self, user_input: dict[str, Any] | None = None

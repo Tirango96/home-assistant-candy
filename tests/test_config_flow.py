@@ -750,13 +750,6 @@ async def test_options_flow_maintenance_settings(
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
 
-    assert result["type"] == data_entry_flow.FlowResultType.FORM
-    assert result["step_id"] == "init"
-
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"], user_input={"next_step": "maintenance_settings"}
-    )
-
     assert result["step_id"] == "maintenance"
 
     result = await hass.config_entries.options.async_configure(
@@ -811,9 +804,6 @@ async def test_options_flow_maintenance_settings_disable(
     entry.add_to_hass(hass)
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"], user_input={"next_step": "maintenance_settings"}
-    )
     result = await hass.config_entries.options.async_configure(
         result["flow_id"], user_input={CONF_KEY_MAINTENANCE_ENABLED: False}
     )
