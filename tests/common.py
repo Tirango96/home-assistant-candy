@@ -20,15 +20,20 @@ async def init_integration(
     aioclient_mock,
     status_response: str,
     statistics_response: str | None = None,
+    extra_config_data: dict | None = None,
 ):
+    base_data = {
+        CONF_IP_ADDRESS: "192.168.0.66",
+        CONF_KEY_USE_ENCRYPTION: False,
+        CONF_PASSWORD: "",
+    }
+    if extra_config_data:
+        base_data.update(extra_config_data)
+
     entry = MockConfigEntry(
         domain=DOMAIN,
         unique_id="123-456",
-        data={
-            CONF_IP_ADDRESS: "192.168.0.66",
-            CONF_KEY_USE_ENCRYPTION: False,
-            CONF_PASSWORD: "",
-        },
+        data=base_data,
     )
 
     aioclient_mock.get(

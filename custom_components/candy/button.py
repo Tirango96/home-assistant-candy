@@ -91,8 +91,9 @@ def _resolve_nfc_programs(
             (p for pattern in patterns for p in standard_programs if pattern in p.name),
             None,
         )
-        if base is not None and base.default_duration > 0:
-            nfc.duration = base.default_duration
+        if base is not None:
+            if base.default_duration > 0:
+                nfc.duration = base.default_duration
             result.append((nfc, base))
     return result
 

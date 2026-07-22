@@ -58,8 +58,9 @@ def _resolve_nfc_programs(
             (p for pattern in patterns for p in standard_programs if pattern in p.name),
             None,
         )
-        if base is not None and base.default_duration > 0:
-            nfc.duration = base.default_duration
+        if base is not None:
+            if base.default_duration > 0:
+                nfc.duration = base.default_duration
             result.append((nfc, base))
     return result
 
@@ -212,9 +213,14 @@ class WashProgramSelect(CandyWashSelectBase):
     @property
     def current_option(self) -> str | None:
         if self._current_option is not None:
-            return self._current_option
+            if self._current_option in self.options:
+                return self._current_option
+            self._current_option = None
         prog = self._current_program()
-        return self._program_name(prog) if prog else None
+        if prog is not None:
+            return self._program_name(prog)
+        opts = self.options
+        return opts[0] if opts else None
 
     @property
     def extra_state_attributes(self) -> dict | None:

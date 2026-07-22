@@ -69,6 +69,30 @@ UNIQUE_ID_WASH_LIQUID_DETERGENT = "{0}-wash_liquid_detergent"
 UNIQUE_ID_WASH_POWDER_DETERGENT = "{0}-wash_powder_detergent"
 UNIQUE_ID_WASH_CYCLE_CAPACITY = "{0}-wash_cycle_capacity"
 
+CONF_KEY_IS_WASHING_MACHINE = "is_washing_machine"
+
+CONF_KEY_MAINTENANCE_ENABLED = "maintenance_enabled"
+CONF_KEY_WATER_HARDNESS = "water_hardness"
+CONF_KEY_MAINTENANCE_LAST_SELFCLEAN = "maintenance_last_selfclean"
+CONF_KEY_MAINTENANCE_LAST_LIMESCALE = "maintenance_last_limescale"
+CONF_KEY_MAINTENANCE_LAST_FILTER = "maintenance_last_filter"
+
+MAINTENANCE_SELFCLEAN_THRESHOLD = 100
+MAINTENANCE_FILTER_THRESHOLD = 100
+MAINTENANCE_HARDNESS_THRESHOLDS: list[int] = [110, 105, 100, 95, 90, 85]
+MAINTENANCE_HARDNESS_LABELS: list[str] = [
+    "very_soft",
+    "soft",
+    "medium",
+    "moderately_hard",
+    "hard",
+    "very_hard",
+]
+
+UNIQUE_ID_WASH_MAINT_SELFCLEAN = "{0}-wash_maint_selfclean"
+UNIQUE_ID_WASH_MAINT_LIMESCALE = "{0}-wash_maint_limescale"
+UNIQUE_ID_WASH_MAINT_FILTER = "{0}-wash_maint_filter"
+
 UNIQUE_ID_WASH_PROGRAM_SELECT = "{0}-wash_program_select"
 UNIQUE_ID_WASH_TEMP_SELECT = "{0}-wash_temp_select"
 UNIQUE_ID_WASH_SPIN_SELECT = "{0}-wash_spin_select"
@@ -119,8 +143,6 @@ DEVICE_NAME_DISHWASHER = "Dishwasher"
 
 SUGGESTED_AREA_BATHROOM = "Bathroom"
 SUGGESTED_AREA_KITCHEN = "Kitchen"
-
-CONF_KEY_SHOW_SPECIAL_PROGRAMS = "show_special_programs"
 
 # Maps NFC OutputCluster id → substrings to match against WashingMachineWashProgram.name
 NFC_CLUSTER_TO_PROGRAM: dict[int, list[str]] = {

@@ -12,7 +12,6 @@ from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
-    BooleanSelector,
     SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
@@ -27,14 +26,23 @@ from .client.model import WashingMachineStatus
 from .const import (
     CONF_INTEGRATION_TITLE,
     CONF_KEY_DEVICE_MODEL,
+    CONF_KEY_IS_WASHING_MACHINE,
     CONF_KEY_MAC_ADDRESS,
+    CONF_KEY_MAINTENANCE_ENABLED,
+    CONF_KEY_MAINTENANCE_LAST_FILTER,
+    CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
+    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
     CONF_KEY_MODE,
     CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
     CONF_KEY_SERIAL_NUMBER,
-    CONF_KEY_SHOW_SPECIAL_PROGRAMS,
     CONF_KEY_USE_ENCRYPTION,
+    CONF_KEY_WATER_HARDNESS,
     DOMAIN,
+    MAINTENANCE_FILTER_THRESHOLD,
+    MAINTENANCE_HARDNESS_LABELS,
+    MAINTENANCE_HARDNESS_THRESHOLDS,
+    MAINTENANCE_SELFCLEAN_THRESHOLD,
     MODE_FULL_CONTROL,
     MODE_READ_ONLY,
     PROGRAM_LANGUAGES,
@@ -65,8 +73,49 @@ CLOUD_SCHEMA = vol.Schema(
 
 MANUAL_IP_OPTION = "manual"
 
+MAINTENANCE_ENABLE_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_KEY_MAINTENANCE_ENABLED, default=False): bool,
+    }
+)
 
-def _language_schema(default_lang: str, default_show_special: bool) -> vol.Schema:
+HARDNESS_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_KEY_WATER_HARDNESS, default=2): SelectSelector(
+            SelectSelectorConfig(
+                options=[
+                    SelectOptionDict(value=str(i), label=label)
+                    for i, label in enumerate(MAINTENANCE_HARDNESS_LABELS)
+                ],
+                mode=SelectSelectorMode.DROPDOWN,
+                translation_key="water_hardness",
+            )
+        ),
+    }
+)
+
+
+def _baselines_schema(hardness_index: int) -> vol.Schema:
+    limescale_default = MAINTENANCE_HARDNESS_THRESHOLDS[hardness_index]
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
+                default=MAINTENANCE_SELFCLEAN_THRESHOLD,
+            ): int,
+            vol.Required(
+                CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
+                default=limescale_default,
+            ): int,
+            vol.Required(
+                CONF_KEY_MAINTENANCE_LAST_FILTER,
+                default=MAINTENANCE_FILTER_THRESHOLD,
+            ): int,
+        }
+    )
+
+
+def _language_schema(default_lang: str) -> vol.Schema:
     return vol.Schema(
         {
             vol.Required(
@@ -80,9 +129,6 @@ def _language_schema(default_lang: str, default_show_special: bool) -> vol.Schem
                     mode=SelectSelectorMode.DROPDOWN,
                 )
             ),
-            vol.Required(
-                CONF_KEY_SHOW_SPECIAL_PROGRAMS, default=default_show_special
-            ): BooleanSelector(),
         }
     )
 
@@ -103,10 +149,37 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Branch based on current mode."""
+        is_washing_machine = self.config_entry.data.get(
+            CONF_KEY_IS_WASHING_MACHINE, False
+        )
         if self.config_entry.data.get(CONF_KEY_MODE) == MODE_FULL_CONTROL:
             if user_input is not None:
                 if user_input["next_step"] == "switch_to_read_only":
                     return await self.async_step_switch_to_read_only()
+                if user_input["next_step"] == "maintenance_settings":
+                    return await self.async_step_maintenance()
+                return await self.async_step_update_cloud_data()
+            next_step_options = ["update_cloud_data", "switch_to_read_only"]
+            if is_washing_machine:
+                next_step_options.append("maintenance_settings")
+            return self.async_show_form(
+                step_id="init",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required("next_step"): SelectSelector(
+                            SelectSelectorConfig(
+                                options=next_step_options,
+                                mode=SelectSelectorMode.LIST,
+                                translation_key="next_step",
+                            )
+                        )
+                    }
+                ),
+            )
+        if is_washing_machine:
+            if user_input is not None:
+                if user_input["next_step"] == "maintenance_settings":
+                    return await self.async_step_maintenance()
                 return await self.async_step_update_cloud_data()
             return self.async_show_form(
                 step_id="init",
@@ -114,7 +187,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     {
                         vol.Required("next_step"): SelectSelector(
                             SelectSelectorConfig(
-                                options=["update_cloud_data", "switch_to_read_only"],
+                                options=["update_cloud_data", "maintenance_settings"],
                                 mode=SelectSelectorMode.LIST,
                                 translation_key="next_step",
                             )
@@ -123,6 +196,116 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 ),
             )
         return await self.async_step_update_cloud_data()
+
+    async def async_step_maintenance(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask whether maintenance counters are enabled."""
+        if user_input is None:
+            current = self.config_entry.data.get(CONF_KEY_MAINTENANCE_ENABLED, False)
+            return self.async_show_form(
+                step_id="maintenance",
+                data_schema=vol.Schema(
+                    {vol.Required(CONF_KEY_MAINTENANCE_ENABLED, default=current): bool}
+                ),
+            )
+        self._pending_data = dict(self.config_entry.data)
+        self._pending_data[CONF_KEY_MAINTENANCE_ENABLED] = user_input[
+            CONF_KEY_MAINTENANCE_ENABLED
+        ]
+        if not user_input[CONF_KEY_MAINTENANCE_ENABLED]:
+            self.hass.config_entries.async_update_entry(
+                self.config_entry, data=self._pending_data
+            )
+            self.hass.async_create_task(
+                self.hass.config_entries.async_reload(self.config_entry.entry_id)
+            )
+            return self.async_create_entry(data={})
+        return await self.async_step_hardness()
+
+    async def async_step_hardness(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask for water hardness level."""
+        if user_input is None:
+            current = self.config_entry.data.get(CONF_KEY_WATER_HARDNESS, 2)
+            return self.async_show_form(
+                step_id="hardness",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(
+                            CONF_KEY_WATER_HARDNESS, default=current
+                        ): SelectSelector(
+                            SelectSelectorConfig(
+                                options=[
+                                    SelectOptionDict(value=str(i), label=label)
+                                    for i, label in enumerate(
+                                        MAINTENANCE_HARDNESS_LABELS
+                                    )
+                                ],
+                                mode=SelectSelectorMode.DROPDOWN,
+                                translation_key="water_hardness",
+                            )
+                        ),
+                    }
+                ),
+            )
+        self._pending_data[CONF_KEY_WATER_HARDNESS] = int(
+            user_input[CONF_KEY_WATER_HARDNESS]
+        )
+        return await self.async_step_maintenance_baselines()
+
+    async def async_step_maintenance_baselines(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask for the last-reset baseline cycle counts."""
+        hardness_index = self._pending_data.get(CONF_KEY_WATER_HARDNESS, 2)
+        if user_input is None:
+            selfclean_default = self.config_entry.data.get(
+                CONF_KEY_MAINTENANCE_LAST_SELFCLEAN, MAINTENANCE_SELFCLEAN_THRESHOLD
+            )
+            limescale_default = self.config_entry.data.get(
+                CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
+                MAINTENANCE_HARDNESS_THRESHOLDS[hardness_index],
+            )
+            filter_default = self.config_entry.data.get(
+                CONF_KEY_MAINTENANCE_LAST_FILTER, MAINTENANCE_FILTER_THRESHOLD
+            )
+            return self.async_show_form(
+                step_id="maintenance_baselines",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(
+                            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
+                            default=selfclean_default,
+                        ): int,
+                        vol.Required(
+                            CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
+                            default=limescale_default,
+                        ): int,
+                        vol.Required(
+                            CONF_KEY_MAINTENANCE_LAST_FILTER,
+                            default=filter_default,
+                        ): int,
+                    }
+                ),
+            )
+        self._pending_data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] = user_input[
+            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN
+        ]
+        self._pending_data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] = user_input[
+            CONF_KEY_MAINTENANCE_LAST_LIMESCALE
+        ]
+        self._pending_data[CONF_KEY_MAINTENANCE_LAST_FILTER] = user_input[
+            CONF_KEY_MAINTENANCE_LAST_FILTER
+        ]
+        self.hass.config_entries.async_update_entry(
+            self.config_entry, data=self._pending_data
+        )
+        self.hass.async_create_task(
+            self.hass.config_entries.async_reload(self.config_entry.entry_id)
+        )
+        return self.async_create_entry(data={})
 
     async def async_step_update_cloud_data(
         self, user_input: dict[str, Any] | None = None
@@ -180,20 +363,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 CONF_KEY_PROGRAM_LANGUAGE,
                 self.config_entry.data.get(CONF_KEY_PROGRAM_LANGUAGE, "en"),
             )
-            current_special = self._pending_data.get(
-                CONF_KEY_SHOW_SPECIAL_PROGRAMS,
-                self.config_entry.data.get(CONF_KEY_SHOW_SPECIAL_PROGRAMS, False),
-            )
             return self.async_show_form(
                 step_id="language",
-                data_schema=_language_schema(current_lang, current_special),
+                data_schema=_language_schema(current_lang),
             )
 
         self._pending_data[CONF_KEY_PROGRAM_LANGUAGE] = user_input[
             CONF_KEY_PROGRAM_LANGUAGE
-        ]
-        self._pending_data[CONF_KEY_SHOW_SPECIAL_PROGRAMS] = user_input[
-            CONF_KEY_SHOW_SPECIAL_PROGRAMS
         ]
         self.hass.config_entries.async_update_entry(
             self.config_entry, data=self._pending_data
@@ -345,6 +521,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
             _LOGGER.debug("Device type probe failed, assuming non-washing-machine")
             self._is_washing_machine = False
 
+        if self._is_washing_machine:
+            self._config_data[CONF_KEY_IS_WASHING_MACHINE] = True
+
         return await self.async_step_mode()
 
     async def async_step_mode(
@@ -366,10 +545,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
         if mode == MODE_FULL_CONTROL:
             return await self.async_step_cloud()
 
-        # Read-only: create entry immediately
-        return self.async_create_entry(
-            title=CONF_INTEGRATION_TITLE, data=self._config_data
-        )
+        # Read-only washing machine: ask about maintenance counters
+        return await self.async_step_maintenance()
 
     async def async_step_cloud(
         self, user_input: dict[str, Any] | None = None
@@ -425,24 +602,67 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
                 if self.hass.config.language in PROGRAM_LANGUAGES
                 else "en"
             )
-            default_special = self._config_data.get(
-                CONF_KEY_SHOW_SPECIAL_PROGRAMS, False
-            )
             return self.async_show_form(
                 step_id="language",
-                data_schema=_language_schema(default_lang, default_special),
+                data_schema=_language_schema(default_lang),
             )
 
         self._config_data[CONF_KEY_PROGRAM_LANGUAGE] = user_input[
             CONF_KEY_PROGRAM_LANGUAGE
         ]
-        self._config_data[CONF_KEY_SHOW_SPECIAL_PROGRAMS] = user_input[
-            CONF_KEY_SHOW_SPECIAL_PROGRAMS
-        ]
         if self._is_reconfigure:
             return self.async_update_reload_and_abort(
                 self._get_reconfigure_entry(), data=self._config_data
             )
+        return await self.async_step_maintenance()
+
+    async def async_step_maintenance(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask whether maintenance counters should be enabled."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="maintenance", data_schema=MAINTENANCE_ENABLE_SCHEMA
+            )
+        self._config_data[CONF_KEY_MAINTENANCE_ENABLED] = user_input[
+            CONF_KEY_MAINTENANCE_ENABLED
+        ]
+        if not user_input[CONF_KEY_MAINTENANCE_ENABLED]:
+            return self.async_create_entry(
+                title=CONF_INTEGRATION_TITLE, data=self._config_data
+            )
+        return await self.async_step_hardness()
+
+    async def async_step_hardness(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask for water hardness level."""
+        if user_input is None:
+            return self.async_show_form(step_id="hardness", data_schema=HARDNESS_SCHEMA)
+        self._config_data[CONF_KEY_WATER_HARDNESS] = int(
+            user_input[CONF_KEY_WATER_HARDNESS]
+        )
+        return await self.async_step_maintenance_baselines()
+
+    async def async_step_maintenance_baselines(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask for the last-reset baseline cycle counts."""
+        hardness_index = self._config_data.get(CONF_KEY_WATER_HARDNESS, 2)
+        if user_input is None:
+            return self.async_show_form(
+                step_id="maintenance_baselines",
+                data_schema=_baselines_schema(hardness_index),
+            )
+        self._config_data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] = user_input[
+            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN
+        ]
+        self._config_data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] = user_input[
+            CONF_KEY_MAINTENANCE_LAST_LIMESCALE
+        ]
+        self._config_data[CONF_KEY_MAINTENANCE_LAST_FILTER] = user_input[
+            CONF_KEY_MAINTENANCE_LAST_FILTER
+        ]
         return self.async_create_entry(
             title=CONF_INTEGRATION_TITLE, data=self._config_data
         )

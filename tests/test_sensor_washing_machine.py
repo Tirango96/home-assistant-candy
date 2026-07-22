@@ -15,6 +15,12 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClien
 
 from custom_components.candy import CONF_KEY_USE_ENCRYPTION
 from custom_components.candy.const import (
+    CONF_KEY_IS_WASHING_MACHINE,
+    CONF_KEY_MAINTENANCE_ENABLED,
+    CONF_KEY_MAINTENANCE_LAST_FILTER,
+    CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
+    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
+    CONF_KEY_WATER_HARDNESS,
     DATA_KEY_COORDINATOR,
     DATA_KEY_STATS_COORDINATOR,
     DOMAIN,
@@ -497,3 +503,144 @@ async def test_statistics_not_fetched_when_machine_is_off(
     state = hass.states.get("sensor.wash_total_cycles")
     assert state is not None
     assert state.state.isdigit()
+
+
+# ---------------------------------------------------------------------------
+# Maintenance counter sensor tests
+# ---------------------------------------------------------------------------
+
+_MAINTENANCE_CONFIG = {
+    CONF_KEY_IS_WASHING_MACHINE: True,
+    CONF_KEY_MAINTENANCE_ENABLED: True,
+    CONF_KEY_WATER_HARDNESS: 2,
+    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 0,
+    CONF_KEY_MAINTENANCE_LAST_LIMESCALE: 0,
+    CONF_KEY_MAINTENANCE_LAST_FILTER: 0,
+}
+
+
+async def test_maintenance_sensors_absent_when_disabled(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data={
+            CONF_KEY_IS_WASHING_MACHINE: True,
+            CONF_KEY_MAINTENANCE_ENABLED: False,
+        },
+    )
+
+    assert hass.states.get("sensor.auto_clean_reminder") is None
+    assert hass.states.get("sensor.limescale_cleaning") is None
+    assert hass.states.get("sensor.filter_clean") is None
+
+
+async def test_maintenance_sensors_absent_without_statistics(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        extra_config_data=_MAINTENANCE_CONFIG,
+    )
+
+    assert hass.states.get("sensor.auto_clean_reminder") is None
+    assert hass.states.get("sensor.limescale_cleaning") is None
+    assert hass.states.get("sensor.filter_clean") is None
+
+
+async def test_selfclean_sensor(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """total_cycles=40, last_selfclean=0, threshold=100 → 60 cycles remaining."""
+    await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data=_MAINTENANCE_CONFIG,
+    )
+
+    state = hass.states.get("sensor.auto_clean_reminder")
+    assert state
+    assert state.state == "60"
+    assert state.attributes["icon"] == "mdi:washing-machine"
+
+
+async def test_limescale_sensor_medium_hardness(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """total_cycles=40, last_limescale=0, hardness=2 (threshold=100) → 60 remaining."""
+    await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data=_MAINTENANCE_CONFIG,
+    )
+
+    state = hass.states.get("sensor.limescale_cleaning")
+    assert state
+    assert state.state == "60"
+    assert state.attributes["icon"] == "mdi:water-alert"
+
+
+async def test_limescale_sensor_very_hard_water(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """total_cycles=40, last_limescale=0, hardness=5 (threshold=85) → 45 remaining."""
+    config = dict(_MAINTENANCE_CONFIG)
+    config[CONF_KEY_WATER_HARDNESS] = 5
+
+    await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data=config,
+    )
+
+    state = hass.states.get("sensor.limescale_cleaning")
+    assert state
+    assert state.state == "45"
+
+
+async def test_filter_sensor(hass: HomeAssistant, aioclient_mock: AiohttpClientMocker):
+    """total_cycles=40, last_filter=0, threshold=100 → 60 remaining."""
+    await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data=_MAINTENANCE_CONFIG,
+    )
+
+    state = hass.states.get("sensor.filter_clean")
+    assert state
+    assert state.state == "60"
+    assert state.attributes["icon"] == "mdi:filter-check"
+
+
+async def test_maintenance_sensor_wraps_at_threshold(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """When total_cycles equals threshold exactly, sensor shows full threshold (100), not 0."""
+    # Statistics fixture gives 40 total; we use last_selfclean=40 so delta=0 mod 100 → wraps to 100
+    config = dict(_MAINTENANCE_CONFIG)
+    config[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] = 40
+
+    await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data=config,
+    )
+
+    state = hass.states.get("sensor.auto_clean_reminder")
+    assert state
+    assert state.state == "100"

@@ -28,6 +28,36 @@
           "password": "Password"
         }
       },
+      "language": {
+        "title": "Program language",
+        "description": "Choose which language to use for program names in the UI. This can differ from your Home Assistant language.",
+        "data": {
+          "program_language": "Language"
+        }
+      },
+      "maintenance": {
+        "title": "Maintenance counters",
+        "description": "The integration can track when your washing machine is due for auto-cleaning, limescale cleaning, and filter cleaning — based on total wash cycles, just like the Simply-Fi app.",
+        "data": {
+          "maintenance_enabled": "Enable maintenance counters"
+        }
+      },
+      "hardness": {
+        "title": "Water hardness",
+        "description": "Select your local water hardness. This determines how often the descale reminder fires.",
+        "data": {
+          "water_hardness": "Water hardness"
+        }
+      },
+      "maintenance_baselines": {
+        "title": "Current counter values",
+        "description": "Enter the current counter values from the Simply-Fi app if known. Leave at the default to start a fresh full cycle from now.",
+        "data": {
+          "maintenance_last_selfclean": "Auto-Clean Reminder counter",
+          "maintenance_last_limescale": "Limescale Cleaning counter",
+          "maintenance_last_filter": "Filter-Clean counter"
+        }
+      },
       "reconfigure": {
         "title": "Upgrade to Full Control",
         "description": "Enter your Simply-Fi / hOn credentials.\n\nCredentials are only used to download the machine data, then discarded. Your machine should be already registered with the Candy Simply-Fi service.",
@@ -71,11 +101,30 @@
         "title": "Program language",
         "description": "Choose which language to use for program names in the UI. This can differ from your Home Assistant language.",
         "data": {
-          "program_language": "Language",
-          "show_special_programs": "Show special programs"
-        },
-        "data_description": {
-          "show_special_programs": "Add NFC preset programs (e.g. Cashmere, Bathrobe) to the program selector"
+          "program_language": "Language"
+        }
+      },
+      "maintenance": {
+        "title": "Maintenance counters",
+        "description": "The integration can track when your washing machine is due for auto-cleaning, limescale cleaning, and filter cleaning — based on total wash cycles, just like the Simply-Fi app.",
+        "data": {
+          "maintenance_enabled": "Enable maintenance counters"
+        }
+      },
+      "hardness": {
+        "title": "Water hardness",
+        "description": "Select your local water hardness. This determines how often the descale reminder fires.",
+        "data": {
+          "water_hardness": "Water hardness"
+        }
+      },
+      "maintenance_baselines": {
+        "title": "Current counter values",
+        "description": "Enter the current counter values from the Simply-Fi app if known. Leave at the default to start a fresh full cycle from now.",
+        "data": {
+          "maintenance_last_selfclean": "Auto-Clean Reminder counter",
+          "maintenance_last_limescale": "Limescale Cleaning counter",
+          "maintenance_last_filter": "Filter-Clean counter"
         }
       }
     },
@@ -126,6 +175,15 @@
       },
       "wash_total_cycles": {
         "name": "Wash total cycles"
+      },
+      "wash_maint_selfclean": {
+        "name": "Auto-Clean Reminder"
+      },
+      "wash_maint_limescale": {
+        "name": "Limescale Cleaning"
+      },
+      "wash_maint_filter": {
+        "name": "Filter-Clean"
       },
       "wash_soil_level": {
         "name": "Wash stain level",
@@ -241,7 +299,18 @@
     "next_step": {
       "options": {
         "update_cloud_data": "Update cloud data",
-        "switch_to_read_only": "Switch to Read-Only"
+        "switch_to_read_only": "Switch to Read-Only",
+        "maintenance_settings": "Maintenance counter settings"
+      }
+    },
+    "water_hardness": {
+      "options": {
+        "0": "Very soft (0–3 °fH / 0–4 °dH)",
+        "1": "Soft (4–6 °fH / 4–8 °dH)",
+        "2": "Medium (7–11 °fH / 8–12 °dH)",
+        "3": "Moderately hard (12–16 °fH / 12–18 °dH)",
+        "4": "Hard (17–22 °fH / 18–30 °dH)",
+        "5": "Very hard (23–27 °fH / >30 °dH)"
       }
     }
   }

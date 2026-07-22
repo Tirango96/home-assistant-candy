@@ -42,10 +42,15 @@ from .client.model import (
 from .const import (
     CONF_KEY_DEVICE_MODEL,
     CONF_KEY_MAC_ADDRESS,
+    CONF_KEY_MAINTENANCE_ENABLED,
+    CONF_KEY_MAINTENANCE_LAST_FILTER,
+    CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
+    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
     CONF_KEY_MODE,
     CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
     CONF_KEY_SERIAL_NUMBER,
+    CONF_KEY_WATER_HARDNESS,
     DATA_KEY_COORDINATOR,
     DATA_KEY_STATS_COORDINATOR,
     DATA_KEY_WRITE_PENDING,
@@ -54,6 +59,9 @@ from .const import (
     DEVICE_NAME_TUMBLE_DRYER,
     DEVICE_NAME_WASHING_MACHINE,
     DOMAIN,
+    MAINTENANCE_FILTER_THRESHOLD,
+    MAINTENANCE_HARDNESS_THRESHOLDS,
+    MAINTENANCE_SELFCLEAN_THRESHOLD,
     MODE_FULL_CONTROL,
     SOIL_LABELS,
     SOIL_LABELS_REVERSE,
@@ -78,6 +86,9 @@ from .const import (
     UNIQUE_ID_WASH_ESTIMATED_DURATION,
     UNIQUE_ID_WASH_FILL_PERCENT,
     UNIQUE_ID_WASH_LIQUID_DETERGENT,
+    UNIQUE_ID_WASH_MAINT_FILTER,
+    UNIQUE_ID_WASH_MAINT_LIMESCALE,
+    UNIQUE_ID_WASH_MAINT_SELFCLEAN,
     UNIQUE_ID_WASH_MOTOR_FREQ,
     UNIQUE_ID_WASH_NTC_DRUM,
     UNIQUE_ID_WASH_NTC_WATER,
@@ -165,6 +176,16 @@ async def async_setup_entry(
         stats_coordinator = hass.data[DOMAIN][config_id].get(DATA_KEY_STATS_COORDINATOR)
         if stats_coordinator is not None:
             entities.append(CandyWashTotalCyclesSensor(stats_coordinator, config_entry))
+            if config_entry.data.get(CONF_KEY_MAINTENANCE_ENABLED):
+                entities.append(
+                    CandyWashMaintSelfcleanSensor(stats_coordinator, config_entry)
+                )
+                entities.append(
+                    CandyWashMaintLimescaleSensor(stats_coordinator, config_entry)
+                )
+                entities.append(
+                    CandyWashMaintFilterSensor(stats_coordinator, config_entry)
+                )
         async_add_entities(entities)
     elif isinstance(coordinator.data, TumbleDryerStatus):
         async_add_entities(
@@ -738,6 +759,147 @@ class CandyWashTotalCyclesSensor(CandyBaseSensor, RestoreSensor):
         return "mdi:counter"
 
 
+def _cycles_remaining(total: int, last_reset: int, threshold: int) -> int:
+    """Return cycles until next maintenance alert."""
+    remaining = threshold - ((total - last_reset) % threshold)
+    # When exactly at the boundary the modulo returns 0; map that back to a full threshold
+    return remaining if remaining != 0 else threshold
+
+
+class CandyWashMaintSelfcleanSensor(CandyBaseSensor, RestoreSensor):
+    """Cycles remaining until the next drum self-clean is due."""
+
+    _attr_translation_key = "wash_maint_selfclean"
+    _attr_name = "Auto-Clean Reminder"
+    _restored_value: int | None = None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_sensor_data()) is not None:
+            with contextlib.suppress(TypeError, ValueError):
+                self._restored_value = int(str(last.native_value))
+
+    @property
+    def available(self) -> bool:
+        return super().available or self._restored_value is not None
+
+    def device_name(self) -> str:
+        return DEVICE_NAME_WASHING_MACHINE
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_BATHROOM
+
+    @property
+    def entity_category(self) -> EntityCategory:
+        return EntityCategory.DIAGNOSTIC
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_MAINT_SELFCLEAN.format(self.config_id)
+
+    @property
+    def native_value(self) -> StateType:
+        if self.coordinator.data is not None:
+            total = cast(WashingMachineStatistics, self.coordinator.data).total_cycles
+            last = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_SELFCLEAN, 0)
+            return _cycles_remaining(total, last, MAINTENANCE_SELFCLEAN_THRESHOLD)
+        return self._restored_value
+
+    @property
+    def icon(self) -> str:
+        return "mdi:washing-machine"
+
+
+class CandyWashMaintLimescaleSensor(CandyBaseSensor, RestoreSensor):
+    """Cycles remaining until the next descale is due."""
+
+    _attr_translation_key = "wash_maint_limescale"
+    _attr_name = "Limescale Cleaning"
+    _restored_value: int | None = None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_sensor_data()) is not None:
+            with contextlib.suppress(TypeError, ValueError):
+                self._restored_value = int(str(last.native_value))
+
+    @property
+    def available(self) -> bool:
+        return super().available or self._restored_value is not None
+
+    def device_name(self) -> str:
+        return DEVICE_NAME_WASHING_MACHINE
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_BATHROOM
+
+    @property
+    def entity_category(self) -> EntityCategory:
+        return EntityCategory.DIAGNOSTIC
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_MAINT_LIMESCALE.format(self.config_id)
+
+    @property
+    def native_value(self) -> StateType:
+        if self.coordinator.data is not None:
+            total = cast(WashingMachineStatistics, self.coordinator.data).total_cycles
+            last = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_LIMESCALE, 0)
+            hardness = self.config_entry.data.get(CONF_KEY_WATER_HARDNESS, 2)
+            threshold = MAINTENANCE_HARDNESS_THRESHOLDS[hardness]
+            return _cycles_remaining(total, last, threshold)
+        return self._restored_value
+
+    @property
+    def icon(self) -> str:
+        return "mdi:water-alert"
+
+
+class CandyWashMaintFilterSensor(CandyBaseSensor, RestoreSensor):
+    """Cycles remaining until the next filter clean is due."""
+
+    _attr_translation_key = "wash_maint_filter"
+    _attr_name = "Filter-Clean"
+    _restored_value: int | None = None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_sensor_data()) is not None:
+            with contextlib.suppress(TypeError, ValueError):
+                self._restored_value = int(str(last.native_value))
+
+    @property
+    def available(self) -> bool:
+        return super().available or self._restored_value is not None
+
+    def device_name(self) -> str:
+        return DEVICE_NAME_WASHING_MACHINE
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_BATHROOM
+
+    @property
+    def entity_category(self) -> EntityCategory:
+        return EntityCategory.DIAGNOSTIC
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_MAINT_FILTER.format(self.config_id)
+
+    @property
+    def native_value(self) -> StateType:
+        if self.coordinator.data is not None:
+            total = cast(WashingMachineStatistics, self.coordinator.data).total_cycles
+            last = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_FILTER, 0)
+            return _cycles_remaining(total, last, MAINTENANCE_FILTER_THRESHOLD)
+        return self._restored_value
+
+    @property
+    def icon(self) -> str:
+        return "mdi:filter-check"
+
+
 class CandyWashEstimatedDurationSensor(CandyBaseSensor):
     """Estimated cycle duration based on the selected program and soil level."""
 
@@ -818,6 +980,13 @@ class CandyWashEstimatedDurationSensor(CandyBaseSensor):
             )
 
         if program is None:
+            if prog_state is not None and prog_state.state not in (
+                "unavailable",
+                "unknown",
+            ):
+                nfc_duration = prog_state.attributes.get("duration_minutes")
+                if nfc_duration and int(nfc_duration) > 0:
+                    return int(nfc_duration)
             return None
 
         if program.min_soil_level < program.max_soil_level:
