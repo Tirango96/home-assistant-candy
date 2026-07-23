@@ -105,6 +105,7 @@ from .const import (
     UNIQUE_ID_WASH_TOTAL_CYCLES,
     UNIQUE_ID_WASHING_MACHINE,
 )
+from .helpers import cycles_remaining
 
 
 async def async_setup_entry(
@@ -759,18 +760,12 @@ class CandyWashTotalCyclesSensor(CandyBaseSensor, RestoreSensor):
         return "mdi:counter"
 
 
-def _cycles_remaining(total: int, last_reset: int, threshold: int) -> int:
-    """Return cycles until next maintenance alert."""
-    remaining = threshold - ((total - last_reset) % threshold)
-    # When exactly at the boundary the modulo returns 0; map that back to a full threshold
-    return remaining if remaining != 0 else threshold
-
-
 class CandyWashMaintSelfcleanSensor(CandyBaseSensor, RestoreSensor):
     """Cycles remaining until the next drum self-clean is due."""
 
     _attr_translation_key = "wash_maint_selfclean"
     _attr_name = "Auto-Clean Reminder"
+    _attr_state_class = SensorStateClass.MEASUREMENT
     _restored_value: int | None = None
 
     async def async_added_to_hass(self) -> None:
@@ -802,7 +797,7 @@ class CandyWashMaintSelfcleanSensor(CandyBaseSensor, RestoreSensor):
         if self.coordinator.data is not None:
             total = cast(WashingMachineStatistics, self.coordinator.data).total_cycles
             last = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_SELFCLEAN, 0)
-            return _cycles_remaining(total, last, MAINTENANCE_SELFCLEAN_THRESHOLD)
+            return cycles_remaining(total, last, MAINTENANCE_SELFCLEAN_THRESHOLD)
         return self._restored_value
 
     @property
@@ -815,6 +810,7 @@ class CandyWashMaintLimescaleSensor(CandyBaseSensor, RestoreSensor):
 
     _attr_translation_key = "wash_maint_limescale"
     _attr_name = "Limescale Cleaning"
+    _attr_state_class = SensorStateClass.MEASUREMENT
     _restored_value: int | None = None
 
     async def async_added_to_hass(self) -> None:
@@ -848,7 +844,7 @@ class CandyWashMaintLimescaleSensor(CandyBaseSensor, RestoreSensor):
             last = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_LIMESCALE, 0)
             hardness = self.config_entry.data.get(CONF_KEY_WATER_HARDNESS, 2)
             threshold = MAINTENANCE_HARDNESS_THRESHOLDS[hardness]
-            return _cycles_remaining(total, last, threshold)
+            return cycles_remaining(total, last, threshold)
         return self._restored_value
 
     @property
@@ -861,6 +857,7 @@ class CandyWashMaintFilterSensor(CandyBaseSensor, RestoreSensor):
 
     _attr_translation_key = "wash_maint_filter"
     _attr_name = "Filter-Clean"
+    _attr_state_class = SensorStateClass.MEASUREMENT
     _restored_value: int | None = None
 
     async def async_added_to_hass(self) -> None:
@@ -892,7 +889,7 @@ class CandyWashMaintFilterSensor(CandyBaseSensor, RestoreSensor):
         if self.coordinator.data is not None:
             total = cast(WashingMachineStatistics, self.coordinator.data).total_cycles
             last = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_FILTER, 0)
-            return _cycles_remaining(total, last, MAINTENANCE_FILTER_THRESHOLD)
+            return cycles_remaining(total, last, MAINTENANCE_FILTER_THRESHOLD)
         return self._restored_value
 
     @property

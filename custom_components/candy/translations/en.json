@@ -59,19 +59,11 @@
       },
       "maintenance_baselines": {
         "title": "Current counter values",
-        "description": "Enter the current counter values from the Simply-Fi app if known. Leave at the default to start a fresh full cycle from now.",
+        "description": "Enter the remaining cycles shown in the Simply-Fi app for each maintenance item. Leave at the default to start a fresh full cycle from now.",
         "data": {
-          "maintenance_last_selfclean": "Auto-Clean Reminder counter",
-          "maintenance_last_limescale": "Limescale Cleaning counter",
-          "maintenance_last_filter": "Filter-Clean counter"
-        }
-      },
-      "reconfigure": {
-        "title": "Upgrade to Full Control",
-        "description": "Enter your Simply-Fi / hOn credentials.\n\nCredentials are only used to download the machine data, then discarded. Your machine should be already registered with the Candy Simply-Fi service.",
-        "data": {
-          "email": "Email",
-          "password": "Password"
+          "maintenance_last_selfclean": "Auto-Clean: remaining cycles",
+          "maintenance_last_limescale": "Limescale Cleaning: remaining cycles",
+          "maintenance_last_filter": "Filter-Clean: remaining cycles"
         }
       }
     }
@@ -120,11 +112,11 @@
       },
       "maintenance_baselines": {
         "title": "Current counter values",
-        "description": "Enter the current counter values from the Simply-Fi app if known. Leave at the default to start a fresh full cycle from now.",
+        "description": "Enter the remaining cycles shown in the Simply-Fi app for each maintenance item. Leave at the default to start a fresh full cycle from now.",
         "data": {
-          "maintenance_last_selfclean": "Auto-Clean Reminder counter",
-          "maintenance_last_limescale": "Limescale Cleaning counter",
-          "maintenance_last_filter": "Filter-Clean counter"
+          "maintenance_last_selfclean": "Auto-Clean: remaining cycles",
+          "maintenance_last_limescale": "Limescale Cleaning: remaining cycles",
+          "maintenance_last_filter": "Filter-Clean: remaining cycles"
         }
       }
     },

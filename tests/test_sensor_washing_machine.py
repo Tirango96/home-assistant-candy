@@ -625,11 +625,32 @@ async def test_filter_sensor(hass: HomeAssistant, aioclient_mock: AiohttpClientM
     assert state.attributes["icon"] == "mdi:filter-check"
 
 
-async def test_maintenance_sensor_wraps_at_threshold(
+async def test_maintenance_sensor_shows_zero_when_due(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    """When total_cycles equals threshold exactly, sensor shows full threshold (100), not 0."""
-    # Statistics fixture gives 40 total; we use last_selfclean=40 so delta=0 mod 100 → wraps to 100
+    """When elapsed == threshold (multiple), sensor shows 0 (due now)."""
+    # total_cycles=40, threshold=100; last_selfclean=-60 → elapsed=100 → due
+    config = dict(_MAINTENANCE_CONFIG)
+    config[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] = -60
+
+    await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data=config,
+    )
+
+    state = hass.states.get("sensor.auto_clean_reminder")
+    assert state
+    assert state.state == "0"
+
+
+async def test_maintenance_sensor_full_threshold_when_just_reset(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """When last_reset == total_cycles (just reset), sensor shows the full threshold."""
+    # total_cycles=40, last_selfclean=40 → elapsed=0 → full threshold=100
     config = dict(_MAINTENANCE_CONFIG)
     config[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] = 40
 

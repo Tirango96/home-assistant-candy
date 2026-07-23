@@ -7,10 +7,13 @@ import copy
 from datetime import timedelta
 import json
 import logging
-from typing import Union
+from typing import Any, Union, cast
 
 import aiohttp
 import async_timeout
+from homeassistant.components.persistent_notification import (
+    async_create as pn_async_create,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
@@ -33,11 +36,22 @@ from .client.model import (
     WashProgramState,
 )
 from .const import (
+    CONF_KEY_MAINTENANCE_ENABLED,
+    CONF_KEY_MAINTENANCE_LAST_FILTER,
+    CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
+    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
     CONF_KEY_USE_ENCRYPTION,
+    CONF_KEY_WATER_HARDNESS,
     DATA_KEY_CLIENT,
     DATA_KEY_COORDINATOR,
     DATA_KEY_STATS_COORDINATOR,
     DOMAIN,
+    MAINTENANCE_FILTER_THRESHOLD,
+    MAINTENANCE_HARDNESS_THRESHOLDS,
+    MAINTENANCE_SELFCLEAN_THRESHOLD,
+    NOTIF_ID_MAINT_FILTER,
+    NOTIF_ID_MAINT_LIMESCALE,
+    NOTIF_ID_MAINT_SELFCLEAN,
     PLATFORMS,
     UNIQUE_ID_DISHWASHER,
     UNIQUE_ID_OVEN,
@@ -45,6 +59,7 @@ from .const import (
     UNIQUE_ID_WASH_TOTAL_CYCLES,
     UNIQUE_ID_WASHING_MACHINE,
 )
+from .helpers import cycles_remaining
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -346,9 +361,59 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
                 stats_coordinator
             )
 
+        if config_entry.data.get(CONF_KEY_MAINTENANCE_ENABLED):
+            _register_maintenance_notifications(hass, config_entry, stats_coordinator)
+
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
     return True
+
+
+def _register_maintenance_notifications(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    stats_coordinator: DataUpdateCoordinator[Any],
+) -> None:
+    entry_id = config_entry.entry_id
+    hardness = config_entry.data.get(CONF_KEY_WATER_HARDNESS, 2)
+    limescale_threshold = MAINTENANCE_HARDNESS_THRESHOLDS[hardness]
+
+    _MAINTENANCE_ITEMS = [
+        (
+            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
+            MAINTENANCE_SELFCLEAN_THRESHOLD,
+            NOTIF_ID_MAINT_SELFCLEAN.format(entry_id),
+            "Self-cleaning",
+            "We suggest you start the Self-cleaning cycle to keep the performance of your appliance AT optimal levels.",
+        ),
+        (
+            CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
+            limescale_threshold,
+            NOTIF_ID_MAINT_LIMESCALE.format(entry_id),
+            "Limescale cleaning",
+            "To keep your washing machine always clean and to remove any deposits, we suggest you start the Limescale Removal cycle.",
+        ),
+        (
+            CONF_KEY_MAINTENANCE_LAST_FILTER,
+            MAINTENANCE_FILTER_THRESHOLD,
+            NOTIF_ID_MAINT_FILTER.format(entry_id),
+            "Filter cleaning",
+            "To always guarantee the best performance, we suggest you clean the filter",
+        ),
+    ]
+
+    def _on_stats_update() -> None:
+        stats: WashingMachineStatistics | None = cast(
+            WashingMachineStatistics | None, stats_coordinator.data
+        )
+        if stats is None:
+            return
+        for last_key, threshold, notif_id, title, message in _MAINTENANCE_ITEMS:
+            last = config_entry.data.get(last_key, 0)
+            if cycles_remaining(stats.total_cycles, last, threshold) == 0:
+                pn_async_create(hass, message, title=title, notification_id=notif_id)
+
+    stats_coordinator.async_add_listener(_on_stats_update)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

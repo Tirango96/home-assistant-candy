@@ -38,6 +38,7 @@ from .const import (
     CONF_KEY_SERIAL_NUMBER,
     CONF_KEY_USE_ENCRYPTION,
     CONF_KEY_WATER_HARDNESS,
+    DATA_KEY_STATS_COORDINATOR,
     DOMAIN,
     MAINTENANCE_FILTER_THRESHOLD,
     MAINTENANCE_HARDNESS_LABELS,
@@ -47,6 +48,7 @@ from .const import (
     MODE_READ_ONLY,
     PROGRAM_LANGUAGES,
 )
+from .helpers import cycles_remaining
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -95,21 +97,47 @@ HARDNESS_SCHEMA = vol.Schema(
 )
 
 
-def _baselines_schema(hardness_index: int) -> vol.Schema:
-    limescale_default = MAINTENANCE_HARDNESS_THRESHOLDS[hardness_index]
+def _remaining_to_last_reset(remaining: int, total: int, threshold: int) -> int:
+    """Convert user-visible remaining cycles into the last_reset value for storage.
+
+    last_reset is total_cycles at the time of the last maintenance action.
+    remaining = threshold - (total - last_reset), so last_reset = total - (threshold - remaining).
+    """
+    return max(0, total - (threshold - remaining))
+
+
+def _baselines_schema(hardness_index: int, total_cycles: int) -> vol.Schema:
+    """Build schema for remaining-cycles fields with current remaining as defaults."""
+    limescale_threshold = MAINTENANCE_HARDNESS_THRESHOLDS[hardness_index]
+    selfclean_remaining = (
+        MAINTENANCE_SELFCLEAN_THRESHOLD
+        - (total_cycles % MAINTENANCE_SELFCLEAN_THRESHOLD)
+        if total_cycles
+        else MAINTENANCE_SELFCLEAN_THRESHOLD
+    )
+    limescale_remaining = (
+        limescale_threshold - (total_cycles % limescale_threshold)
+        if total_cycles
+        else limescale_threshold
+    )
+    filter_remaining = (
+        MAINTENANCE_FILTER_THRESHOLD - (total_cycles % MAINTENANCE_FILTER_THRESHOLD)
+        if total_cycles
+        else MAINTENANCE_FILTER_THRESHOLD
+    )
     return vol.Schema(
         {
             vol.Required(
                 CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
-                default=MAINTENANCE_SELFCLEAN_THRESHOLD,
+                default=selfclean_remaining,
             ): int,
             vol.Required(
                 CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
-                default=limescale_default,
+                default=limescale_remaining,
             ): int,
             vol.Required(
                 CONF_KEY_MAINTENANCE_LAST_FILTER,
-                default=MAINTENANCE_FILTER_THRESHOLD,
+                default=filter_remaining,
             ): int,
         }
     )
@@ -149,39 +177,41 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Branch based on current mode."""
+        mode = self.config_entry.data.get(CONF_KEY_MODE)
         is_washing_machine = self.config_entry.data.get(
             CONF_KEY_IS_WASHING_MACHINE, False
         )
+
+        if mode == MODE_FULL_CONTROL:
+            if user_input is not None:
+                if user_input["next_step"] == "switch_to_read_only":
+                    return await self.async_step_switch_to_read_only()
+                if user_input["next_step"] == "maintenance_settings":
+                    return await self.async_step_maintenance()
+                return await self.async_step_update_cloud_data()
+            return self.async_show_form(
+                step_id="init",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required("next_step"): SelectSelector(
+                            SelectSelectorConfig(
+                                options=[
+                                    "update_cloud_data",
+                                    "switch_to_read_only",
+                                    "maintenance_settings",
+                                ],
+                                mode=SelectSelectorMode.LIST,
+                                translation_key="next_step",
+                            )
+                        )
+                    }
+                ),
+            )
+
         if not is_washing_machine:
             return self.async_create_entry(data={})
 
-        if self.config_entry.data.get(CONF_KEY_MODE) != MODE_FULL_CONTROL:
-            return await self.async_step_maintenance()
-
-        if user_input is not None:
-            if user_input["next_step"] == "switch_to_read_only":
-                return await self.async_step_switch_to_read_only()
-            if user_input["next_step"] == "maintenance_settings":
-                return await self.async_step_maintenance()
-            return await self.async_step_update_cloud_data()
-        return self.async_show_form(
-            step_id="init",
-            data_schema=vol.Schema(
-                {
-                    vol.Required("next_step"): SelectSelector(
-                        SelectSelectorConfig(
-                            options=[
-                                "update_cloud_data",
-                                "switch_to_read_only",
-                                "maintenance_settings",
-                            ],
-                            mode=SelectSelectorMode.LIST,
-                            translation_key="next_step",
-                        )
-                    )
-                }
-            ),
-        )
+        return await self.async_step_maintenance()
 
     async def async_step_maintenance(
         self, user_input: dict[str, Any] | None = None
@@ -244,47 +274,75 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_maintenance_baselines(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Ask for the last-reset baseline cycle counts."""
+        """Ask for remaining cycles (what the app shows) for each maintenance item."""
         hardness_index = self._pending_data.get(CONF_KEY_WATER_HARDNESS, 2)
+        limescale_threshold = MAINTENANCE_HARDNESS_THRESHOLDS[hardness_index]
+
+        # Read current total_cycles from the live stats coordinator if available
+        total_cycles: int = 0
+        stats_data = (
+            self.hass.data.get(DOMAIN, {})
+            .get(self.config_entry.entry_id, {})
+            .get(DATA_KEY_STATS_COORDINATOR)
+        )
+        if stats_data is not None and stats_data.data is not None:
+            total_cycles = stats_data.data.total_cycles
+
         if user_input is None:
-            selfclean_default = self.config_entry.data.get(
-                CONF_KEY_MAINTENANCE_LAST_SELFCLEAN, MAINTENANCE_SELFCLEAN_THRESHOLD
+            # Show the current remaining values as defaults, derived from stored last_reset
+            last_sc = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_SELFCLEAN, 0)
+            last_ls = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_LIMESCALE, 0)
+            last_ft = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_FILTER, 0)
+            sc_default = (
+                cycles_remaining(total_cycles, last_sc, MAINTENANCE_SELFCLEAN_THRESHOLD)
+                if total_cycles
+                else MAINTENANCE_SELFCLEAN_THRESHOLD
             )
-            limescale_default = self.config_entry.data.get(
-                CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
-                MAINTENANCE_HARDNESS_THRESHOLDS[hardness_index],
+            ls_default = (
+                cycles_remaining(total_cycles, last_ls, limescale_threshold)
+                if total_cycles
+                else limescale_threshold
             )
-            filter_default = self.config_entry.data.get(
-                CONF_KEY_MAINTENANCE_LAST_FILTER, MAINTENANCE_FILTER_THRESHOLD
+            ft_default = (
+                cycles_remaining(total_cycles, last_ft, MAINTENANCE_FILTER_THRESHOLD)
+                if total_cycles
+                else MAINTENANCE_FILTER_THRESHOLD
             )
             return self.async_show_form(
                 step_id="maintenance_baselines",
                 data_schema=vol.Schema(
                     {
                         vol.Required(
-                            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
-                            default=selfclean_default,
+                            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN, default=sc_default
                         ): int,
                         vol.Required(
-                            CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
-                            default=limescale_default,
+                            CONF_KEY_MAINTENANCE_LAST_LIMESCALE, default=ls_default
                         ): int,
                         vol.Required(
-                            CONF_KEY_MAINTENANCE_LAST_FILTER,
-                            default=filter_default,
+                            CONF_KEY_MAINTENANCE_LAST_FILTER, default=ft_default
                         ): int,
                     }
                 ),
             )
-        self._pending_data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] = user_input[
-            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN
-        ]
-        self._pending_data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] = user_input[
-            CONF_KEY_MAINTENANCE_LAST_LIMESCALE
-        ]
-        self._pending_data[CONF_KEY_MAINTENANCE_LAST_FILTER] = user_input[
-            CONF_KEY_MAINTENANCE_LAST_FILTER
-        ]
+        self._pending_data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] = (
+            _remaining_to_last_reset(
+                user_input[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN],
+                total_cycles,
+                MAINTENANCE_SELFCLEAN_THRESHOLD,
+            )
+        )
+        self._pending_data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] = (
+            _remaining_to_last_reset(
+                user_input[CONF_KEY_MAINTENANCE_LAST_LIMESCALE],
+                total_cycles,
+                limescale_threshold,
+            )
+        )
+        self._pending_data[CONF_KEY_MAINTENANCE_LAST_FILTER] = _remaining_to_last_reset(
+            user_input[CONF_KEY_MAINTENANCE_LAST_FILTER],
+            total_cycles,
+            MAINTENANCE_FILTER_THRESHOLD,
+        )
         self.hass.config_entries.async_update_entry(
             self.config_entry, data=self._pending_data
         )
@@ -403,8 +461,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
         self._discovered: dict[str, str] = {}  # ip -> device type label
         self._ip_address: str = ""
         self._config_data: dict[str, Any] = {}  # accumulated config entry data
-        self._is_reconfigure: bool = False
         self._is_washing_machine: bool = False
+        self._total_cycles: int = (
+            0  # fetched once after device probe; used for baselines
+        )
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -503,6 +563,16 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
             async with async_timeout.timeout(10):
                 status = await client.status()
             self._is_washing_machine = isinstance(status, WashingMachineStatus)
+            if self._is_washing_machine:
+                try:
+                    async with async_timeout.timeout(20):
+                        stats = await client.statistics_with_retry()
+                    self._total_cycles = stats.total_cycles
+                except Exception:  # pylint: disable=broad-except
+                    _LOGGER.debug(
+                        "Statistics fetch failed during setup, defaulting total_cycles to 0"
+                    )
+                    self._total_cycles = 0
         except Exception:  # pylint: disable=broad-except
             _LOGGER.debug("Device type probe failed, assuming non-washing-machine")
             self._is_washing_machine = False
@@ -596,10 +666,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
         self._config_data[CONF_KEY_PROGRAM_LANGUAGE] = user_input[
             CONF_KEY_PROGRAM_LANGUAGE
         ]
-        if self._is_reconfigure:
-            return self.async_update_reload_and_abort(
-                self._get_reconfigure_entry(), data=self._config_data
-            )
         return await self.async_step_maintenance()
 
     async def async_step_maintenance(
@@ -633,74 +699,33 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
     async def async_step_maintenance_baselines(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Ask for the last-reset baseline cycle counts."""
+        """Ask for remaining cycles (what the app shows) for each maintenance item."""
         hardness_index = self._config_data.get(CONF_KEY_WATER_HARDNESS, 2)
         if user_input is None:
             return self.async_show_form(
                 step_id="maintenance_baselines",
-                data_schema=_baselines_schema(hardness_index),
+                data_schema=_baselines_schema(hardness_index, self._total_cycles),
             )
-        self._config_data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] = user_input[
-            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN
-        ]
-        self._config_data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] = user_input[
-            CONF_KEY_MAINTENANCE_LAST_LIMESCALE
-        ]
-        self._config_data[CONF_KEY_MAINTENANCE_LAST_FILTER] = user_input[
-            CONF_KEY_MAINTENANCE_LAST_FILTER
-        ]
+        limescale_threshold = MAINTENANCE_HARDNESS_THRESHOLDS[hardness_index]
+        self._config_data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] = (
+            _remaining_to_last_reset(
+                user_input[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN],
+                self._total_cycles,
+                MAINTENANCE_SELFCLEAN_THRESHOLD,
+            )
+        )
+        self._config_data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] = (
+            _remaining_to_last_reset(
+                user_input[CONF_KEY_MAINTENANCE_LAST_LIMESCALE],
+                self._total_cycles,
+                limescale_threshold,
+            )
+        )
+        self._config_data[CONF_KEY_MAINTENANCE_LAST_FILTER] = _remaining_to_last_reset(
+            user_input[CONF_KEY_MAINTENANCE_LAST_FILTER],
+            self._total_cycles,
+            MAINTENANCE_FILTER_THRESHOLD,
+        )
         return self.async_create_entry(
             title=CONF_INTEGRATION_TITLE, data=self._config_data
         )
-
-    async def async_step_reconfigure(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Allow upgrading Read-Only → Full Control without reinstalling.
-
-        Shows the cloud credentials form directly, since IP + encryption are already
-        stored in the config entry.
-        """
-        if user_input is None:
-            return self.async_show_form(step_id="reconfigure", data_schema=CLOUD_SCHEMA)
-
-        entry = self._get_reconfigure_entry()
-        self._ip_address = entry.data[CONF_IP_ADDRESS]
-        self._config_data = dict(entry.data)
-        self._is_reconfigure = True
-
-        errors: dict[str, str] = {}
-        try:
-            async with async_timeout.timeout(30):
-                appliance = await fetch_appliance_data(
-                    session=async_get_clientsession(self.hass),
-                    email=user_input["email"],
-                    password=user_input["password"],
-                    device_ip=self._ip_address,
-                )
-        except SimplyFiCloudError as err:
-            _LOGGER.warning("Simply-Fi cloud fetch failed during reconfigure: %s", err)
-            errors["base"] = "cloud_auth"
-            return self.async_show_form(
-                step_id="reconfigure", data_schema=CLOUD_SCHEMA, errors=errors
-            )
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.exception("Unexpected error during reconfigure cloud fetch")
-            errors["base"] = "cloud_auth"
-            return self.async_show_form(
-                step_id="reconfigure", data_schema=CLOUD_SCHEMA, errors=errors
-            )
-
-        self._config_data[CONF_KEY_MODE] = MODE_FULL_CONTROL
-        if appliance.encryption_key:
-            self._config_data[CONF_KEY_USE_ENCRYPTION] = True
-            self._config_data[CONF_PASSWORD] = appliance.encryption_key
-        if appliance.mac_address:
-            self._config_data[CONF_KEY_MAC_ADDRESS] = appliance.mac_address
-        if appliance.appliance_model:
-            self._config_data[CONF_KEY_DEVICE_MODEL] = appliance.appliance_model
-        if appliance.serial_number:
-            self._config_data[CONF_KEY_SERIAL_NUMBER] = appliance.serial_number
-        self._config_data[CONF_KEY_PROGRAMS] = appliance.programs
-
-        return await self.async_step_language()

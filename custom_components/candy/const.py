@@ -93,6 +93,10 @@ UNIQUE_ID_WASH_MAINT_SELFCLEAN = "{0}-wash_maint_selfclean"
 UNIQUE_ID_WASH_MAINT_LIMESCALE = "{0}-wash_maint_limescale"
 UNIQUE_ID_WASH_MAINT_FILTER = "{0}-wash_maint_filter"
 
+NOTIF_ID_MAINT_SELFCLEAN = "candy_{0}_maint_selfclean"
+NOTIF_ID_MAINT_LIMESCALE = "candy_{0}_maint_limescale"
+NOTIF_ID_MAINT_FILTER = "candy_{0}_maint_filter"
+
 UNIQUE_ID_WASH_PROGRAM_SELECT = "{0}-wash_program_select"
 UNIQUE_ID_WASH_TEMP_SELECT = "{0}-wash_temp_select"
 UNIQUE_ID_WASH_SPIN_SELECT = "{0}-wash_spin_select"

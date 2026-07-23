@@ -14,6 +14,7 @@ from custom_components.candy.client.model import (
     DryerProgramState,
     MachineState,
     TumbleDryerStatus,
+    WashingMachineStatistics,
     WashingMachineStatus,
     WashProgramState,
 )
@@ -79,6 +80,17 @@ def _device_probe_washing_machine():  # noqa: PT004
         "custom_components.candy.config_flow.CandyClient.status",
         new_callable=AsyncMock,
         return_value=_IDLE_WASHING_MACHINE,
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def _statistics_probe():  # noqa: PT004
+    """Return total_cycles=40 during config flow setup for all tests."""
+    with patch(
+        "custom_components.candy.config_flow.CandyClient.statistics_with_retry",
+        new_callable=AsyncMock,
+        return_value=WashingMachineStatistics(total_cycles=40),
     ):
         yield
 
@@ -537,85 +549,6 @@ async def test_full_control_cloud_error(
 
 
 # ---------------------------------------------------------------------------
-# Reconfigure flow (Read-Only → Full Control upgrade)
-# ---------------------------------------------------------------------------
-
-
-async def test_reconfigure_to_full_control(hass, mock_cloud_success):
-    """Reconfigure flow upgrades a Read-Only entry to Full Control."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        unique_id="reconfigure-test",
-        data={
-            CONF_IP_ADDRESS: "192.168.0.66",
-            CONF_KEY_USE_ENCRYPTION: False,
-            CONF_PASSWORD: "",
-            CONF_KEY_MODE: MODE_READ_ONLY,
-        },
-    )
-    entry.add_to_hass(hass)
-
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={
-            "source": config_entries.SOURCE_RECONFIGURE,
-            "entry_id": entry.entry_id,
-        },
-    )
-    assert result["type"] == data_entry_flow.FlowResultType.FORM
-    assert result["step_id"] == "reconfigure"
-
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], user_input={"email": "user@example.com", "password": "pass"}
-    )
-
-    assert result["type"] == data_entry_flow.FlowResultType.FORM
-    assert result["step_id"] == "language"
-
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], user_input={CONF_KEY_PROGRAM_LANGUAGE: "it"}
-    )
-
-    assert result["type"] == data_entry_flow.FlowResultType.ABORT
-    assert result["reason"] == "reconfigure_successful"
-
-    updated = hass.config_entries.async_get_entry(entry.entry_id)
-    assert updated.data[CONF_KEY_MODE] == MODE_FULL_CONTROL
-    assert updated.data[CONF_KEY_DEVICE_MODEL] == "RO41274DWMSE/1-S"
-    assert len(updated.data[CONF_KEY_PROGRAMS]) == 1
-    assert updated.data[CONF_KEY_PROGRAM_LANGUAGE] == "it"
-
-
-async def test_reconfigure_cloud_error(hass, mock_cloud_error):
-    """Reconfigure flow shows cloud_auth error when cloud fetch fails."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        unique_id="reconfigure-test-err",
-        data={
-            CONF_IP_ADDRESS: "192.168.0.66",
-            CONF_KEY_USE_ENCRYPTION: False,
-            CONF_PASSWORD: "",
-            CONF_KEY_MODE: MODE_READ_ONLY,
-        },
-    )
-    entry.add_to_hass(hass)
-
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={
-            "source": config_entries.SOURCE_RECONFIGURE,
-            "entry_id": entry.entry_id,
-        },
-    )
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], user_input={"email": "bad@example.com", "password": "wrong"}
-    )
-
-    assert result["type"] == data_entry_flow.FlowResultType.FORM
-    assert result["step_id"] == "reconfigure"
-    assert result["errors"] == {"base": "cloud_auth"}
-
-
 # ---------------------------------------------------------------------------
 # Maintenance counter flow tests
 # ---------------------------------------------------------------------------
@@ -685,7 +618,7 @@ async def test_read_only_with_maintenance_disabled(
 async def test_read_only_with_maintenance_enabled(
     hass, no_discovery, detect_no_encryption
 ):  # pylint: disable=unused-argument
-    """Full maintenance flow stores hardness and baselines in config entry."""
+    """Maintenance flow: user enters remaining cycles, stored as last_reset = total - (threshold - remaining)."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
@@ -707,12 +640,14 @@ async def test_read_only_with_maintenance_enabled(
 
     assert result["step_id"] == "maintenance_baselines"
 
+    # User enters remaining=17 for all (total_cycles=40 from mocked stats)
+    # last_reset = max(0, 40 - (100 - 17)) = max(0, -43) = 0
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
-            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 100,
-            CONF_KEY_MAINTENANCE_LAST_LIMESCALE: 100,
-            CONF_KEY_MAINTENANCE_LAST_FILTER: 100,
+            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 17,
+            CONF_KEY_MAINTENANCE_LAST_LIMESCALE: 57,
+            CONF_KEY_MAINTENANCE_LAST_FILTER: 17,
         },
     )
 
@@ -720,16 +655,20 @@ async def test_read_only_with_maintenance_enabled(
     data = result["data"]
     assert data[CONF_KEY_MAINTENANCE_ENABLED] is True
     assert data[CONF_KEY_WATER_HARDNESS] == 2
-    assert data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] == 100
-    assert data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] == 100
-    assert data[CONF_KEY_MAINTENANCE_LAST_FILTER] == 100
+    # last_reset = max(0, total - (threshold - remaining))
+    # selfclean:  max(0, 40 - (100 - 17)) = max(0, -43) = 0
+    # limescale:  max(0, 40 - (100 - 57)) = max(0, -3)  = 0
+    # filter:     max(0, 40 - (100 - 17)) = max(0, -43) = 0
+    assert data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] == 0
+    assert data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] == 0
+    assert data[CONF_KEY_MAINTENANCE_LAST_FILTER] == 0
     assert data[CONF_KEY_IS_WASHING_MACHINE] is True
 
 
 async def test_options_flow_maintenance_settings(
     hass, no_discovery, detect_no_encryption
 ):  # pylint: disable=unused-argument
-    """Options flow maintenance_settings branch updates hardness in config entry."""
+    """Options flow maintenance_settings: remaining values are converted to last_reset on save."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         unique_id="opts-maint-test",
@@ -741,9 +680,9 @@ async def test_options_flow_maintenance_settings(
             CONF_KEY_IS_WASHING_MACHINE: True,
             CONF_KEY_MAINTENANCE_ENABLED: True,
             CONF_KEY_WATER_HARDNESS: 2,
-            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 100,
-            CONF_KEY_MAINTENANCE_LAST_LIMESCALE: 100,
-            CONF_KEY_MAINTENANCE_LAST_FILTER: 100,
+            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 0,
+            CONF_KEY_MAINTENANCE_LAST_LIMESCALE: 0,
+            CONF_KEY_MAINTENANCE_LAST_FILTER: 0,
         },
     )
     entry.add_to_hass(hass)
@@ -764,6 +703,8 @@ async def test_options_flow_maintenance_settings(
 
     assert result["step_id"] == "maintenance_baselines"
 
+    # stats coordinator not available in this test (setup bypassed) → total_cycles=0
+    # last_reset = max(0, 0 - (threshold - remaining)) = 0 for any positive remaining
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
         user_input={
@@ -776,9 +717,9 @@ async def test_options_flow_maintenance_settings(
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     updated = hass.config_entries.async_get_entry(entry.entry_id)
     assert updated.data[CONF_KEY_WATER_HARDNESS] == 5
-    assert updated.data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] == 50
-    assert updated.data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] == 40
-    assert updated.data[CONF_KEY_MAINTENANCE_LAST_FILTER] == 60
+    assert updated.data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] == 0
+    assert updated.data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] == 0
+    assert updated.data[CONF_KEY_MAINTENANCE_LAST_FILTER] == 0
 
 
 async def test_options_flow_maintenance_settings_disable(
@@ -796,9 +737,9 @@ async def test_options_flow_maintenance_settings_disable(
             CONF_KEY_IS_WASHING_MACHINE: True,
             CONF_KEY_MAINTENANCE_ENABLED: True,
             CONF_KEY_WATER_HARDNESS: 2,
-            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 100,
-            CONF_KEY_MAINTENANCE_LAST_LIMESCALE: 100,
-            CONF_KEY_MAINTENANCE_LAST_FILTER: 100,
+            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 0,
+            CONF_KEY_MAINTENANCE_LAST_LIMESCALE: 0,
+            CONF_KEY_MAINTENANCE_LAST_FILTER: 0,
         },
     )
     entry.add_to_hass(hass)

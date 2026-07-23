@@ -16,6 +16,19 @@ from .const import (
 )
 
 
+def cycles_remaining(total: int, last_reset: int, threshold: int) -> int:
+    """Return cycles until next maintenance alert, or 0 when due.
+
+    elapsed=0 means maintenance was just performed — return the full threshold.
+    elapsed%threshold==0 (and elapsed>0) means a full cycle has passed — due now.
+    """
+    elapsed = total - last_reset
+    if elapsed <= 0:
+        return threshold
+    delta = elapsed % threshold
+    return threshold - delta if delta != 0 else 0
+
+
 def wash_device_info(config_entry: ConfigEntry) -> DeviceInfo:
     info = DeviceInfo(
         identifiers={(DOMAIN, config_entry.entry_id)},

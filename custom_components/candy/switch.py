@@ -101,16 +101,21 @@ class _WashSwitchBase(CoordinatorEntity, SwitchEntity):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        registry = er.async_get(self.hass)
-        entity_id = registry.async_get_entity_id(
-            "select", DOMAIN, UNIQUE_ID_WASH_PROGRAM_SELECT.format(self.config_id)
-        )
-        if entity_id is not None:
-            self.async_on_remove(
-                async_track_state_change_event(
-                    self.hass, [entity_id], self._on_program_changed
-                )
+
+        async def _late_subscribe() -> None:
+            """Subscribe after all platforms finish loading so the select entity is registered."""
+            registry = er.async_get(self.hass)
+            entity_id = registry.async_get_entity_id(
+                "select", DOMAIN, UNIQUE_ID_WASH_PROGRAM_SELECT.format(self.config_id)
             )
+            if entity_id is not None:
+                self.async_on_remove(
+                    async_track_state_change_event(
+                        self.hass, [entity_id], self._on_program_changed
+                    )
+                )
+
+        self.hass.async_create_task(_late_subscribe())
 
     @callback
     def _on_program_changed(self, event) -> None:
