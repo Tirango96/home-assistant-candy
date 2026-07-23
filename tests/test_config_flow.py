@@ -641,7 +641,7 @@ async def test_read_only_with_maintenance_enabled(
     assert result["step_id"] == "maintenance_baselines"
 
     # User enters remaining=17 for all (total_cycles=40 from mocked stats)
-    # last_reset = max(0, 40 - (100 - 17)) = max(0, -43) = 0
+    # last_reset = total - (threshold - remaining)
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
@@ -655,13 +655,13 @@ async def test_read_only_with_maintenance_enabled(
     data = result["data"]
     assert data[CONF_KEY_MAINTENANCE_ENABLED] is True
     assert data[CONF_KEY_WATER_HARDNESS] == 2
-    # last_reset = max(0, total - (threshold - remaining))
-    # selfclean:  max(0, 40 - (100 - 17)) = max(0, -43) = 0
-    # limescale:  max(0, 40 - (100 - 57)) = max(0, -3)  = 0
-    # filter:     max(0, 40 - (100 - 17)) = max(0, -43) = 0
-    assert data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] == 0
-    assert data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] == 0
-    assert data[CONF_KEY_MAINTENANCE_LAST_FILTER] == 0
+    # last_reset = total - (threshold - remaining)
+    # selfclean:  40 - (100 - 17) = 40 - 83 = -43
+    # limescale:  40 - (100 - 57) = 40 - 43 = -3   (hardness=2 → threshold=100)
+    # filter:     40 - (100 - 17) = 40 - 83 = -43
+    assert data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] == -43
+    assert data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] == -3
+    assert data[CONF_KEY_MAINTENANCE_LAST_FILTER] == -43
     assert data[CONF_KEY_IS_WASHING_MACHINE] is True
 
 

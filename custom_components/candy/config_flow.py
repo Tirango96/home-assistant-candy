@@ -102,8 +102,13 @@ def _remaining_to_last_reset(remaining: int, total: int, threshold: int) -> int:
 
     last_reset is total_cycles at the time of the last maintenance action.
     remaining = threshold - (total - last_reset), so last_reset = total - (threshold - remaining).
+    Negative values are valid: they represent a virtual reset point before the device existed,
+    which correctly tracks a partial cycle from the machine's history.
+    Returns 0 only when total==0 (stats unavailable) to start a fresh cycle.
     """
-    return max(0, total - (threshold - remaining))
+    if total == 0:
+        return 0
+    return total - (threshold - remaining)
 
 
 def _baselines_schema(hardness_index: int, total_cycles: int) -> vol.Schema:
