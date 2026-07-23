@@ -114,35 +114,21 @@ def _remaining_to_last_reset(remaining: int, total: int, threshold: int) -> int:
 def _baselines_schema(hardness_index: int, total_cycles: int) -> vol.Schema:
     """Build schema for remaining-cycles fields with current remaining as defaults."""
     limescale_threshold = MAINTENANCE_HARDNESS_THRESHOLDS[hardness_index]
-    selfclean_remaining = (
-        MAINTENANCE_SELFCLEAN_THRESHOLD
-        - (total_cycles % MAINTENANCE_SELFCLEAN_THRESHOLD)
-        if total_cycles
-        else MAINTENANCE_SELFCLEAN_THRESHOLD
-    )
-    limescale_remaining = (
-        limescale_threshold - (total_cycles % limescale_threshold)
-        if total_cycles
-        else limescale_threshold
-    )
-    filter_remaining = (
-        MAINTENANCE_FILTER_THRESHOLD - (total_cycles % MAINTENANCE_FILTER_THRESHOLD)
-        if total_cycles
-        else MAINTENANCE_FILTER_THRESHOLD
-    )
     return vol.Schema(
         {
             vol.Required(
                 CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
-                default=selfclean_remaining,
+                default=cycles_remaining(
+                    total_cycles, 0, MAINTENANCE_SELFCLEAN_THRESHOLD
+                ),
             ): int,
             vol.Required(
                 CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
-                default=limescale_remaining,
+                default=cycles_remaining(total_cycles, 0, limescale_threshold),
             ): int,
             vol.Required(
                 CONF_KEY_MAINTENANCE_LAST_FILTER,
-                default=filter_remaining,
+                default=cycles_remaining(total_cycles, 0, MAINTENANCE_FILTER_THRESHOLD),
             ): int,
         }
     )

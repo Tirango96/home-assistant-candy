@@ -44,6 +44,7 @@ from .const import (
     CONF_KEY_WATER_HARDNESS,
     DATA_KEY_CLIENT,
     DATA_KEY_COORDINATOR,
+    DATA_KEY_MAINT_UNSUB,
     DATA_KEY_STATS_COORDINATOR,
     DOMAIN,
     MAINTENANCE_FILTER_THRESHOLD,
@@ -362,7 +363,10 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
             )
 
         if config_entry.data.get(CONF_KEY_MAINTENANCE_ENABLED):
-            _register_maintenance_notifications(hass, config_entry, stats_coordinator)
+            unsub = _register_maintenance_notifications(
+                hass, config_entry, stats_coordinator
+            )
+            hass.data[DOMAIN][config_entry.entry_id][DATA_KEY_MAINT_UNSUB] = unsub
 
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
@@ -373,7 +377,7 @@ def _register_maintenance_notifications(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
     stats_coordinator: DataUpdateCoordinator[Any],
-) -> None:
+) -> Callable[[], None]:
     entry_id = config_entry.entry_id
     hardness = config_entry.data.get(CONF_KEY_WATER_HARDNESS, 2)
     limescale_threshold = MAINTENANCE_HARDNESS_THRESHOLDS[hardness]
@@ -413,13 +417,17 @@ def _register_maintenance_notifications(
             if cycles_remaining(stats.total_cycles, last, threshold) == 0:
                 pn_async_create(hass, message, title=title, notification_id=notif_id)
 
-    stats_coordinator.async_add_listener(_on_stats_update)
+    return stats_coordinator.async_add_listener(_on_stats_update)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
-        del hass.data[DOMAIN]
-
+        entry_data = hass.data[DOMAIN].pop(entry.entry_id, {})
+        unsub = entry_data.get(DATA_KEY_MAINT_UNSUB)
+        if unsub is not None:
+            unsub()
+        if not hass.data[DOMAIN]:
+            del hass.data[DOMAIN]
     return unload_ok
