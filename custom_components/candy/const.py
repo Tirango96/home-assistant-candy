@@ -93,6 +93,9 @@ MAINTENANCE_HARDNESS_LABELS: list[str] = [
 UNIQUE_ID_WASH_MAINT_SELFCLEAN = "{0}-wash_maint_selfclean"
 UNIQUE_ID_WASH_MAINT_LIMESCALE = "{0}-wash_maint_limescale"
 UNIQUE_ID_WASH_MAINT_FILTER = "{0}-wash_maint_filter"
+UNIQUE_ID_WASH_MAINT_SELFCLEAN_BUTTON = "{0}-wash_maint_selfclean_reset"
+UNIQUE_ID_WASH_MAINT_LIMESCALE_BUTTON = "{0}-wash_maint_limescale_reset"
+UNIQUE_ID_WASH_MAINT_FILTER_BUTTON = "{0}-wash_maint_filter_reset"
 
 NOTIF_ID_MAINT_SELFCLEAN = "candy_{0}_maint_selfclean"
 NOTIF_ID_MAINT_LIMESCALE = "candy_{0}_maint_limescale"

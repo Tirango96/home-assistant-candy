@@ -299,6 +299,15 @@
       },
       "wash_stop_button": {
         "name": "Stop wash"
+      },
+      "wash_maint_selfclean_reset": {
+        "name": "Reset Auto-Clean Counter"
+      },
+      "wash_maint_limescale_reset": {
+        "name": "Reset Limescale Counter"
+      },
+      "wash_maint_filter_reset": {
+        "name": "Reset Filter Counter"
       }
     }
   },

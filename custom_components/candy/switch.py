@@ -243,7 +243,7 @@ class NfcSpecialProgramsSwitch(_WashSwitchBase):
 class WashOptionSwitch(_WashSwitchBase):
     _attr_icon = "mdi:washing-machine"
 
-    def __init__(
+    def __init__(  # noqa: PLR0917
         self,
         coordinator: DataUpdateCoordinator,
         config_entry: ConfigEntry,

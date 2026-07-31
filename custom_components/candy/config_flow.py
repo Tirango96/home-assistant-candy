@@ -241,7 +241,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 data_schema=vol.Schema(
                     {
                         vol.Required(
-                            CONF_KEY_WATER_HARDNESS, default=current
+                            CONF_KEY_WATER_HARDNESS, default=str(current)
                         ): SelectSelector(
                             SelectSelectorConfig(
                                 options=[

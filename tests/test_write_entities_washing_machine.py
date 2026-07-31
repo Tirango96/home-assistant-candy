@@ -454,7 +454,7 @@ async def test_start_button_sends_command(
     assert "StSt=1" in query_string
     assert "PrNm=1" in query_string
     assert "PrCode=136" in query_string
-    assert "PrStr=COTTON" in query_string
+    assert "PrStr=Cotton" in query_string
 
 
 # ---------------------------------------------------------------------------
@@ -1162,7 +1162,7 @@ async def test_start_button_sends_nfc_command(
     assert "StSt=1" in qs
     assert "PrNm=1" in qs  # COTTON selector_position
     assert "PrCode=136" in qs  # COTTON pr_code
-    assert "PrStr=COTTON" in qs
+    assert "PrStr=Bathrobe" in qs
     assert "TmpTgt=40" in qs
     assert "SpdTgt=14" in qs  # 1400 // 100
     assert "SLevTgt=2" in qs  # nfc.soil_level=2 (non-zero, used directly)
@@ -1201,7 +1201,7 @@ async def test_start_button_nfc_soil_fallback_to_base_default(
     qs: str = mock_send.call_args[0][0]
     assert "PrNm=2" in qs  # RAPID selector_position
     assert "PrCode=5" in qs
-    assert "PrStr=RAPID" in qs
+    assert "PrStr=New%20Clothes" in qs
     assert "TmpTgt=20" in qs
     assert "SpdTgt=12" in qs  # 1200 // 100
     assert "SLevTgt=0" in qs  # soil fallback: base.default_soil_level = 0

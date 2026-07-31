@@ -122,7 +122,7 @@ class WashProgramSelect(CandyWashSelectBase):
     _attr_name = "Wash program"
     _attr_translation_key = "wash_program_select"
 
-    def __init__(
+    def __init__(  # noqa: PLR0917
         self,
         coordinator: DataUpdateCoordinator,
         config_entry: ConfigEntry,

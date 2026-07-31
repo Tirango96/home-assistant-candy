@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import asyncio
 from typing import cast
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -17,6 +17,7 @@ from homeassistant.helpers.update_coordinator import (
 from .client import (
     CandyClient,
     NfcProgram,
+    WashingMachineStatistics,
     WashingMachineStatus,
     WashingMachineWashProgram,
     load_nfc_programs,
@@ -25,17 +26,25 @@ from .client import (
 )
 from .client.model import MachineState
 from .const import (
+    CONF_KEY_MAINTENANCE_ENABLED,
+    CONF_KEY_MAINTENANCE_LAST_FILTER,
+    CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
+    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
     CONF_KEY_MODE,
     CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
     DATA_KEY_CLIENT,
     DATA_KEY_COORDINATOR,
+    DATA_KEY_STATS_COORDINATOR,
     DATA_KEY_WRITE_PENDING,
     DOMAIN,
     MODE_FULL_CONTROL,
     NFC_CLUSTER_TO_PROGRAM,
     SOIL_LABELS_REVERSE,
     UNIQUE_ID_WASH_DELAY_NUMBER,
+    UNIQUE_ID_WASH_MAINT_FILTER_BUTTON,
+    UNIQUE_ID_WASH_MAINT_LIMESCALE_BUTTON,
+    UNIQUE_ID_WASH_MAINT_SELFCLEAN_BUTTON,
     UNIQUE_ID_WASH_NFC_SWITCH,
     UNIQUE_ID_WASH_PAUSE_BUTTON,
     UNIQUE_ID_WASH_PROGRAM_SELECT,
@@ -77,6 +86,44 @@ async def async_setup_entry(
             WashStopButton(coordinator, config_entry, client),
         ]
     )
+
+    if config_entry.data.get(CONF_KEY_MAINTENANCE_ENABLED):
+        stats_coordinator = hass.data[DOMAIN][config_id].get(DATA_KEY_STATS_COORDINATOR)
+        if stats_coordinator is not None:
+            async_add_entities(
+                [
+                    WashMaintResetButton(
+                        coordinator,
+                        config_entry,
+                        stats_coordinator,
+                        CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
+                        UNIQUE_ID_WASH_MAINT_SELFCLEAN_BUTTON,
+                        "Reset Auto-Clean Counter",
+                        "wash_maint_selfclean_reset",
+                        "mdi:washing-machine-alert",
+                    ),
+                    WashMaintResetButton(
+                        coordinator,
+                        config_entry,
+                        stats_coordinator,
+                        CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
+                        UNIQUE_ID_WASH_MAINT_LIMESCALE_BUTTON,
+                        "Reset Limescale Counter",
+                        "wash_maint_limescale_reset",
+                        "mdi:water-remove",
+                    ),
+                    WashMaintResetButton(
+                        coordinator,
+                        config_entry,
+                        stats_coordinator,
+                        CONF_KEY_MAINTENANCE_LAST_FILTER,
+                        UNIQUE_ID_WASH_MAINT_FILTER_BUTTON,
+                        "Reset Filter Counter",
+                        "wash_maint_filter_reset",
+                        "mdi:filter-remove",
+                    ),
+                ]
+            )
 
 
 class CandyWashButtonBase(CoordinatorEntity, ButtonEntity):
@@ -219,10 +266,10 @@ class WashStartButton(CandyWashButtonBase):
             params = {
                 "Write": 1,
                 "StSt": 1,
-                "DelVl": delay // 20,
+                "DelVl": delay // 30,
                 "PrNm": base.selector_position,
                 "PrCode": base.pr_code,
-                "PrStr": base.name,
+                "PrStr": nfc.display_name(lang),
                 "TmpTgt": nfc.temperature,
                 "SLevTgt": nfc.soil_level
                 if nfc.soil_level > 0
@@ -238,7 +285,7 @@ class WashStartButton(CandyWashButtonBase):
                 "StartCheckUp": 0,
                 "DispTestOn": 1,
             }
-            await self._client.send_command(urlencode(params))
+            await self._client.send_command(urlencode(params, quote_via=quote))
             await self._post_command_refresh()
             return
 
@@ -297,10 +344,10 @@ class WashStartButton(CandyWashButtonBase):
         params = {
             "Write": 1,
             "StSt": 1,
-            "DelVl": delay // 20,  # device uses 20-min increments
+            "DelVl": delay // 30,  # device uses 30-min increments
             "PrNm": program.selector_position,
             "PrCode": program.pr_code,
-            "PrStr": program.name,
+            "PrStr": program.localized_name(lang),
             "TmpTgt": temp,
             "SLevTgt": soil,
             "SpdTgt": spin // 100,
@@ -314,8 +361,55 @@ class WashStartButton(CandyWashButtonBase):
             "StartCheckUp": 0,
             "DispTestOn": 1,
         }
-        await self._client.send_command(urlencode(params))
+        await self._client.send_command(urlencode(params, quote_via=quote))
         await self._post_command_refresh()
+
+
+class WashMaintResetButton(CoordinatorEntity, ButtonEntity):
+    """Reset a maintenance counter to its full threshold."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_has_entity_name = True
+
+    def __init__(  # noqa: PLR0917
+        self,
+        coordinator: DataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        stats_coordinator: DataUpdateCoordinator,
+        conf_key: str,
+        unique_id_template: str,
+        name: str,
+        translation_key: str,
+        icon: str,
+    ) -> None:
+        super().__init__(coordinator)
+        self.config_entry = config_entry
+        self.config_id = config_entry.entry_id
+        self._stats_coordinator = stats_coordinator
+        self._conf_key = conf_key
+        self._unique_id_template = unique_id_template
+        self._attr_name = name
+        self._attr_translation_key = translation_key
+        self._attr_icon = icon
+
+    @property
+    def unique_id(self) -> str:
+        return self._unique_id_template.format(self.config_id)
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return wash_device_info(self.config_entry)
+
+    async def async_press(self) -> None:
+        total = 0
+        if self._stats_coordinator.data is not None:
+            total = cast(
+                WashingMachineStatistics, self._stats_coordinator.data
+            ).total_cycles
+        new_data = dict(self.config_entry.data)
+        new_data[self._conf_key] = total
+        self.hass.config_entries.async_update_entry(self.config_entry, data=new_data)
+        self._stats_coordinator.async_update_listeners()
 
 
 class WashPauseButton(CandyWashButtonBase):
@@ -369,5 +463,5 @@ class WashStopButton(CandyWashButtonBase):
             "PrNm": status.program,
             "DelVl": 0,
         }
-        await self._client.send_command(urlencode(params))
+        await self._client.send_command(urlencode(params, quote_via=quote))
         await self._post_command_refresh()
