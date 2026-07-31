@@ -144,12 +144,15 @@ class CandyWashButtonBase(CoordinatorEntity, ButtonEntity):
             self.hass.data[DOMAIN][self.config_id].get(DATA_KEY_WRITE_PENDING, 0) == 0
         )
 
-    async def _post_command_refresh(self) -> None:
+    async def _send_command_and_refresh(self, query_string: str) -> None:
         data = self.hass.data[DOMAIN][self.config_id]
         data[DATA_KEY_WRITE_PENDING] = data.get(DATA_KEY_WRITE_PENDING, 0) + 1
         self.coordinator.async_update_listeners()
         try:
+            await self._client.send_command(query_string)
+        except Exception:
             await asyncio.sleep(5)
+            raise
         finally:
             data[DATA_KEY_WRITE_PENDING] -= 1
             if data[DATA_KEY_WRITE_PENDING] == 0:
@@ -285,8 +288,7 @@ class WashStartButton(CandyWashButtonBase):
                 "StartCheckUp": 0,
                 "DispTestOn": 1,
             }
-            await self._client.send_command(urlencode(params, quote_via=quote))
-            await self._post_command_refresh()
+            await self._send_command_and_refresh(urlencode(params, quote_via=quote))
             return
 
         temp_str = _get_state(UNIQUE_ID_WASH_TEMP_SELECT)
@@ -361,8 +363,7 @@ class WashStartButton(CandyWashButtonBase):
             "StartCheckUp": 0,
             "DispTestOn": 1,
         }
-        await self._client.send_command(urlencode(params, quote_via=quote))
-        await self._post_command_refresh()
+        await self._send_command_and_refresh(urlencode(params, quote_via=quote))
 
 
 class WashMaintResetButton(CoordinatorEntity, ButtonEntity):
@@ -432,8 +433,7 @@ class WashPauseButton(CandyWashButtonBase):
         return status.machine_state == MachineState.RUNNING
 
     async def async_press(self) -> None:
-        await self._client.send_command("Pa=1")
-        await self._post_command_refresh()
+        await self._send_command_and_refresh("Pa=1")
 
 
 class WashStopButton(CandyWashButtonBase):
@@ -463,5 +463,4 @@ class WashStopButton(CandyWashButtonBase):
             "PrNm": status.program,
             "DelVl": 0,
         }
-        await self._client.send_command(urlencode(params, quote_via=quote))
-        await self._post_command_refresh()
+        await self._send_command_and_refresh(urlencode(params, quote_via=quote))
