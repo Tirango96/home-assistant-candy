@@ -522,4 +522,4 @@ async def test_last_checkup_sensor_unknown_when_never_run(
     )
     state = _sensor_state(hass, entry, UNIQUE_ID_WASH_LAST_CHECKUP)
     assert state is not None
-    assert state.state in ("unknown", "unavailable", "None") or state.state == "unknown"
+    assert state.state in ("unknown", "unavailable")

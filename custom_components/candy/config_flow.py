@@ -424,6 +424,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     MAINTENANCE_FILTER_THRESHOLD,
                 )
             )
+        if self.config_entry.data.get(CONF_KEY_MODE) == MODE_FULL_CONTROL:
+            return await self.async_step_checkup()
         self.hass.config_entries.async_update_entry(
             self.config_entry, data=self._pending_data
         )
@@ -436,6 +438,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Ask whether automatic self check-up should be enabled."""
+        if not self._pending_data:
+            self._pending_data = dict(self.config_entry.data)
         if user_input is None:
             current = self._pending_data.get(
                 CONF_KEY_CHECKUP_ENABLED,

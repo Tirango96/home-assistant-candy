@@ -761,9 +761,10 @@ class CandyWashCheckUpResultSensor(CandyBaseSensor, RestoreSensor):
 
     @property
     def native_value(self) -> StateType:
-        result = cast(WashingMachineStatus, self.coordinator.data).dis_test_res
-        if result is not None:
-            return {0: "not_run", 1: "ok", 2: "problem"}.get(result.code)
+        if self.coordinator.data is not None:
+            result = cast(WashingMachineStatus, self.coordinator.data).dis_test_res
+            if result is not None:
+                return {0: "not_run", 1: "ok", 2: "problem"}.get(result.code)
         return self._restored_state
 
     @property
@@ -784,6 +785,10 @@ class CandyWashLastCheckUpSensor(CandyBaseSensor):
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_BATHROOM
+
+    @property
+    def available(self) -> bool:
+        return True
 
     @property
     def unique_id(self) -> str:
