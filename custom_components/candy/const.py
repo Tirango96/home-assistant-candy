@@ -8,6 +8,7 @@ DATA_KEY_STATS_COORDINATOR = "stats_coordinator"
 DATA_KEY_CLIENT = "client"
 DATA_KEY_WRITE_PENDING = "write_pending"
 DATA_KEY_MAINT_UNSUB = "maint_unsub"
+DATA_KEY_CHECKUP_UNSUB = "checkup_unsub"
 
 CONF_INTEGRATION_TITLE = "Candy"
 CONF_KEY_USE_ENCRYPTION = "use_encryption"
@@ -60,6 +61,8 @@ UNIQUE_ID_WASH_MOTOR_FREQ = "{0}-wash_motor_freq"
 UNIQUE_ID_WASH_TOTAL_CYCLES = "{0}-wash_total_cycles"
 UNIQUE_ID_WASH_CHECK_UP = "{0}-wash_check_up"
 UNIQUE_ID_WASH_SOIL_LEVEL = "{0}-wash_soil_level"
+UNIQUE_ID_WASH_CHECKUP_RESULT = "{0}-wash_checkup_result"
+UNIQUE_ID_WASH_LAST_CHECKUP = "{0}-wash_last_checkup"
 
 SOIL_LABELS: dict[int, str] = {1: "low", 2: "normal", 3: "high"}
 SOIL_LABELS_REVERSE: dict[str, int] = {v: k for k, v in SOIL_LABELS.items()}
@@ -73,10 +76,20 @@ UNIQUE_ID_WASH_CYCLE_CAPACITY = "{0}-wash_cycle_capacity"
 CONF_KEY_IS_WASHING_MACHINE = "is_washing_machine"
 
 CONF_KEY_MAINTENANCE_ENABLED = "maintenance_enabled"
+CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED = "maintenance_limescale_enabled"
+CONF_KEY_MAINTENANCE_FILTER_ENABLED = "maintenance_filter_enabled"
 CONF_KEY_WATER_HARDNESS = "water_hardness"
 CONF_KEY_MAINTENANCE_LAST_SELFCLEAN = "maintenance_last_selfclean"
 CONF_KEY_MAINTENANCE_LAST_LIMESCALE = "maintenance_last_limescale"
 CONF_KEY_MAINTENANCE_LAST_FILTER = "maintenance_last_filter"
+
+CONF_KEY_CHECKUP_ENABLED = "checkup_enabled"
+CONF_KEY_CHECKUP_SCHEDULE = "checkup_schedule"
+CONF_KEY_CHECKUP_LAST_DATE = "checkup_last_date"
+
+CHECKUP_SCHEDULE_EVERY_CYCLE = 0
+CHECKUP_SCHEDULE_WEEKLY = 1
+CHECKUP_SCHEDULE_MONTHLY = 2
 
 MAINTENANCE_SELFCLEAN_THRESHOLD = 100
 MAINTENANCE_FILTER_THRESHOLD = 100

@@ -42,6 +42,14 @@
           "maintenance_enabled": "Enable maintenance counters"
         }
       },
+      "maintenance_types": {
+        "title": "Counter selection",
+        "description": "Self-cleaning is always tracked. Choose which additional counters to enable.",
+        "data": {
+          "maintenance_limescale_enabled": "Limescale cleaning",
+          "maintenance_filter_enabled": "Filter cleaning"
+        }
+      },
       "hardness": {
         "title": "Water hardness",
         "description": "Select your local water hardness. This determines how often the descale reminder fires.",
@@ -56,6 +64,20 @@
           "maintenance_last_selfclean": "Auto-Clean Reminder counter",
           "maintenance_last_limescale": "Limescale Cleaning counter",
           "maintenance_last_filter": "Filter-Clean counter"
+        }
+      },
+      "checkup": {
+        "title": "Automatic self check-up",
+        "description": "The integration can trigger the machine's built-in electronic self-diagnostic at the end of each wash. The result will be available as a sensor in Home Assistant.",
+        "data": {
+          "checkup_enabled": "Enable automatic self check-up"
+        }
+      },
+      "checkup_schedule": {
+        "title": "Check-up schedule",
+        "description": "How often should the self check-up run?",
+        "data": {
+          "checkup_schedule": "Schedule"
         }
       },
       "reconfigure": {
@@ -126,6 +148,20 @@
           "maintenance_last_limescale": "Limescale Cleaning counter",
           "maintenance_last_filter": "Filter-Clean counter"
         }
+      },
+      "checkup": {
+        "title": "Automatic self check-up",
+        "description": "The integration can trigger the machine's built-in electronic self-diagnostic at the end of each wash. The result will be available as a sensor in Home Assistant.",
+        "data": {
+          "checkup_enabled": "Enable automatic self check-up"
+        }
+      },
+      "checkup_schedule": {
+        "title": "Check-up schedule",
+        "description": "How often should the self check-up run?",
+        "data": {
+          "checkup_schedule": "Schedule"
+        }
       }
     },
     "error": {
@@ -172,6 +208,25 @@
       },
       "wash_maintenance": {
         "name": "Wash maintenance"
+      },
+      "wash_checkup_state": {
+        "name": "Wash check-up state",
+        "state": {
+          "idle": "Idle",
+          "in_progress": "In progress",
+          "healthy": "Healthy"
+        }
+      },
+      "wash_checkup_result": {
+        "name": "Wash check-up result",
+        "state": {
+          "not_run": "Not yet run",
+          "ok": "OK",
+          "problem": "Problem detected"
+        }
+      },
+      "wash_last_checkup": {
+        "name": "Last wash check-up"
       },
       "wash_total_cycles": {
         "name": "Wash total cycles"
@@ -309,7 +364,8 @@
       "options": {
         "update_cloud_data": "Update cloud data",
         "switch_to_read_only": "Switch to Read-Only",
-        "maintenance_settings": "Maintenance counter settings"
+        "maintenance_settings": "Maintenance counter settings",
+        "checkup_settings": "Self check-up settings"
       }
     },
     "water_hardness": {
@@ -320,6 +376,13 @@
         "3": "Moderately hard (12–16 °fH / 12–18 °dH)",
         "4": "Hard (17–22 °fH / 18–30 °dH)",
         "5": "Very hard (23–27 °fH / >30 °dH)"
+      }
+    },
+    "checkup_schedule": {
+      "options": {
+        "0": "Every cycle",
+        "1": "Weekly",
+        "2": "Monthly"
       }
     }
   }

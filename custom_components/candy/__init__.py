@@ -20,6 +20,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from .client import CandyClient
 from .client.model import (
@@ -36,12 +37,17 @@ from .client.model import (
     WashProgramState,
 )
 from .const import (
+    CONF_KEY_CHECKUP_ENABLED,
+    CONF_KEY_CHECKUP_LAST_DATE,
     CONF_KEY_MAINTENANCE_ENABLED,
+    CONF_KEY_MAINTENANCE_FILTER_ENABLED,
     CONF_KEY_MAINTENANCE_LAST_FILTER,
     CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
     CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
+    CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED,
     CONF_KEY_USE_ENCRYPTION,
     CONF_KEY_WATER_HARDNESS,
+    DATA_KEY_CHECKUP_UNSUB,
     DATA_KEY_CLIENT,
     DATA_KEY_COORDINATOR,
     DATA_KEY_MAINT_UNSUB,
@@ -188,6 +194,7 @@ def _offline_washing_machine() -> WashingMachineStatus:
         unbalance_count=None,
         fault_count=None,
         check_up_state=None,
+        dis_test_res=None,
         soil_level=None,
     )
 
@@ -368,6 +375,12 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
             )
             hass.data[DOMAIN][config_entry.entry_id][DATA_KEY_MAINT_UNSUB] = unsub
 
+        if config_entry.data.get(CONF_KEY_CHECKUP_ENABLED):
+            unsub_checkup = _register_checkup_listener(hass, config_entry, coordinator)
+            hass.data[DOMAIN][config_entry.entry_id][DATA_KEY_CHECKUP_UNSUB] = (
+                unsub_checkup
+            )
+
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
     return True
@@ -390,21 +403,27 @@ def _register_maintenance_notifications(
             "Self-cleaning",
             "We suggest you start the Self-cleaning cycle to keep the performance of your appliance AT optimal levels.",
         ),
-        (
-            CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
-            limescale_threshold,
-            NOTIF_ID_MAINT_LIMESCALE.format(entry_id),
-            "Limescale cleaning",
-            "To keep your washing machine always clean and to remove any deposits, we suggest you start the Limescale Removal cycle.",
-        ),
-        (
-            CONF_KEY_MAINTENANCE_LAST_FILTER,
-            MAINTENANCE_FILTER_THRESHOLD,
-            NOTIF_ID_MAINT_FILTER.format(entry_id),
-            "Filter cleaning",
-            "To always guarantee the best performance, we suggest you clean the filter",
-        ),
     ]
+    if config_entry.data.get(CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED, True):
+        _MAINTENANCE_ITEMS.append(
+            (
+                CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
+                limescale_threshold,
+                NOTIF_ID_MAINT_LIMESCALE.format(entry_id),
+                "Limescale cleaning",
+                "To keep your washing machine always clean and to remove any deposits, we suggest you start the Limescale Removal cycle.",
+            )
+        )
+    if config_entry.data.get(CONF_KEY_MAINTENANCE_FILTER_ENABLED, True):
+        _MAINTENANCE_ITEMS.append(
+            (
+                CONF_KEY_MAINTENANCE_LAST_FILTER,
+                MAINTENANCE_FILTER_THRESHOLD,
+                NOTIF_ID_MAINT_FILTER.format(entry_id),
+                "Filter cleaning",
+                "To always guarantee the best performance, we suggest you clean the filter",
+            )
+        )
 
     def _on_stats_update() -> None:
         stats: WashingMachineStatistics | None = cast(
@@ -420,14 +439,46 @@ def _register_maintenance_notifications(
     return stats_coordinator.async_add_listener(_on_stats_update)
 
 
+def _register_checkup_listener(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    coordinator: DataUpdateCoordinator[Any],
+) -> Callable[[], None]:
+    """Register a coordinator listener that persists the timestamp when DisTestRes transitions 0→non-zero."""
+    initial = cast(WashingMachineStatus | None, coordinator.data)
+    initial_code = (
+        initial.dis_test_res.code
+        if initial is not None and initial.dis_test_res is not None
+        else None
+    )
+    prev_result: list[int | None] = [initial_code]
+
+    def _on_status_update() -> None:
+        status = cast(WashingMachineStatus | None, coordinator.data)
+        if status is None or status.dis_test_res is None:
+            return
+        curr_code = status.dis_test_res.code
+        prev_code = prev_result[0]
+        prev_result[0] = curr_code
+        if prev_code is None:
+            return
+        if curr_code != 0 and prev_code == 0:
+            new_data = dict(config_entry.data)
+            new_data[CONF_KEY_CHECKUP_LAST_DATE] = dt_util.utcnow().timestamp()
+            hass.config_entries.async_update_entry(config_entry, data=new_data)
+
+    return coordinator.async_add_listener(_on_status_update)
+
+
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         entry_data = hass.data[DOMAIN].pop(entry.entry_id, {})
-        unsub = entry_data.get(DATA_KEY_MAINT_UNSUB)
-        if unsub is not None:
-            unsub()
+        for key in (DATA_KEY_MAINT_UNSUB, DATA_KEY_CHECKUP_UNSUB):
+            unsub = entry_data.get(key)
+            if unsub is not None:
+                unsub()
         if not hass.data[DOMAIN]:
             del hass.data[DOMAIN]
     return unload_ok

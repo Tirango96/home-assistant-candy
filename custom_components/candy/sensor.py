@@ -40,12 +40,16 @@ from .client.model import (
     WashingMachineStatistics,
 )
 from .const import (
+    CONF_KEY_CHECKUP_ENABLED,
+    CONF_KEY_CHECKUP_LAST_DATE,
     CONF_KEY_DEVICE_MODEL,
     CONF_KEY_MAC_ADDRESS,
     CONF_KEY_MAINTENANCE_ENABLED,
+    CONF_KEY_MAINTENANCE_FILTER_ENABLED,
     CONF_KEY_MAINTENANCE_LAST_FILTER,
     CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
     CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
+    CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED,
     CONF_KEY_MODE,
     CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
@@ -78,6 +82,7 @@ from .const import (
     UNIQUE_ID_TUMBLE_PROGRAM,
     UNIQUE_ID_TUMBLE_REMAINING_TIME,
     UNIQUE_ID_WASH_CHECK_UP,
+    UNIQUE_ID_WASH_CHECKUP_RESULT,
     UNIQUE_ID_WASH_CYCLE_CAPACITY,
     UNIQUE_ID_WASH_CYCLE_STATUS,
     UNIQUE_ID_WASH_DELAY,
@@ -85,6 +90,7 @@ from .const import (
     UNIQUE_ID_WASH_ERROR,
     UNIQUE_ID_WASH_ESTIMATED_DURATION,
     UNIQUE_ID_WASH_FILL_PERCENT,
+    UNIQUE_ID_WASH_LAST_CHECKUP,
     UNIQUE_ID_WASH_LIQUID_DETERGENT,
     UNIQUE_ID_WASH_MAINT_FILTER,
     UNIQUE_ID_WASH_MAINT_LIMESCALE,
@@ -174,6 +180,10 @@ async def async_setup_entry(
         entities.append(CandyWashScheduledFinishSensor(coordinator, config_entry))
         if programs:
             entities.append(CandyWashScheduledStartSensor(coordinator, config_entry))
+        if config_entry.data.get(CONF_KEY_MODE) == MODE_FULL_CONTROL:
+            if config_entry.data.get(CONF_KEY_CHECKUP_ENABLED):
+                entities.append(CandyWashCheckUpResultSensor(coordinator, config_entry))
+                entities.append(CandyWashLastCheckUpSensor(coordinator, config_entry))
         stats_coordinator = hass.data[DOMAIN][config_id].get(DATA_KEY_STATS_COORDINATOR)
         if stats_coordinator is not None:
             entities.append(CandyWashTotalCyclesSensor(stats_coordinator, config_entry))
@@ -181,12 +191,14 @@ async def async_setup_entry(
                 entities.append(
                     CandyWashMaintSelfcleanSensor(stats_coordinator, config_entry)
                 )
-                entities.append(
-                    CandyWashMaintLimescaleSensor(stats_coordinator, config_entry)
-                )
-                entities.append(
-                    CandyWashMaintFilterSensor(stats_coordinator, config_entry)
-                )
+                if config_entry.data.get(CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED, True):
+                    entities.append(
+                        CandyWashMaintLimescaleSensor(stats_coordinator, config_entry)
+                    )
+                if config_entry.data.get(CONF_KEY_MAINTENANCE_FILTER_ENABLED, True):
+                    entities.append(
+                        CandyWashMaintFilterSensor(stats_coordinator, config_entry)
+                    )
         async_add_entities(entities)
     elif isinstance(coordinator.data, TumbleDryerStatus):
         async_add_entities(
@@ -651,16 +663,16 @@ class CandyWashMotorFreqSensor(CandyBaseSensor):
 
 
 class CandyWashCheckUpSensor(CandyBaseSensor, RestoreSensor):
-    """Check-up state reported by the washing machine (0 = ok, non-zero = service due)."""
+    """Live diagnostic lifecycle state of the washing machine (CheckUpState)."""
 
-    _attr_translation_key = "wash_maintenance"
-    _attr_name = "Wash maintenance"
+    _attr_translation_key = "wash_checkup_state"
+    _attr_name = "Wash check-up state"
     _restored_state: str | None = None
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         if (last := await self.async_get_last_sensor_data()) is not None:
-            if last.native_value in ("Ok", "Service due"):
+            if last.native_value in ("Idle", "In progress", "Healthy"):
                 self._restored_state = str(last.native_value)
 
     def device_name(self) -> str:
@@ -715,6 +727,78 @@ class CandyWashSoilLevelSensor(CandyBaseSensor):
     @property
     def icon(self) -> str:
         return "mdi:water-opacity"
+
+
+class CandyWashCheckUpResultSensor(CandyBaseSensor, RestoreSensor):
+    """Result of the last completed automatic diagnostic (DisTestRes)."""
+
+    _attr_translation_key = "wash_checkup_result"
+    _attr_name = "Wash check-up result"
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = ["not_run", "ok", "problem"]
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _restored_state: str | None = None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_sensor_data()) is not None:
+            if last.native_value in self._attr_options:
+                self._restored_state = str(last.native_value)
+
+    @property
+    def available(self) -> bool:
+        return super().available or self._restored_state is not None
+
+    def device_name(self) -> str:
+        return DEVICE_NAME_WASHING_MACHINE
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_BATHROOM
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_CHECKUP_RESULT.format(self.config_id)
+
+    @property
+    def native_value(self) -> StateType:
+        result = cast(WashingMachineStatus, self.coordinator.data).dis_test_res
+        if result is not None:
+            return {0: "not_run", 1: "ok", 2: "problem"}.get(result.code)
+        return self._restored_state
+
+    @property
+    def icon(self) -> str:
+        return "mdi:stethoscope"
+
+
+class CandyWashLastCheckUpSensor(CandyBaseSensor):
+    """Timestamp of the last completed automatic diagnostic."""
+
+    _attr_translation_key = "wash_last_checkup"
+    _attr_name = "Last wash check-up"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def device_name(self) -> str:
+        return DEVICE_NAME_WASHING_MACHINE
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_BATHROOM
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_LAST_CHECKUP.format(self.config_id)
+
+    @property
+    def native_value(self) -> datetime.datetime | None:
+        ts = self.config_entry.data.get(CONF_KEY_CHECKUP_LAST_DATE)
+        if ts is None:
+            return None
+        return dt_util.utc_from_timestamp(ts)
+
+    @property
+    def icon(self) -> str:
+        return "mdi:calendar-check"
 
 
 class CandyWashTotalCyclesSensor(CandyBaseSensor, RestoreSensor):

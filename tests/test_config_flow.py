@@ -20,12 +20,15 @@ from custom_components.candy.client.model import (
 )
 from custom_components.candy.config_flow import MANUAL_IP_OPTION
 from custom_components.candy.const import (
+    CONF_KEY_CHECKUP_ENABLED,
     CONF_KEY_DEVICE_MODEL,
     CONF_KEY_IS_WASHING_MACHINE,
     CONF_KEY_MAINTENANCE_ENABLED,
+    CONF_KEY_MAINTENANCE_FILTER_ENABLED,
     CONF_KEY_MAINTENANCE_LAST_FILTER,
     CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
     CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
+    CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED,
     CONF_KEY_MODE,
     CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
@@ -55,6 +58,7 @@ _IDLE_WASHING_MACHINE = WashingMachineStatus(
     unbalance_count=None,
     fault_count=None,
     check_up_state=CheckUpState.IDLE,
+    dis_test_res=None,
     soil_level=None,
 )
 
@@ -512,6 +516,13 @@ async def test_full_control_flow(
         result["flow_id"], user_input={CONF_KEY_MAINTENANCE_ENABLED: False}
     )
 
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "checkup"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_CHECKUP_ENABLED: False}
+    )
+
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     data = result["data"]
     assert data[CONF_KEY_MODE] == MODE_FULL_CONTROL
@@ -632,6 +643,16 @@ async def test_read_only_with_maintenance_enabled(
         result["flow_id"], user_input={CONF_KEY_MAINTENANCE_ENABLED: True}
     )
 
+    assert result["step_id"] == "maintenance_types"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED: True,
+            CONF_KEY_MAINTENANCE_FILTER_ENABLED: True,
+        },
+    )
+
     assert result["step_id"] == "hardness"
 
     result = await hass.config_entries.flow.async_configure(
@@ -695,6 +716,16 @@ async def test_options_flow_maintenance_settings(
         result["flow_id"], user_input={CONF_KEY_MAINTENANCE_ENABLED: True}
     )
 
+    assert result["step_id"] == "maintenance_types"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED: True,
+            CONF_KEY_MAINTENANCE_FILTER_ENABLED: True,
+        },
+    )
+
     assert result["step_id"] == "hardness"
 
     result = await hass.config_entries.options.async_configure(
@@ -752,3 +783,101 @@ async def test_options_flow_maintenance_settings_disable(
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     updated = hass.config_entries.async_get_entry(entry.entry_id)
     assert updated.data[CONF_KEY_MAINTENANCE_ENABLED] is False
+
+
+async def test_maintenance_only_selfclean(hass, no_discovery, detect_no_encryption):  # pylint: disable=unused-argument
+    """When both optional counters are disabled, hardness step is skipped and baselines only shows selfclean."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_IP_ADDRESS: "192.168.0.66"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_MODE: MODE_READ_ONLY}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_MAINTENANCE_ENABLED: True}
+    )
+
+    assert result["step_id"] == "maintenance_types"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED: False,
+            CONF_KEY_MAINTENANCE_FILTER_ENABLED: False,
+        },
+    )
+
+    # Hardness step skipped — limescale disabled
+    assert result["step_id"] == "maintenance_baselines"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 50},
+    )
+
+    assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
+    data = result["data"]
+    assert data[CONF_KEY_MAINTENANCE_ENABLED] is True
+    assert data[CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED] is False
+    assert data[CONF_KEY_MAINTENANCE_FILTER_ENABLED] is False
+    assert CONF_KEY_WATER_HARDNESS not in data
+    assert CONF_KEY_MAINTENANCE_LAST_LIMESCALE not in data
+    assert CONF_KEY_MAINTENANCE_LAST_FILTER not in data
+    # total_cycles=40 from mock; selfclean remaining=50 → last_reset = 40 - (100 - 50) = -10
+    assert data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] == -10
+
+
+async def test_maintenance_limescale_only(hass, no_discovery, detect_no_encryption):  # pylint: disable=unused-argument
+    """When only limescale is enabled, hardness is shown but filter field is absent from baselines."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_IP_ADDRESS: "192.168.0.66"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_MODE: MODE_READ_ONLY}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_MAINTENANCE_ENABLED: True}
+    )
+
+    assert result["step_id"] == "maintenance_types"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED: True,
+            CONF_KEY_MAINTENANCE_FILTER_ENABLED: False,
+        },
+    )
+
+    # Limescale enabled → hardness step shown
+    assert result["step_id"] == "hardness"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_WATER_HARDNESS: "2"}
+    )
+
+    assert result["step_id"] == "maintenance_baselines"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 17,
+            CONF_KEY_MAINTENANCE_LAST_LIMESCALE: 57,
+        },
+    )
+
+    assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
+    data = result["data"]
+    assert data[CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED] is True
+    assert data[CONF_KEY_MAINTENANCE_FILTER_ENABLED] is False
+    assert CONF_KEY_MAINTENANCE_LAST_FILTER not in data
+    # selfclean:  40 - (100 - 17) = -43
+    # limescale:  40 - (100 - 57) = -3   (hardness=2 → threshold=100)
+    assert data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] == -43
+    assert data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] == -3

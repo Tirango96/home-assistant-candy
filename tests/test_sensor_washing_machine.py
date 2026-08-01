@@ -218,15 +218,18 @@ async def test_check_up_sensor_ok(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
     await init_integration(
-        hass, aioclient_mock, load_fixture("washing_machine/idle.json")
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response='{"statusCounters": {"Program1": "10"}}',
     )
 
-    state = hass.states.get("sensor.wash_maintenance")
+    state = hass.states.get("sensor.wash_check_up_state")
 
     assert state
-    assert state.state == "Ok"
+    assert state.state == "Idle"
     assert state.attributes == {
-        "friendly_name": "Wash maintenance",
+        "friendly_name": "Wash check-up state",
         "icon": "mdi:wrench-check",
     }
 
@@ -237,9 +240,14 @@ async def test_check_up_sensor_in_progress(
     service_due_fixture = load_fixture("washing_machine/idle.json").replace(
         '"CheckUpState": "0"', '"CheckUpState": "1"'
     )
-    await init_integration(hass, aioclient_mock, service_due_fixture)
+    await init_integration(
+        hass,
+        aioclient_mock,
+        service_due_fixture,
+        statistics_response='{"statusCounters": {"Program1": "10"}}',
+    )
 
-    state = hass.states.get("sensor.wash_maintenance")
+    state = hass.states.get("sensor.wash_check_up_state")
 
     assert state
     assert state.state == "In progress"
@@ -251,12 +259,17 @@ async def test_check_up_sensor_healthy(
     healthy_fixture = load_fixture("washing_machine/idle.json").replace(
         '"CheckUpState": "0"', '"CheckUpState": "2"'
     )
-    await init_integration(hass, aioclient_mock, healthy_fixture)
+    await init_integration(
+        hass,
+        aioclient_mock,
+        healthy_fixture,
+        statistics_response='{"statusCounters": {"Program1": "10"}}',
+    )
 
-    state = hass.states.get("sensor.wash_maintenance")
+    state = hass.states.get("sensor.wash_check_up_state")
 
     assert state
-    assert state.state == "Ok"
+    assert state.state == "Healthy"
 
 
 async def test_total_cycles_sensor(
@@ -413,9 +426,9 @@ async def test_check_up_sensor_shows_cached_value_after_offline_startup(
         hass,
         [
             (
-                State(checkup_entry.entity_id, "Ok"),
+                State(checkup_entry.entity_id, "Idle"),
                 SensorExtraStoredData(
-                    native_value="Ok", native_unit_of_measurement=None
+                    native_value="Idle", native_unit_of_measurement=None
                 ).as_dict(),
             )
         ],
@@ -431,7 +444,7 @@ async def test_check_up_sensor_shows_cached_value_after_offline_startup(
 
     state = hass.states.get(checkup_entry.entity_id)
     assert state is not None
-    assert state.state == "Ok"
+    assert state.state == "Idle"
 
 
 async def test_soil_level_sensor_idle(

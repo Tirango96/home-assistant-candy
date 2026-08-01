@@ -17,16 +17,17 @@ from .const import (
 
 
 def cycles_remaining(total: int, last_reset: int, threshold: int) -> int:
-    """Return cycles until next maintenance alert, or 0 when due.
+    """Return cycles until next maintenance alert, or 0 when due (including overdue).
 
-    elapsed=0 means maintenance was just performed — return the full threshold.
-    elapsed%threshold==0 (and elapsed>0) means a full cycle has passed — due now.
+    Returns 0 for any elapsed >= threshold so notifications fire on every wash
+    until the user manually resets the counter.
     """
     elapsed = total - last_reset
     if elapsed <= 0:
         return threshold
-    delta = elapsed % threshold
-    return threshold - delta if delta != 0 else 0
+    if elapsed >= threshold:
+        return 0
+    return threshold - elapsed
 
 
 def wash_device_info(config_entry: ConfigEntry) -> DeviceInfo:

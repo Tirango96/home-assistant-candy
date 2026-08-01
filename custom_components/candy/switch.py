@@ -104,9 +104,9 @@ class _WashSwitchBase(CoordinatorEntity, SwitchEntity):
 
         async def _late_subscribe() -> None:
             """Subscribe after all platforms finish loading so the select entity is registered."""
-            registry = er.async_get(self.hass)
-            if registry.async_get(self.entity_id) is None:
+            if self.registry_entry is None:
                 return
+            registry = er.async_get(self.hass)
             entity_id = registry.async_get_entity_id(
                 "select", DOMAIN, UNIQUE_ID_WASH_PROGRAM_SELECT.format(self.config_id)
             )

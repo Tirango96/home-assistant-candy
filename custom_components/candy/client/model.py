@@ -44,9 +44,15 @@ class MachineState(StatusCode):
 
 
 class CheckUpState(StatusCode):
-    IDLE = (0, "Ok")
+    IDLE = (0, "Idle")
     IN_PROGRESS = (1, "In progress")
-    HEALTHY = (2, "Ok")
+    HEALTHY = (2, "Healthy")
+
+
+class CheckUpResult(StatusCode):
+    NOT_RUN = (0, "Not run")
+    OK = (1, "OK")
+    PROBLEM = (2, "Problem detected")
 
 
 class WashProgramState(StatusCode):
@@ -85,6 +91,7 @@ class WashingMachineStatus:
     unbalance_count: int | None  # unbC — unbalance count
     fault_count: int | None  # numF — total fault count
     check_up_state: CheckUpState | None
+    dis_test_res: CheckUpResult | None  # DisTestRes — result of last diagnostic
     soil_level: int | None  # SLevel — 0–4 soil level setting
 
     @classmethod
@@ -110,6 +117,9 @@ class WashingMachineStatus:
             fault_count=int(json["numF"]) if "numF" in json else None,
             check_up_state=CheckUpState.from_code(int(json["CheckUpState"]))
             if "CheckUpState" in json
+            else None,
+            dis_test_res=CheckUpResult.from_code(int(json["DisTestRes"]))
+            if "DisTestRes" in json
             else None,
             soil_level=int(json["SLevel"]) if "SLevel" in json else None,
         )

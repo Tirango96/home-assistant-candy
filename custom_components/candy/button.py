@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime, timedelta
 from typing import cast
 from urllib.parse import quote, urlencode
 
@@ -13,6 +14,7 @@ from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
 )
+from homeassistant.util import dt as dt_util
 
 from .client import (
     CandyClient,
@@ -26,10 +28,17 @@ from .client import (
 )
 from .client.model import MachineState
 from .const import (
+    CHECKUP_SCHEDULE_EVERY_CYCLE,
+    CHECKUP_SCHEDULE_WEEKLY,
+    CONF_KEY_CHECKUP_ENABLED,
+    CONF_KEY_CHECKUP_LAST_DATE,
+    CONF_KEY_CHECKUP_SCHEDULE,
     CONF_KEY_MAINTENANCE_ENABLED,
+    CONF_KEY_MAINTENANCE_FILTER_ENABLED,
     CONF_KEY_MAINTENANCE_LAST_FILTER,
     CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
     CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
+    CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED,
     CONF_KEY_MODE,
     CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
@@ -57,6 +66,23 @@ from .const import (
     WASH_OPTIONS,
 )
 from .helpers import wash_device_info
+
+
+def _should_send_checkup(config_entry: ConfigEntry, now: datetime) -> int:
+    """Return 1 if the automatic diagnostic should run with the next wash start, else 0."""
+    if not config_entry.data.get(CONF_KEY_CHECKUP_ENABLED, False):
+        return 0
+    schedule = config_entry.data.get(
+        CONF_KEY_CHECKUP_SCHEDULE, CHECKUP_SCHEDULE_EVERY_CYCLE
+    )
+    if schedule == CHECKUP_SCHEDULE_EVERY_CYCLE:
+        return 1
+    last_ts = config_entry.data.get(CONF_KEY_CHECKUP_LAST_DATE)
+    if last_ts is None:
+        return 1
+    last = dt_util.utc_from_timestamp(last_ts)
+    delta = timedelta(days=7 if schedule == CHECKUP_SCHEDULE_WEEKLY else 30)
+    return 1 if (now - last) >= delta else 0
 
 
 async def async_setup_entry(
@@ -90,18 +116,20 @@ async def async_setup_entry(
     if config_entry.data.get(CONF_KEY_MAINTENANCE_ENABLED):
         stats_coordinator = hass.data[DOMAIN][config_id].get(DATA_KEY_STATS_COORDINATOR)
         if stats_coordinator is not None:
-            async_add_entities(
-                [
-                    WashMaintResetButton(
-                        coordinator,
-                        config_entry,
-                        stats_coordinator,
-                        CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
-                        UNIQUE_ID_WASH_MAINT_SELFCLEAN_BUTTON,
-                        "Reset Auto-Clean Counter",
-                        "wash_maint_selfclean_reset",
-                        "mdi:washing-machine-alert",
-                    ),
+            buttons = [
+                WashMaintResetButton(
+                    coordinator,
+                    config_entry,
+                    stats_coordinator,
+                    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
+                    UNIQUE_ID_WASH_MAINT_SELFCLEAN_BUTTON,
+                    "Reset Auto-Clean Counter",
+                    "wash_maint_selfclean_reset",
+                    "mdi:washing-machine-alert",
+                ),
+            ]
+            if config_entry.data.get(CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED, True):
+                buttons.append(
                     WashMaintResetButton(
                         coordinator,
                         config_entry,
@@ -111,7 +139,10 @@ async def async_setup_entry(
                         "Reset Limescale Counter",
                         "wash_maint_limescale_reset",
                         "mdi:water-remove",
-                    ),
+                    )
+                )
+            if config_entry.data.get(CONF_KEY_MAINTENANCE_FILTER_ENABLED, True):
+                buttons.append(
                     WashMaintResetButton(
                         coordinator,
                         config_entry,
@@ -121,9 +152,9 @@ async def async_setup_entry(
                         "Reset Filter Counter",
                         "wash_maint_filter_reset",
                         "mdi:filter-remove",
-                    ),
-                ]
-            )
+                    )
+                )
+            async_add_entities(buttons)
 
 
 class CandyWashButtonBase(CoordinatorEntity, ButtonEntity):
@@ -285,7 +316,9 @@ class WashStartButton(CandyWashButtonBase):
                 "Dry": 0,
                 "ED": 0,
                 "RecipeId": 0,
-                "StartCheckUp": 0,
+                "StartCheckUp": _should_send_checkup(
+                    self.config_entry, dt_util.utcnow()
+                ),
                 "DispTestOn": 1,
             }
             await self._send_command_and_refresh(urlencode(params, quote_via=quote))
@@ -360,7 +393,7 @@ class WashStartButton(CandyWashButtonBase):
             "Dry": 0,
             "ED": 0,
             "RecipeId": 0,
-            "StartCheckUp": 0,
+            "StartCheckUp": _should_send_checkup(self.config_entry, dt_util.utcnow()),
             "DispTestOn": 1,
         }
         await self._send_command_and_refresh(urlencode(params, quote_via=quote))

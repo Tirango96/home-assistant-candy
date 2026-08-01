@@ -24,14 +24,21 @@ from .client.cloud import SimplyFiCloudError, fetch_appliance_data
 from .client.decryption import Encryption
 from .client.model import WashingMachineStatus
 from .const import (
+    CHECKUP_SCHEDULE_EVERY_CYCLE,
+    CHECKUP_SCHEDULE_MONTHLY,
+    CHECKUP_SCHEDULE_WEEKLY,
     CONF_INTEGRATION_TITLE,
+    CONF_KEY_CHECKUP_ENABLED,
+    CONF_KEY_CHECKUP_SCHEDULE,
     CONF_KEY_DEVICE_MODEL,
     CONF_KEY_IS_WASHING_MACHINE,
     CONF_KEY_MAC_ADDRESS,
     CONF_KEY_MAINTENANCE_ENABLED,
+    CONF_KEY_MAINTENANCE_FILTER_ENABLED,
     CONF_KEY_MAINTENANCE_LAST_FILTER,
     CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
     CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
+    CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED,
     CONF_KEY_MODE,
     CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
@@ -81,6 +88,30 @@ MAINTENANCE_ENABLE_SCHEMA = vol.Schema(
     }
 )
 
+CHECKUP_ENABLE_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_KEY_CHECKUP_ENABLED, default=False): bool,
+    }
+)
+
+CHECKUP_SCHEDULE_SCHEMA = vol.Schema(
+    {
+        vol.Required(
+            CONF_KEY_CHECKUP_SCHEDULE, default=CHECKUP_SCHEDULE_EVERY_CYCLE
+        ): SelectSelector(
+            SelectSelectorConfig(
+                options=[
+                    str(CHECKUP_SCHEDULE_EVERY_CYCLE),
+                    str(CHECKUP_SCHEDULE_WEEKLY),
+                    str(CHECKUP_SCHEDULE_MONTHLY),
+                ],
+                mode=SelectSelectorMode.LIST,
+                translation_key="checkup_schedule",
+            )
+        ),
+    }
+)
+
 HARDNESS_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_KEY_WATER_HARDNESS, default=2): SelectSelector(
@@ -111,27 +142,35 @@ def _remaining_to_last_reset(remaining: int, total: int, threshold: int) -> int:
     return total - (threshold - remaining)
 
 
-def _baselines_schema(hardness_index: int, total_cycles: int) -> vol.Schema:
+def _baselines_schema(
+    hardness_index: int,
+    total_cycles: int,
+    limescale_enabled: bool,
+    filter_enabled: bool,
+) -> vol.Schema:
     """Build schema for remaining-cycles fields with current remaining as defaults."""
     limescale_threshold = MAINTENANCE_HARDNESS_THRESHOLDS[hardness_index]
-    return vol.Schema(
-        {
-            vol.Required(
-                CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
-                default=cycles_remaining(
-                    total_cycles, 0, MAINTENANCE_SELFCLEAN_THRESHOLD
-                ),
-            ): int,
+    fields: dict[vol.Required, type] = {
+        vol.Required(
+            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
+            default=cycles_remaining(total_cycles, 0, MAINTENANCE_SELFCLEAN_THRESHOLD),
+        ): int,
+    }
+    if limescale_enabled:
+        fields[
             vol.Required(
                 CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
                 default=cycles_remaining(total_cycles, 0, limescale_threshold),
-            ): int,
+            )
+        ] = int
+    if filter_enabled:
+        fields[
             vol.Required(
                 CONF_KEY_MAINTENANCE_LAST_FILTER,
                 default=cycles_remaining(total_cycles, 0, MAINTENANCE_FILTER_THRESHOLD),
-            ): int,
-        }
-    )
+            )
+        ] = int
+    return vol.Schema(fields)
 
 
 def _language_schema(default_lang: str) -> vol.Schema:
@@ -179,6 +218,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     return await self.async_step_switch_to_read_only()
                 if user_input["next_step"] == "maintenance_settings":
                     return await self.async_step_maintenance()
+                if user_input["next_step"] == "checkup_settings":
+                    return await self.async_step_checkup()
                 return await self.async_step_update_cloud_data()
             return self.async_show_form(
                 step_id="init",
@@ -190,6 +231,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                                     "update_cloud_data",
                                     "switch_to_read_only",
                                     "maintenance_settings",
+                                    "checkup_settings",
                                 ],
                                 mode=SelectSelectorMode.LIST,
                                 translation_key="next_step",
@@ -221,6 +263,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             CONF_KEY_MAINTENANCE_ENABLED
         ]
         if not user_input[CONF_KEY_MAINTENANCE_ENABLED]:
+            if self.config_entry.data.get(CONF_KEY_MODE) == MODE_FULL_CONTROL:
+                return await self.async_step_checkup()
             self.hass.config_entries.async_update_entry(
                 self.config_entry, data=self._pending_data
             )
@@ -228,7 +272,41 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 self.hass.config_entries.async_reload(self.config_entry.entry_id)
             )
             return self.async_create_entry(data={})
-        return await self.async_step_hardness()
+        return await self.async_step_maintenance_types()
+
+    async def async_step_maintenance_types(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask which optional counters to enable (limescale, filter)."""
+        if user_input is None:
+            ls_current = self.config_entry.data.get(
+                CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED, True
+            )
+            ft_current = self.config_entry.data.get(
+                CONF_KEY_MAINTENANCE_FILTER_ENABLED, True
+            )
+            return self.async_show_form(
+                step_id="maintenance_types",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(
+                            CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED, default=ls_current
+                        ): bool,
+                        vol.Required(
+                            CONF_KEY_MAINTENANCE_FILTER_ENABLED, default=ft_current
+                        ): bool,
+                    }
+                ),
+            )
+        self._pending_data[CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED] = user_input[
+            CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED
+        ]
+        self._pending_data[CONF_KEY_MAINTENANCE_FILTER_ENABLED] = user_input[
+            CONF_KEY_MAINTENANCE_FILTER_ENABLED
+        ]
+        if user_input[CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED]:
+            return await self.async_step_hardness()
+        return await self.async_step_maintenance_baselines()
 
     async def async_step_hardness(
         self, user_input: dict[str, Any] | None = None
@@ -265,9 +343,15 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_maintenance_baselines(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Ask for remaining cycles (what the app shows) for each maintenance item."""
+        """Ask for remaining cycles (what the app shows) for each enabled maintenance item."""
         hardness_index = self._pending_data.get(CONF_KEY_WATER_HARDNESS, 2)
         limescale_threshold = MAINTENANCE_HARDNESS_THRESHOLDS[hardness_index]
+        limescale_enabled = self._pending_data.get(
+            CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED, True
+        )
+        filter_enabled = self._pending_data.get(
+            CONF_KEY_MAINTENANCE_FILTER_ENABLED, True
+        )
 
         # Read current total_cycles from the live stats coordinator if available
         total_cycles: int = 0
@@ -280,7 +364,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             total_cycles = stats_data.data.total_cycles
 
         if user_input is None:
-            # Show the current remaining values as defaults, derived from stored last_reset
             last_sc = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_SELFCLEAN, 0)
             last_ls = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_LIMESCALE, 0)
             last_ft = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_FILTER, 0)
@@ -299,21 +382,24 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 if total_cycles
                 else MAINTENANCE_FILTER_THRESHOLD
             )
+            fields: dict[vol.Required, type] = {
+                vol.Required(
+                    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN, default=sc_default
+                ): int,
+            }
+            if limescale_enabled:
+                fields[
+                    vol.Required(
+                        CONF_KEY_MAINTENANCE_LAST_LIMESCALE, default=ls_default
+                    )
+                ] = int
+            if filter_enabled:
+                fields[
+                    vol.Required(CONF_KEY_MAINTENANCE_LAST_FILTER, default=ft_default)
+                ] = int
             return self.async_show_form(
                 step_id="maintenance_baselines",
-                data_schema=vol.Schema(
-                    {
-                        vol.Required(
-                            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN, default=sc_default
-                        ): int,
-                        vol.Required(
-                            CONF_KEY_MAINTENANCE_LAST_LIMESCALE, default=ls_default
-                        ): int,
-                        vol.Required(
-                            CONF_KEY_MAINTENANCE_LAST_FILTER, default=ft_default
-                        ): int,
-                    }
-                ),
+                data_schema=vol.Schema(fields),
             )
         self._pending_data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] = (
             _remaining_to_last_reset(
@@ -322,17 +408,91 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 MAINTENANCE_SELFCLEAN_THRESHOLD,
             )
         )
-        self._pending_data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] = (
-            _remaining_to_last_reset(
-                user_input[CONF_KEY_MAINTENANCE_LAST_LIMESCALE],
-                total_cycles,
-                limescale_threshold,
+        if limescale_enabled:
+            self._pending_data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] = (
+                _remaining_to_last_reset(
+                    user_input[CONF_KEY_MAINTENANCE_LAST_LIMESCALE],
+                    total_cycles,
+                    limescale_threshold,
+                )
             )
+        if filter_enabled:
+            self._pending_data[CONF_KEY_MAINTENANCE_LAST_FILTER] = (
+                _remaining_to_last_reset(
+                    user_input[CONF_KEY_MAINTENANCE_LAST_FILTER],
+                    total_cycles,
+                    MAINTENANCE_FILTER_THRESHOLD,
+                )
+            )
+        self.hass.config_entries.async_update_entry(
+            self.config_entry, data=self._pending_data
         )
-        self._pending_data[CONF_KEY_MAINTENANCE_LAST_FILTER] = _remaining_to_last_reset(
-            user_input[CONF_KEY_MAINTENANCE_LAST_FILTER],
-            total_cycles,
-            MAINTENANCE_FILTER_THRESHOLD,
+        self.hass.async_create_task(
+            self.hass.config_entries.async_reload(self.config_entry.entry_id)
+        )
+        return self.async_create_entry(data={})
+
+    async def async_step_checkup(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask whether automatic self check-up should be enabled."""
+        if user_input is None:
+            current = self._pending_data.get(
+                CONF_KEY_CHECKUP_ENABLED,
+                self.config_entry.data.get(CONF_KEY_CHECKUP_ENABLED, False),
+            )
+            return self.async_show_form(
+                step_id="checkup",
+                data_schema=vol.Schema(
+                    {vol.Required(CONF_KEY_CHECKUP_ENABLED, default=current): bool}
+                ),
+            )
+        self._pending_data[CONF_KEY_CHECKUP_ENABLED] = user_input[
+            CONF_KEY_CHECKUP_ENABLED
+        ]
+        if not user_input[CONF_KEY_CHECKUP_ENABLED]:
+            self.hass.config_entries.async_update_entry(
+                self.config_entry, data=self._pending_data
+            )
+            self.hass.async_create_task(
+                self.hass.config_entries.async_reload(self.config_entry.entry_id)
+            )
+            return self.async_create_entry(data={})
+        return await self.async_step_checkup_schedule()
+
+    async def async_step_checkup_schedule(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask how often the automatic check-up should run."""
+        if user_input is None:
+            current = self._pending_data.get(
+                CONF_KEY_CHECKUP_SCHEDULE,
+                self.config_entry.data.get(
+                    CONF_KEY_CHECKUP_SCHEDULE, CHECKUP_SCHEDULE_EVERY_CYCLE
+                ),
+            )
+            return self.async_show_form(
+                step_id="checkup_schedule",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(
+                            CONF_KEY_CHECKUP_SCHEDULE, default=current
+                        ): SelectSelector(
+                            SelectSelectorConfig(
+                                options=[
+                                    str(CHECKUP_SCHEDULE_EVERY_CYCLE),
+                                    str(CHECKUP_SCHEDULE_WEEKLY),
+                                    str(CHECKUP_SCHEDULE_MONTHLY),
+                                ],
+                                mode=SelectSelectorMode.LIST,
+                                translation_key="checkup_schedule",
+                            )
+                        ),
+                    }
+                ),
+            )
+        self._pending_data[CONF_KEY_CHECKUP_SCHEDULE] = int(
+            user_input[CONF_KEY_CHECKUP_SCHEDULE]
         )
         self.hass.config_entries.async_update_entry(
             self.config_entry, data=self._pending_data
@@ -671,10 +831,40 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
             CONF_KEY_MAINTENANCE_ENABLED
         ]
         if not user_input[CONF_KEY_MAINTENANCE_ENABLED]:
+            if self._config_data.get(CONF_KEY_MODE) == MODE_FULL_CONTROL:
+                return await self.async_step_checkup()
             return self.async_create_entry(
                 title=CONF_INTEGRATION_TITLE, data=self._config_data
             )
-        return await self.async_step_hardness()
+        return await self.async_step_maintenance_types()
+
+    async def async_step_maintenance_types(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask which optional counters to enable (limescale, filter)."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="maintenance_types",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(
+                            CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED, default=True
+                        ): bool,
+                        vol.Required(
+                            CONF_KEY_MAINTENANCE_FILTER_ENABLED, default=True
+                        ): bool,
+                    }
+                ),
+            )
+        self._config_data[CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED] = user_input[
+            CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED
+        ]
+        self._config_data[CONF_KEY_MAINTENANCE_FILTER_ENABLED] = user_input[
+            CONF_KEY_MAINTENANCE_FILTER_ENABLED
+        ]
+        if user_input[CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED]:
+            return await self.async_step_hardness()
+        return await self.async_step_maintenance_baselines()
 
     async def async_step_hardness(
         self, user_input: dict[str, Any] | None = None
@@ -690,12 +880,23 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
     async def async_step_maintenance_baselines(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Ask for remaining cycles (what the app shows) for each maintenance item."""
+        """Ask for remaining cycles (what the app shows) for each enabled maintenance item."""
         hardness_index = self._config_data.get(CONF_KEY_WATER_HARDNESS, 2)
+        limescale_enabled = self._config_data.get(
+            CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED, True
+        )
+        filter_enabled = self._config_data.get(
+            CONF_KEY_MAINTENANCE_FILTER_ENABLED, True
+        )
         if user_input is None:
             return self.async_show_form(
                 step_id="maintenance_baselines",
-                data_schema=_baselines_schema(hardness_index, self._total_cycles),
+                data_schema=_baselines_schema(
+                    hardness_index,
+                    self._total_cycles,
+                    limescale_enabled,
+                    filter_enabled,
+                ),
             )
         limescale_threshold = MAINTENANCE_HARDNESS_THRESHOLDS[hardness_index]
         self._config_data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] = (
@@ -705,17 +906,55 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
                 MAINTENANCE_SELFCLEAN_THRESHOLD,
             )
         )
-        self._config_data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] = (
-            _remaining_to_last_reset(
-                user_input[CONF_KEY_MAINTENANCE_LAST_LIMESCALE],
-                self._total_cycles,
-                limescale_threshold,
+        if limescale_enabled:
+            self._config_data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] = (
+                _remaining_to_last_reset(
+                    user_input[CONF_KEY_MAINTENANCE_LAST_LIMESCALE],
+                    self._total_cycles,
+                    limescale_threshold,
+                )
             )
+        if filter_enabled:
+            self._config_data[CONF_KEY_MAINTENANCE_LAST_FILTER] = (
+                _remaining_to_last_reset(
+                    user_input[CONF_KEY_MAINTENANCE_LAST_FILTER],
+                    self._total_cycles,
+                    MAINTENANCE_FILTER_THRESHOLD,
+                )
+            )
+        if self._config_data.get(CONF_KEY_MODE) == MODE_FULL_CONTROL:
+            return await self.async_step_checkup()
+        return self.async_create_entry(
+            title=CONF_INTEGRATION_TITLE, data=self._config_data
         )
-        self._config_data[CONF_KEY_MAINTENANCE_LAST_FILTER] = _remaining_to_last_reset(
-            user_input[CONF_KEY_MAINTENANCE_LAST_FILTER],
-            self._total_cycles,
-            MAINTENANCE_FILTER_THRESHOLD,
+
+    async def async_step_checkup(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask whether automatic self check-up should be enabled."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="checkup", data_schema=CHECKUP_ENABLE_SCHEMA
+            )
+        self._config_data[CONF_KEY_CHECKUP_ENABLED] = user_input[
+            CONF_KEY_CHECKUP_ENABLED
+        ]
+        if not user_input[CONF_KEY_CHECKUP_ENABLED]:
+            return self.async_create_entry(
+                title=CONF_INTEGRATION_TITLE, data=self._config_data
+            )
+        return await self.async_step_checkup_schedule()
+
+    async def async_step_checkup_schedule(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask how often the automatic check-up should run."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="checkup_schedule", data_schema=CHECKUP_SCHEDULE_SCHEMA
+            )
+        self._config_data[CONF_KEY_CHECKUP_SCHEDULE] = int(
+            user_input[CONF_KEY_CHECKUP_SCHEDULE]
         )
         return self.async_create_entry(
             title=CONF_INTEGRATION_TITLE, data=self._config_data
