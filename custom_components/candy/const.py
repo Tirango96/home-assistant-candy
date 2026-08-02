@@ -9,6 +9,7 @@ DATA_KEY_CLIENT = "client"
 DATA_KEY_WRITE_PENDING = "write_pending"
 DATA_KEY_MAINT_UNSUB = "maint_unsub"
 DATA_KEY_CHECKUP_UNSUB = "checkup_unsub"
+DATA_KEY_STATS_REFRESH_UNSUB = "stats_refresh_unsub"
 
 CONF_INTEGRATION_TITLE = "Candy"
 CONF_KEY_USE_ENCRYPTION = "use_encryption"

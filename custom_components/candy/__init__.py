@@ -52,6 +52,7 @@ from .const import (
     DATA_KEY_COORDINATOR,
     DATA_KEY_MAINT_UNSUB,
     DATA_KEY_STATS_COORDINATOR,
+    DATA_KEY_STATS_REFRESH_UNSUB,
     DOMAIN,
     MAINTENANCE_FILTER_THRESHOLD,
     MAINTENANCE_HARDNESS_THRESHOLDS,
@@ -322,11 +323,10 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 
         async def update_statistics() -> WashingMachineStatistics:
             nonlocal last_known_statistics
-            if (
-                getattr(coordinator.data, "machine_state", None) == MachineState.OFF
-                and last_known_statistics is not None
-            ):
-                return last_known_statistics
+            if getattr(coordinator.data, "machine_state", None) == MachineState.OFF:
+                if last_known_statistics is not None:
+                    return last_known_statistics
+                raise UpdateFailed("Machine is OFF; statistics unavailable.")
             try:
                 async with async_timeout.timeout(40):
                     stats = await client.statistics_with_retry()
@@ -380,6 +380,13 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
             hass.data[DOMAIN][config_entry.entry_id][DATA_KEY_CHECKUP_UNSUB] = (
                 unsub_checkup
             )
+
+        unsub_stats_refresh = _register_stats_refresh_listener(
+            hass, coordinator, stats_coordinator
+        )
+        hass.data[DOMAIN][config_entry.entry_id][DATA_KEY_STATS_REFRESH_UNSUB] = (
+            unsub_stats_refresh
+        )
 
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
@@ -470,12 +477,43 @@ def _register_checkup_listener(
     return coordinator.async_add_listener(_on_status_update)
 
 
+_FINISHED_STATES = {MachineState.FINISHED1, MachineState.FINISHED2}
+
+
+def _register_stats_refresh_listener(
+    hass: HomeAssistant,
+    coordinator: DataUpdateCoordinator[Any],
+    stats_coordinator: DataUpdateCoordinator[WashingMachineStatistics],
+) -> Callable[[], None]:
+    """Refresh statistics when a wash cycle transitions into a finished state."""
+    initial = cast(WashingMachineStatus | None, coordinator.data)
+    prev_state: list[MachineState | None] = [
+        initial.machine_state if initial is not None else None
+    ]
+
+    def _on_status_update() -> None:
+        status = cast(WashingMachineStatus | None, coordinator.data)
+        if status is None:
+            return
+        curr = status.machine_state
+        prev = prev_state[0]
+        prev_state[0] = curr
+        if curr in _FINISHED_STATES and prev not in _FINISHED_STATES:
+            hass.async_create_task(stats_coordinator.async_request_refresh())
+
+    return coordinator.async_add_listener(_on_status_update)
+
+
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         entry_data = hass.data[DOMAIN].pop(entry.entry_id, {})
-        for key in (DATA_KEY_MAINT_UNSUB, DATA_KEY_CHECKUP_UNSUB):
+        for key in (
+            DATA_KEY_MAINT_UNSUB,
+            DATA_KEY_CHECKUP_UNSUB,
+            DATA_KEY_STATS_REFRESH_UNSUB,
+        ):
             unsub = entry_data.get(key)
             if unsub is not None:
                 unsub()
