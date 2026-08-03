@@ -13,7 +13,7 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClien
 
 from custom_components.candy import CONF_KEY_USE_ENCRYPTION, DOMAIN
 from custom_components.candy.button import _should_send_checkup
-from custom_components.candy.client.model import CheckUpResult, CheckUpState
+from custom_components.candy.client.model import CheckUpResult
 from custom_components.candy.const import (
     CHECKUP_SCHEDULE_EVERY_CYCLE,
     CHECKUP_SCHEDULE_MONTHLY,
@@ -309,13 +309,6 @@ def test_checkup_result_from_code():
     assert CheckUpResult.from_code(0) == CheckUpResult.NOT_RUN
     assert CheckUpResult.from_code(1) == CheckUpResult.OK
     assert CheckUpResult.from_code(2) == CheckUpResult.PROBLEM
-
-
-def test_checkup_state_labels_distinct():
-    assert str(CheckUpState.IDLE) != str(CheckUpState.HEALTHY)
-    assert str(CheckUpState.IDLE) == "Idle"
-    assert str(CheckUpState.HEALTHY) == "Healthy"
-    assert str(CheckUpState.IN_PROGRESS) == "In progress"
 
 
 # ---------------------------------------------------------------------------

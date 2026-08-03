@@ -9,7 +9,6 @@ from custom_components.candy import CONF_KEY_USE_ENCRYPTION, DOMAIN
 from custom_components.candy.client import Encryption
 from custom_components.candy.client.cloud import CloudApplianceData, SimplyFiCloudError
 from custom_components.candy.client.model import (
-    CheckUpState,
     DryerCycleState,
     DryerProgramState,
     MachineState,
@@ -57,7 +56,6 @@ _IDLE_WASHING_MACHINE = WashingMachineStatus(
     unbalance_fault=None,
     unbalance_count=None,
     fault_count=None,
-    check_up_state=CheckUpState.IDLE,
     dis_test_res=None,
     soil_level=None,
 )

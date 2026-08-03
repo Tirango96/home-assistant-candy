@@ -209,14 +209,6 @@
       "wash_maintenance": {
         "name": "Wash maintenance"
       },
-      "wash_checkup_state": {
-        "name": "Wash check-up state",
-        "state": {
-          "idle": "Idle",
-          "in_progress": "In progress",
-          "healthy": "Healthy"
-        }
-      },
       "wash_checkup_result": {
         "name": "Wash check-up result",
         "state": {

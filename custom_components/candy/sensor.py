@@ -81,7 +81,6 @@ from .const import (
     UNIQUE_ID_TUMBLE_DRYER,
     UNIQUE_ID_TUMBLE_PROGRAM,
     UNIQUE_ID_TUMBLE_REMAINING_TIME,
-    UNIQUE_ID_WASH_CHECK_UP,
     UNIQUE_ID_WASH_CHECKUP_RESULT,
     UNIQUE_ID_WASH_CYCLE_CAPACITY,
     UNIQUE_ID_WASH_CYCLE_STATUS,
@@ -157,10 +156,6 @@ async def async_setup_entry(
             UNIQUE_ID_WASH_MOTOR_FREQ
         ):
             entities.append(CandyWashMotorFreqSensor(coordinator, config_entry))
-        if status.check_up_state is not None or _was_registered(
-            UNIQUE_ID_WASH_CHECK_UP
-        ):
-            entities.append(CandyWashCheckUpSensor(coordinator, config_entry))
         if status.soil_level is not None or _was_registered(UNIQUE_ID_WASH_SOIL_LEVEL):
             entities.append(CandyWashSoilLevelSensor(coordinator, config_entry))
         programs = parse_wash_programs(config_entry.data.get(CONF_KEY_PROGRAMS, []))
@@ -505,11 +500,22 @@ class CandyWashFillPercentSensor(CandyBaseSensor):
         return "mdi:water-percent"
 
 
-class CandyWashErrorSensor(CandyBaseSensor):
+class CandyWashErrorSensor(CandyBaseSensor, RestoreSensor):
     """Error code reported by the washing machine (0 = no error)."""
 
     _attr_translation_key = "wash_error_code"
     _attr_name = "Wash error code"
+    _restored_state: int | None = None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_sensor_data()) is not None:
+            if isinstance(last.native_value, int):
+                self._restored_state = last.native_value
+
+    @property
+    def available(self) -> bool:
+        return super().available or self._restored_state is not None
 
     def device_name(self) -> str:
         return DEVICE_NAME_WASHING_MACHINE
@@ -527,7 +533,11 @@ class CandyWashErrorSensor(CandyBaseSensor):
 
     @property
     def native_value(self) -> StateType:
-        return cast(WashingMachineStatus, self.coordinator.data).error
+        if self.coordinator.data is not None:
+            error = cast(WashingMachineStatus, self.coordinator.data).error
+            if error is not None:
+                return error
+        return self._restored_state
 
     @property
     def icon(self) -> str:
@@ -660,45 +670,6 @@ class CandyWashMotorFreqSensor(CandyBaseSensor):
     @property
     def icon(self) -> str:
         return "mdi:sine-wave"
-
-
-class CandyWashCheckUpSensor(CandyBaseSensor, RestoreSensor):
-    """Live diagnostic lifecycle state of the washing machine (CheckUpState)."""
-
-    _attr_translation_key = "wash_checkup_state"
-    _attr_name = "Wash check-up state"
-    _restored_state: str | None = None
-
-    async def async_added_to_hass(self) -> None:
-        await super().async_added_to_hass()
-        if (last := await self.async_get_last_sensor_data()) is not None:
-            if last.native_value in ("Idle", "In progress", "Healthy"):
-                self._restored_state = str(last.native_value)
-
-    def device_name(self) -> str:
-        return DEVICE_NAME_WASHING_MACHINE
-
-    def suggested_area(self) -> str:
-        return SUGGESTED_AREA_BATHROOM
-
-    @property
-    def entity_category(self) -> EntityCategory:
-        return EntityCategory.DIAGNOSTIC
-
-    @property
-    def unique_id(self) -> str:
-        return UNIQUE_ID_WASH_CHECK_UP.format(self.config_id)
-
-    @property
-    def native_value(self) -> StateType:
-        state = cast(WashingMachineStatus, self.coordinator.data).check_up_state
-        if state is not None:
-            return str(state)
-        return self._restored_state
-
-    @property
-    def icon(self) -> str:
-        return "mdi:wrench-check"
 
 
 class CandyWashSoilLevelSensor(CandyBaseSensor):

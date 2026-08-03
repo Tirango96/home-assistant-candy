@@ -214,64 +214,6 @@ async def test_sensors_device_info(
     assert main_device == cycle_device == time_device
 
 
-async def test_check_up_sensor_ok(
-    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
-):
-    await init_integration(
-        hass,
-        aioclient_mock,
-        load_fixture("washing_machine/idle.json"),
-        statistics_response='{"statusCounters": {"Program1": "10"}}',
-    )
-
-    state = hass.states.get("sensor.wash_check_up_state")
-
-    assert state
-    assert state.state == "Idle"
-    assert state.attributes == {
-        "friendly_name": "Wash check-up state",
-        "icon": "mdi:wrench-check",
-    }
-
-
-async def test_check_up_sensor_in_progress(
-    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
-):
-    service_due_fixture = load_fixture("washing_machine/idle.json").replace(
-        '"CheckUpState": "0"', '"CheckUpState": "1"'
-    )
-    await init_integration(
-        hass,
-        aioclient_mock,
-        service_due_fixture,
-        statistics_response='{"statusCounters": {"Program1": "10"}}',
-    )
-
-    state = hass.states.get("sensor.wash_check_up_state")
-
-    assert state
-    assert state.state == "In progress"
-
-
-async def test_check_up_sensor_healthy(
-    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
-):
-    healthy_fixture = load_fixture("washing_machine/idle.json").replace(
-        '"CheckUpState": "0"', '"CheckUpState": "2"'
-    )
-    await init_integration(
-        hass,
-        aioclient_mock,
-        healthy_fixture,
-        statistics_response='{"statusCounters": {"Program1": "10"}}',
-    )
-
-    state = hass.states.get("sensor.wash_check_up_state")
-
-    assert state
-    assert state.state == "Healthy"
-
-
 async def test_total_cycles_sensor(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
@@ -390,61 +332,6 @@ async def test_total_cycles_shows_cached_value_after_offline_startup(
     state = hass.states.get(cycles_entry.entity_id)
     assert state is not None
     assert state.state == "40"
-
-
-async def test_check_up_sensor_shows_cached_value_after_offline_startup(
-    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
-):
-    """Wash maintenance sensor should show last known value when startup uses synthetic offline status."""
-    # Build a fixture with no CheckUpState field so check_up_state parses as None
-    fixture_no_checkup = load_fixture("washing_machine/idle.json").replace(
-        '"CheckUpState": "0",', ""
-    )
-
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        unique_id="123-456",
-        data={
-            CONF_IP_ADDRESS: TEST_IP,
-            CONF_KEY_USE_ENCRYPTION: False,
-            CONF_PASSWORD: "",
-        },
-    )
-    entry.add_to_hass(hass)
-
-    # Pre-register the maintenance entity and capture the actual entity_id
-    registry = entity_registry.async_get(hass)
-    checkup_entry = registry.async_get_or_create(
-        "sensor",
-        DOMAIN,
-        f"{entry.entry_id}-wash_check_up",
-        config_entry=entry,
-    )
-
-    # Seed the RestoreSensor cache using the actual entity_id HA assigned
-    mock_restore_cache_with_extra_data(
-        hass,
-        [
-            (
-                State(checkup_entry.entity_id, "Idle"),
-                SensorExtraStoredData(
-                    native_value="Idle", native_unit_of_measurement=None
-                ).as_dict(),
-            )
-        ],
-    )
-
-    aioclient_mock.get(
-        f"http://{TEST_IP}/http-read.json?encrypted=0",
-        text=fixture_no_checkup,
-    )
-
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    state = hass.states.get(checkup_entry.entity_id)
-    assert state is not None
-    assert state.state == "Idle"
 
 
 async def test_soil_level_sensor_idle(

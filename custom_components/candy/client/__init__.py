@@ -134,7 +134,7 @@ class CandyClient:
         else:
             url = _write_url(self.device_ip, use_encryption=False, data=query_string)
 
-        async with async_timeout.timeout(5), _LIMITER, self.session.get(url) as resp:
+        async with async_timeout.timeout(5), self.session.get(url) as resp:
             if resp.status != 200:
                 text = await resp.text()
                 raise ValueError(
