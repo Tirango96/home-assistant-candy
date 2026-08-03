@@ -38,6 +38,7 @@ class CloudApplianceData:
     appliance_model: str
     serial_number: str
     programs: list[dict]
+    interface_type: str
 
 
 class SimplyFiCloudError(Exception):
@@ -190,4 +191,5 @@ def _match_appliance(appliances: list[dict], device_ip: str) -> CloudApplianceDa
         appliance_model=matched.get("appliance_model", ""),
         serial_number=matched.get("sixteen_digits_code", ""),
         programs=programs,
+        interface_type=matched.get("interface_type", ""),
     )

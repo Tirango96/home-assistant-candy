@@ -33,6 +33,7 @@ from .const import (
     CONF_KEY_CHECKUP_ENABLED,
     CONF_KEY_CHECKUP_LAST_DATE,
     CONF_KEY_CHECKUP_SCHEDULE,
+    CONF_KEY_INTERFACE_TYPE,
     CONF_KEY_MAINTENANCE_ENABLED,
     CONF_KEY_MAINTENANCE_FILTER_ENABLED,
     CONF_KEY_MAINTENANCE_LAST_FILTER,
@@ -105,13 +106,16 @@ async def async_setup_entry(
         load_nfc_programs(), programs, NFC_CLUSTER_TO_PROGRAM
     )
 
-    async_add_entities(
-        [
-            WashStartButton(coordinator, config_entry, client, programs, nfc_entries),
-            WashPauseButton(coordinator, config_entry, client),
-            WashStopButton(coordinator, config_entry, client),
-        ]
-    )
+    interface_type = config_entry.data.get(CONF_KEY_INTERFACE_TYPE, "")
+    supports_pause = not interface_type.upper().startswith("BIANCA")
+
+    buttons: list = [
+        WashStartButton(coordinator, config_entry, client, programs, nfc_entries),
+        WashStopButton(coordinator, config_entry, client),
+    ]
+    if supports_pause:
+        buttons.append(WashPauseButton(coordinator, config_entry, client))
+    async_add_entities(buttons)
 
     if config_entry.data.get(CONF_KEY_MAINTENANCE_ENABLED):
         stats_coordinator = hass.data[DOMAIN][config_id].get(DATA_KEY_STATS_COORDINATOR)

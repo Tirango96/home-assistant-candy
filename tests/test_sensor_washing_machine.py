@@ -15,15 +15,19 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClien
 
 from custom_components.candy import CONF_KEY_USE_ENCRYPTION
 from custom_components.candy.const import (
+    CONF_KEY_INTERFACE_TYPE,
     CONF_KEY_IS_WASHING_MACHINE,
     CONF_KEY_MAINTENANCE_ENABLED,
     CONF_KEY_MAINTENANCE_LAST_FILTER,
     CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
     CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
+    CONF_KEY_PROGRAMS,
     CONF_KEY_WATER_HARDNESS,
     DATA_KEY_COORDINATOR,
     DATA_KEY_STATS_COORDINATOR,
     DOMAIN,
+    UNIQUE_ID_WASH_LIQUID_DETERGENT,
+    UNIQUE_ID_WASH_POWDER_DETERGENT,
 )
 
 from .common import TEST_IP, init_integration
@@ -565,3 +569,136 @@ async def test_maintenance_sensor_full_threshold_when_just_reset(
     state = hass.states.get("sensor.auto_clean_reminder")
     assert state
     assert state.state == "100"
+
+
+# ---------------------------------------------------------------------------
+# Autodose sensor gating: only present when interface_type contains "_ad"
+# ---------------------------------------------------------------------------
+
+_MINIMAL_PROGRAM = [
+    {
+        "program": {
+            "position": 1,
+            "name": "COTTON",
+            "command_parameters": [
+                {"command_parameter": {"name": "pr_code", "validation": "136"}},
+                {
+                    "command_parameter": {
+                        "name": "maximum_temperature",
+                        "validation": "90",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "default_temperature",
+                        "validation": "40",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "maximum_spin_speed",
+                        "validation": "1400",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "default_spin_speed",
+                        "validation": "800",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "minimum_soil_level",
+                        "validation": "1",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "maximum_soil_level",
+                        "validation": "3",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "default_soil_level",
+                        "validation": "2",
+                    }
+                },
+            ],
+        }
+    }
+]
+
+
+def _autodose_entity_id(hass: HomeAssistant, entry_id: str, uid_tpl: str) -> str | None:
+    reg = entity_registry.async_get(hass)
+    return reg.async_get_entity_id("sensor", DOMAIN, uid_tpl.format(entry_id))
+
+
+async def test_autodose_sensors_absent_without_ad_interface_type(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Liquid/powder detergent sensors must not be registered for non-_ad devices."""
+    entry = await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data={
+            CONF_KEY_PROGRAMS: _MINIMAL_PROGRAM,
+            CONF_KEY_INTERFACE_TYPE: "RAPIDO_4DIG_STM_NEL",
+        },
+    )
+    assert (
+        _autodose_entity_id(hass, entry.entry_id, UNIQUE_ID_WASH_LIQUID_DETERGENT)
+        is None
+    )
+    assert (
+        _autodose_entity_id(hass, entry.entry_id, UNIQUE_ID_WASH_POWDER_DETERGENT)
+        is None
+    )
+
+
+async def test_autodose_sensors_absent_without_interface_type(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Existing entries with no interface_type must not show autodose sensors."""
+    entry = await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data={CONF_KEY_PROGRAMS: _MINIMAL_PROGRAM},
+    )
+    assert (
+        _autodose_entity_id(hass, entry.entry_id, UNIQUE_ID_WASH_LIQUID_DETERGENT)
+        is None
+    )
+    assert (
+        _autodose_entity_id(hass, entry.entry_id, UNIQUE_ID_WASH_POWDER_DETERGENT)
+        is None
+    )
+
+
+async def test_autodose_sensors_present_for_ad_interface_type(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Liquid/powder detergent sensors must be registered when interface_type contains '_ad'."""
+    entry = await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data={
+            CONF_KEY_PROGRAMS: _MINIMAL_PROGRAM,
+            CONF_KEY_INTERFACE_TYPE: "red_devil_axi_ad",
+        },
+    )
+    assert (
+        _autodose_entity_id(hass, entry.entry_id, UNIQUE_ID_WASH_LIQUID_DETERGENT)
+        is not None
+    )
+    assert (
+        _autodose_entity_id(hass, entry.entry_id, UNIQUE_ID_WASH_POWDER_DETERGENT)
+        is not None
+    )

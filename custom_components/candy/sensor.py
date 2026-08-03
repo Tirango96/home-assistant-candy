@@ -43,6 +43,7 @@ from .const import (
     CONF_KEY_CHECKUP_ENABLED,
     CONF_KEY_CHECKUP_LAST_DATE,
     CONF_KEY_DEVICE_MODEL,
+    CONF_KEY_INTERFACE_TYPE,
     CONF_KEY_MAC_ADDRESS,
     CONF_KEY_MAINTENANCE_ENABLED,
     CONF_KEY_MAINTENANCE_FILTER_ENABLED,
@@ -159,16 +160,18 @@ async def async_setup_entry(
         if status.soil_level is not None or _was_registered(UNIQUE_ID_WASH_SOIL_LEVEL):
             entities.append(CandyWashSoilLevelSensor(coordinator, config_entry))
         programs = parse_wash_programs(config_entry.data.get(CONF_KEY_PROGRAMS, []))
+        interface_type = config_entry.data.get(CONF_KEY_INTERFACE_TYPE, "")
         if programs:
             entities.append(
                 CandyWashEstimatedDurationSensor(coordinator, config_entry, programs)
             )
-            entities.append(
-                CandyWashLiquidDetergentSensor(coordinator, config_entry, programs)
-            )
-            entities.append(
-                CandyWashPowderDetergentSensor(coordinator, config_entry, programs)
-            )
+            if "_ad" in interface_type.lower():
+                entities.append(
+                    CandyWashLiquidDetergentSensor(coordinator, config_entry, programs)
+                )
+                entities.append(
+                    CandyWashPowderDetergentSensor(coordinator, config_entry, programs)
+                )
             entities.append(
                 CandyWashCycleCapacitySensor(coordinator, config_entry, programs)
             )

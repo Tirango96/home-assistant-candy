@@ -407,8 +407,7 @@ def _register_maintenance_notifications(
             MAINTENANCE_SELFCLEAN_THRESHOLD,
             NOTIF_ID_MAINT_SELFCLEAN.format(entry_id),
             "Self-cleaning",
-            "We suggest you start the Self-cleaning cycle to keep the performance of your appliance AT optimal levels.\n\n"
-            'Special cycle designed to clean the drum and avoid bad odors. Start it without laundry, using only powder detergent (pour it into compartment "2") or a specific cleaning product (follow the instructions on its package). Recommended every 50 washing cycles.',
+            'We suggest you start the Self-cleaning cycle to keep the performance of your appliance AT optimal levels.\n\nSpecial cycle designed to clean the drum and avoid bad odors. Start it without laundry, using only powder detergent (pour it into compartment "2") or a specific cleaning product (follow the instructions on its package). Recommended every 50 washing cycles.',
         ),
     ]
     if config_entry.data.get(CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED, True):
@@ -418,8 +417,7 @@ def _register_maintenance_notifications(
                 limescale_threshold,
                 NOTIF_ID_MAINT_LIMESCALE.format(entry_id),
                 "Limescale cleaning",
-                "To keep your washing machine always clean and to remove any deposits, we suggest you start the Limescale Removal cycle.\n\n"
-                "Designed to clean and sanitize the drum, using only powder detergent or a washing machine limescale remover. Do not start the programme with laundry in the drum.",
+                "To keep your washing machine always clean and to remove any deposits, we suggest you start the Limescale Removal cycle.\n\nDesigned to clean and sanitize the drum, using only powder detergent or a washing machine limescale remover. Do not start the programme with laundry in the drum.",
             )
         )
     if config_entry.data.get(CONF_KEY_MAINTENANCE_FILTER_ENABLED, True):
@@ -429,12 +427,7 @@ def _register_maintenance_notifications(
                 MAINTENANCE_FILTER_THRESHOLD,
                 NOTIF_ID_MAINT_FILTER.format(entry_id),
                 "Filter cleaning",
-                "To always guarantee the best performance, we suggest you clean the filter.\n\n"
-                "It's time to check your washing machine filter: "
-                "• Start a drain only cycle. "
-                "• Place an absorbent cloth under the filter door to collect the residual water. "
-                "• Remove the filter and clean it under the tap. "
-                "• Replace the filter.",
+                "To always guarantee the best performance, we suggest you clean the filter.\n\nIt's time to check your washing machine filter: • Start a drain only cycle. • Place an absorbent cloth under the filter door to collect the residual water. • Remove the filter and clean it under the tap. • Replace the filter.",
             )
         )
 

@@ -31,6 +31,7 @@ from .const import (
     CONF_KEY_CHECKUP_ENABLED,
     CONF_KEY_CHECKUP_SCHEDULE,
     CONF_KEY_DEVICE_MODEL,
+    CONF_KEY_INTERFACE_TYPE,
     CONF_KEY_IS_WASHING_MACHINE,
     CONF_KEY_MAC_ADDRESS,
     CONF_KEY_MAINTENANCE_ENABLED,
@@ -549,6 +550,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         if appliance.serial_number:
             new_data[CONF_KEY_SERIAL_NUMBER] = appliance.serial_number
         new_data[CONF_KEY_PROGRAMS] = appliance.programs
+        if appliance.interface_type:
+            new_data[CONF_KEY_INTERFACE_TYPE] = appliance.interface_type
 
         self._pending_data = new_data
         return await self.async_step_language()
@@ -799,6 +802,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
         if appliance.serial_number:
             self._config_data[CONF_KEY_SERIAL_NUMBER] = appliance.serial_number
         self._config_data[CONF_KEY_PROGRAMS] = appliance.programs
+        if appliance.interface_type:
+            self._config_data[CONF_KEY_INTERFACE_TYPE] = appliance.interface_type
 
         return await self.async_step_language()
 

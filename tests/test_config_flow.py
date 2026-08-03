@@ -403,6 +403,7 @@ _MOCK_APPLIANCE = CloudApplianceData(
     encryption_key="testenckey",
     appliance_model="RO41274DWMSE/1-S",
     serial_number="1234567890123456",
+    interface_type="RAPIDO_4DIG_STM_NEL",
     programs=[
         {
             "program": {

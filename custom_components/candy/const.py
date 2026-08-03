@@ -74,6 +74,7 @@ UNIQUE_ID_WASH_POWDER_DETERGENT = "{0}-wash_powder_detergent"
 UNIQUE_ID_WASH_CYCLE_CAPACITY = "{0}-wash_cycle_capacity"
 
 CONF_KEY_IS_WASHING_MACHINE = "is_washing_machine"
+CONF_KEY_INTERFACE_TYPE = "interface_type"
 
 CONF_KEY_MAINTENANCE_ENABLED = "maintenance_enabled"
 CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED = "maintenance_limescale_enabled"

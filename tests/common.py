@@ -21,7 +21,7 @@ async def init_integration(
     status_response: str,
     statistics_response: str | None = None,
     extra_config_data: dict | None = None,
-):
+) -> MockConfigEntry:
     base_data = {
         CONF_IP_ADDRESS: "192.168.0.66",
         CONF_KEY_USE_ENCRYPTION: False,
@@ -52,3 +52,4 @@ async def init_integration(
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
+    return entry

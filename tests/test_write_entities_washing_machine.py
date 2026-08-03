@@ -16,6 +16,7 @@ from custom_components.candy import CONF_KEY_USE_ENCRYPTION, DOMAIN
 from custom_components.candy.client import parse_wash_programs, resolve_nfc_programs
 from custom_components.candy.client.model import MachineState, NfcProgram
 from custom_components.candy.const import (
+    CONF_KEY_INTERFACE_TYPE,
     CONF_KEY_MODE,
     CONF_KEY_PROGRAMS,
     DATA_KEY_COORDINATOR,
@@ -1497,3 +1498,62 @@ async def test_pause_button_sends_command(
         )
 
     mock_send.assert_called_once_with("Pa=1")
+
+
+# ---------------------------------------------------------------------------
+# Feature gating: pause button excluded for BIANCA devices
+# ---------------------------------------------------------------------------
+
+
+async def _init_full_control_with_interface_type(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    interface_type: str,
+) -> MockConfigEntry:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="test-interface-type",
+        data={
+            CONF_IP_ADDRESS: TEST_IP,
+            CONF_KEY_USE_ENCRYPTION: False,
+            CONF_PASSWORD: "",
+            CONF_KEY_MODE: MODE_FULL_CONTROL,
+            CONF_KEY_PROGRAMS: _PROGRAMS,
+            CONF_KEY_INTERFACE_TYPE: interface_type,
+        },
+    )
+    aioclient_mock.get(f"http://{TEST_IP}/http-read.json?encrypted=0", text=_IDLE_JSON)
+    _add_stats_mocks(aioclient_mock)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    return entry
+
+
+async def test_pause_button_present_for_rapido(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control_with_interface_type(
+        hass, aioclient_mock, "RAPIDO_4DIG_STM_NEL"
+    )
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_PAUSE_BUTTON)
+    assert state is not None
+
+
+async def test_pause_button_absent_for_bianca(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control_with_interface_type(
+        hass, aioclient_mock, "BIANCA_SOME_MODEL"
+    )
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_PAUSE_BUTTON)
+    assert state is None
+
+
+async def test_pause_button_present_when_no_interface_type(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Existing entries without interface_type in config keep the pause button."""
+    entry = await _init_full_control(hass, aioclient_mock, _IDLE_JSON)
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_PAUSE_BUTTON)
+    assert state is not None
