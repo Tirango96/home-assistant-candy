@@ -177,34 +177,34 @@
         "name": "Wash program"
       },
       "wash_cycle_status": {
-        "name": "Wash cycle status"
+        "name": "Cycle status"
       },
       "wash_remaining_time": {
-        "name": "Wash cycle remaining time"
+        "name": "Cycle remaining time"
       },
       "wash_temperature": {
-        "name": "Wash temperature"
+        "name": "Temperature"
       },
       "wash_spin_speed": {
-        "name": "Wash spin speed"
+        "name": "Spin speed"
       },
       "wash_fill_level": {
-        "name": "Wash fill level"
+        "name": "Fill level"
       },
       "wash_error_code": {
-        "name": "Wash error code"
+        "name": "Error code"
       },
       "wash_delay_start": {
         "name": "Wash delay start"
       },
       "wash_ntc_water": {
-        "name": "Wash NTC water"
+        "name": "NTC water"
       },
       "wash_ntc_drum": {
-        "name": "Wash NTC drum"
+        "name": "NTC drum"
       },
       "wash_motor_frequency": {
-        "name": "Wash motor frequency"
+        "name": "Motor frequency"
       },
       "wash_maintenance": {
         "name": "Wash maintenance"
@@ -221,7 +221,7 @@
         "name": "Last wash check-up"
       },
       "wash_total_cycles": {
-        "name": "Wash total cycles"
+        "name": "Total cycles"
       },
       "wash_maint_selfclean": {
         "name": "Auto-Clean Reminder"
@@ -233,7 +233,7 @@
         "name": "Filter-Clean"
       },
       "wash_soil_level": {
-        "name": "Wash stain level",
+        "name": "Stain level",
         "state": {
           "low": "Low",
           "normal": "Normal",
@@ -279,13 +279,13 @@
         "name": "Wash program"
       },
       "wash_temp_select": {
-        "name": "Wash temperature"
+        "name": "Temperature"
       },
       "wash_spin_select": {
-        "name": "Wash spin speed"
+        "name": "Spin speed"
       },
       "wash_soil_select": {
-        "name": "Wash stain level",
+        "name": "Stain level",
         "state": {
           "low": "Low",
           "normal": "Normal",
@@ -295,12 +295,12 @@
     },
     "number": {
       "wash_delay_number": {
-        "name": "Wash delay"
+        "name": "Delay"
       }
     },
     "switch": {
       "wash_steam_switch": {
-        "name": "Wash steam"
+        "name": "Steam"
       },
       "wash_nfc_switch": {
         "name": "Special programs"
