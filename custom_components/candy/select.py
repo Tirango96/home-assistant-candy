@@ -283,6 +283,10 @@ class CandyWashProgramDescriptionSensor(CoordinatorEntity, SensorEntity):
     def native_value(self) -> str | None:
         return self._description
 
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self._seed_from_coordinator()
+
     def _handle_coordinator_update(self) -> None:
         if self._description is None:
             self._seed_from_coordinator()
