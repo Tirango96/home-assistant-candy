@@ -35,7 +35,7 @@ def resolve_downloadable_programs(
     programs: list[DownloadableProgram],
     standard_programs: list[WashingMachineWashProgram],
 ) -> list[tuple[DownloadableProgram, WashingMachineWashProgram]]:
-    pos_to_prog = {p.selector_position: p for p in standard_programs}
+    pos_to_prog = {p.position: p for p in standard_programs}
     return [
         (dl, base)
         for dl in programs

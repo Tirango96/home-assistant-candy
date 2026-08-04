@@ -893,7 +893,7 @@ async def test_scheduled_sensors_absent_or_unavailable_in_read_only_mode(
 _NFC_BATHROBE = DownloadableProgram(
     position=56,
     name="DUAL_WM_WD_PROGRAM_DOWNLOAD_NAME_BATHROBE",
-    parent=1,
+    parent=1,  # matches standard program position=1 (COTTON)
     temperature=40,
     spin_speed=1000,
     soil_level=2,
@@ -903,7 +903,7 @@ _NFC_BATHROBE = DownloadableProgram(
     category_translations={"en": "Home Care"},
 )
 
-# New Clothes: parent=2 → RAPID (selector_position=2, pr_code=5, max_spin_speed=255)
+# New Clothes: parent=2 → RAPID (position=2, selector_position=2, pr_code=5, max_spin_speed=255)
 # position=83, spin_speed=1000, soil_level=0 → fallback to base.default_soil_level=0
 _NFC_NEW_CLOTHES = DownloadableProgram(
     position=83,

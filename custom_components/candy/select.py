@@ -171,7 +171,7 @@ class WashProgramSelect(CandyWashSelectBase):
         standard = [self._program_name(p) for p in self._programs]
         if not self._nfc_enabled():
             return standard
-        nfc = [nfc.category_prefixed(lang) for nfc, _ in self._nfc_entries]
+        nfc = sorted(nfc.category_prefixed(lang) for nfc, _ in self._nfc_entries)
         return standard + nfc
 
     @property

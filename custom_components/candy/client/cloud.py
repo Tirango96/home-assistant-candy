@@ -168,7 +168,8 @@ async def _fetch_downloadable_programs(
             )
         data = await resp.json()
 
-    programs = data if isinstance(data, list) else data.get("wm_wd_programs", [])
+    raw = data if isinstance(data, list) else data.get("wm_wd_programs", [])
+    programs = [e.get("wm_wd_program", e) for e in raw if isinstance(e, dict)]
     _LOGGER.debug("Fetched %d downloadable program(s) from Simply-Fi", len(programs))
     return programs
 
