@@ -353,6 +353,11 @@ class WashingMachineWashProgram:
             or self.name.replace("_", " ").title()
         )
 
+    def localized_description(self, language: str) -> str | None:
+        """Return the program description in the given BCP-47 language code, or None."""
+        translations = _PROGRAM_NAMES.get(self.name + "_DESCRIPTION", {})
+        return translations.get(language) or translations.get("en") or None
+
 
 @dataclass
 class DownloadableProgram:

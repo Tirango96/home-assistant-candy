@@ -240,7 +240,9 @@ class WashProgramSelect(CandyWashSelectBase):
                 self._temp_select.reset_for_standard_program(selected)
                 self._spin_select.update_for_program(selected)
                 self._soil_select.update_for_program(selected)
-            self._description_sensor.reset_for_standard_program()
+                self._description_sensor.reset_for_standard_program(selected)
+            else:
+                self._description_sensor.reset_for_standard_program(None)
         self.async_write_ha_state()
         self._temp_select.async_write_ha_state()
         self._spin_select.async_write_ha_state()
@@ -285,8 +287,14 @@ class CandyWashProgramDescriptionSensor(CoordinatorEntity, SensorEntity):
         lang = self.config_entry.data.get(CONF_KEY_PROGRAM_LANGUAGE, "en")
         self._description = program.description(lang) if program is not None else None
 
-    def reset_for_standard_program(self) -> None:
-        self._description = None
+    def reset_for_standard_program(
+        self, program: WashingMachineWashProgram | None
+    ) -> None:
+        if program is None:
+            self._description = None
+            return
+        lang = self.config_entry.data.get(CONF_KEY_PROGRAM_LANGUAGE, "en")
+        self._description = program.localized_description(lang)
 
 
 class WashTempSelect(CandyWashSelectBase):
