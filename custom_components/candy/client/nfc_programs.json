@@ -39,12 +39,30 @@
       "sr": "Posebna nega",
       "tr": "Özel Bakım"
     },
+    "description_translations": {
+      "en": "Specifically designed for Cashmere care. The delicate drum motions allow a wash gentleness like your own hands.",
+      "cs": "Speciálně navržený pro péči o kašmír. Jemné otáčky bubnu umožňují jemné praní srovnatelné s ručním praním.",
+      "de": "Speziell zur Pflege von Kaschmir-Kleidung. Dank der langsamen Trommelbewegungen wird die Kleidung behutsam gewaschen – wie per Handwäsche.",
+      "el": "Ειδικά σχεδιασμένο πρόγραμμα για την φροντίδα υφασμάτων από Κασμίρι. Οι πολύ απαλές αναδεύσεις του τυμπάνου, επιτρέπουν σωστή φροντίδα, σας να πλένετε με το χέρι.",
+      "es": "Específicamente diseñado para el cuidado de la Cachemira. Los suaves movimientos del tambor permite un lavado tan delicado como si lo hicieras a mano.",
+      "fr": "Conçu spécialement pour entretenir le cachemire. Les mouvements délicats du tambour sont aussi soigneux que vos mains.",
+      "hr": "Poseban program namijenjen rublju od kašmira. Nježno okretanje bubnja jamči tretman jednak nježnom ručnom pranju.",
+      "it": "Programma per la cura del Cashmere. Le delicate oscillazioni del cesto permettono un trattamento pari a quello delle tue mani.",
+      "nl": "Speciaal ontworpen voor Kasjmier. De delicate trommelbeweging zorgt voor een tedere wasbeurt zoals een handwas.",
+      "pl": "Delikatne ruchy bębna imitujące ręczne pranie zapewnią najlepsze delikatne warunki prania kaszmiru.",
+      "pt": "Cuidado específico da caxemira. Movimentos delicados do tambor para lavar com a suavidade das suas mãos.",
+      "ro": "Program special pentru hainele din Cașmir. Mișcarea delicată a cuvei permite spălarea rufelor cu delicatețea spălării manuale.",
+      "ru": "Для ухода за кашемиром. Деликатные движения барабана создают эффект ручной стирки.",
+      "sk": "Špeciálne navrhnutý pre starostlivosť o kašmír. Jemné otáčky bubna umožňujú jemné pranie porovnateľné s ručným praním.",
+      "sl": "Poseben program za nego oblačil iz kašmirja. Počasno vrtenje bobna omogoča nežno pranje, kot bi prali na roke.",
+      "sr": "Poseban program namenjen vešu od kašmira. Nežno okretanje bubnja garantuje tretman jednak nežnom ručnom pranju.",
+      "tr": "Specifically designed for Cashmere care. The delicate drum motions allow a wash gentleness like your own hands."
+    },
     "output_cluster": 4,
     "temperature": 20,
     "spin_speed": 0,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_LINGERIE",
@@ -86,12 +104,30 @@
       "sr": "Posebna nega",
       "tr": "Özel Bakım"
     },
+    "description_translations": {
+      "en": "A special cycle for delicate lingerie, with gentle pulsing movements of the drum to simulate a hand wash.",
+      "cs": "Speciální cyklus pro jemné spodní prádlo s jemnými pulzními pohyby bubnu pro simulaci ručního praní.",
+      "de": "Ein spezieller Waschgang für empfindliche Unterwäsche, mit sanft pulsierenden Trommelbewegungen zur Simulation einer Handwäsche.",
+      "el": "Ειδικός κύκλος για ευαίσθητα εσώρουχα, με απαλές διακεκομμένες αναδεύσεις του τυμπάνου που προσομοιώνουν πλύσιμο στο χέρι.",
+      "es": "Ciclo especial para la lencería delicada, con movimientos pulsados suaves del tambor, simulando un lavado a mano.",
+      "fr": "Un cycle spécial pour la lingerie délicate, avec des mouvements du tambour rythmés mais doux, simulant un lavage à la main.",
+      "hr": "Poseban program namijenjen osjetljivom donjem rublju, uz nježno okretanje bubnja poput ručnog pranja.",
+      "it": "Ciclo ideale per la lingerie delicata; i lenti movimenti del cesto, eviteranno che i capi possano rovinarsi.",
+      "nl": "Een speciale cyclus voor delicate lingerie, met zachte pulserende bewegingen van de trommel om een handwas te simuleren.",
+      "pl": "Delikatny program prania bielizny, z pulsacyjnymi ruchami bębna imitującymi ręczne pranie.",
+      "pt": "Ciclo especial para lingerie delicada, com movimentos pulsantes do tambor para simular a lavagem à mão.",
+      "ro": "Program special pentru lenjerie delicată, cu pulsații delicate ale cuvei, pentru a simula spălarea manuală.",
+      "ru": "Специальная программа для женского белья. Деликатное пульсирующее движении барабана, дающее эффект ручной стирки.",
+      "sk": "Špeciálny cyklus na jemnú spodnú bielizeň s jemnými pulznými pohybmi bubna na simuláciu ručného prania.",
+      "sl": "Poseben program za občutljivo damsko perilo z nežnim ritmičnim vrtenjem bobna posnema ročno pranje.",
+      "sr": "Poseban program namenjen osetljivom donjem vešu, uz nežno okretanje bubnja poput ručnog pranja.",
+      "tr": "A special cycle for delicate lingerie, with gentle pulsing movements of the drum to simulate a hand wash."
+    },
     "output_cluster": 4,
     "temperature": 30,
     "spin_speed": 400,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_DOWN_JACKETS",
@@ -133,12 +169,30 @@
       "sr": "Posebna nega",
       "tr": "Özel Bakım"
     },
+    "description_translations": {
+      "en": "A specific programme designed for quilted jackets. The high water level ensures an accurate washing and rinsing.",
+      "cs": "Speciální program pro prošívané bundy. Vyšší hladina vody zajišťuje kvalitní praní a máchání.",
+      "de": "Ein Spezialprogramm für Steppjacken. Durch den hohen Wasserstand wird ein bestmöglicher Wasch- und Spülvorgang gewährleistet.",
+      "el": "Εξειδικευμένο πρόγραμμα για το πλύσιμο αδιάβροχων μπουφάν. Το υψηλό επίπεδο νερού εξασφαλίζει βαθύ καθαρισμό και ξέβγαλμα.",
+      "es": "Programa específico diseñado para chaquetas acolchadas. El elevado nivel de agua garantiza un lavado y aclarado preciso.",
+      "fr": "Un programme spécial pour les vestes matelassées. Le niveau d\\'eau élevé assure un lavage et un rinçage précis.",
+      "hr": "Poseban program namijenjen pranju punjenih jakni. Visoka razina vode jamči izvrsno pranje i ispiranje.",
+      "it": "Ciclo ideale per la cura delle giacche imbottite in piuma. L\\'alto livello d\\'acqua garantisce un lavaggio ed un risciacquo accurati.",
+      "nl": "Een specifiek programma dat is ontworpen voor gewatteerde jassen. De hoge waterstand zorgt voor een accurate was- en spoelbeurt.",
+      "pl": "Specjalny program do pikowanych kurtek. Duży poziom wody zapewnia idealne rozpuszczenie detergentu i jego wypłukanie.",
+      "pt": "Programa específico para casacos acolchoados. O nível alto de água garante a lavagem e o enxaguamento ideais.",
+      "ro": "Un program conceput pentru jachete matlasate. Nivelul ridicat de apă asigură o spălare și clătire eficientă.",
+      "ru": "Специальная программа для набивных курток. Высокий уровень воды для тщательных стирки и полоскания.",
+      "sk": "Špeciálny program na prešívané bundy. Vyššia hladina vody zabezpečuje kvalitné pranie a plákanie.",
+      "sl": "Poseben program za prešite jakne. Visok nivo vode zagotavlja temeljito pranje in izpiranje.",
+      "sr": "Poseban program namenjen pranju punjenih jakni. Visok nivo vode garantuje izvrsno pranje i ispiranje.",
+      "tr": "A specific programme designed for quilted jackets. The high water level ensures an accurate washing and rinsing."
+    },
     "output_cluster": 3,
     "temperature": 30,
     "spin_speed": 400,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_SILK",
@@ -180,12 +234,30 @@
       "sr": "Posebna nega",
       "tr": "Özel Bakım"
     },
+    "description_translations": {
+      "en": "Programme for silk garments, like a hand wash, with very slow pulsing drum movements and high water level.",
+      "cs": "Program pro hedvábné prádlo, jako ruční praní, s velmi pomalými pulzními pohyby bubnu a vysokou hladinou vody.",
+      "de": "Programm für Kleidungsstücke aus Seide, vergleichbar mit einer Handwäsche, mit ganz langsamen, pulsierenden Trommelbewegungen und einem hohem Wasserstand.",
+      "el": "Πρόγραμμα για μεταξωτά υφάσματα, εφάμιλλο του πλυσίματος στο χέρι, με απαλές αναδεύσεις του τυμπάνου και υψηλή στάθμη νερού.",
+      "es": "Programa para prendas de seda, igual que un lavado a mano, con movimientos de tambor pulsados muy lentamente y un elevado nivel de agua",
+      "fr": "Programme pour les vêtements en soie similaire à un lavage à la main, avec des mouvements du tambour rythmés et très lents, et un niveau d\\'eau élevé.",
+      "hr": "Program namijenjen svilenom rublju, poput ručnog pranja, uz sporo okretanje bubnja i visoku razinu vode.",
+      "it": "Programma per i capi in seta, per lavarli come a mano, tramite pulsazioni del cesto molto lente ed alto livello d\\'acqua.",
+      "nl": "Programma voor zijden kleding, zoals een handwas, met zeer trage pulserende trommelbewegingen en een hoge waterstand.",
+      "pl": "Bardzo powolne, pulsacyjne ruchy bębna i wysoki poziom wody zapewnią delikatne pranie jedwabiu.",
+      "pt": "Programa para sedas, com movimentos pulsantes do tambor muito lentos e nível alto de água; é como lavar à mão.",
+      "ro": "Program pentru rufele din mătase, ca o spălare manuală, cu mișcări foarte lente ale cuvei și o cantitate mare de apă.",
+      "ru": "Для шелковых тканей. Деликатное пульсирующее движение барабана и высокий уровень воды.",
+      "sk": "Program pre hodvábnu bielizeň, ako ručné pranie, s veľmi pomalými pulznými pohybmi bubna a vysokou hladinou vody.",
+      "sl": "Program za svilena oblačila posnema ročno pranje in pere z zelo počasnim in ritmičnim vrtenjem bobna ter visokim nivojem vode.",
+      "sr": "Program namenjen svilenom vešu, poput ručnog pranja, uz sporo okretanje bubnja i visok nivo vode.",
+      "tr": "Programme for silk garments, like a hand wash, with very slow pulsing drum movements and high water level."
+    },
     "output_cluster": 4,
     "temperature": 30,
     "spin_speed": 400,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_BATHROBE",
@@ -227,12 +299,30 @@
       "sr": "Kućna nega",
       "tr": "Home Care"
     },
+    "description_translations": {
+      "en": "To wash bathrobes, towels and resistant sponge garments, ensuring the total detergent removal.",
+      "cs": "Pro praní županů, osušek a savých materiálů, zajišťující dokonalé odstranění pracího prostředku.",
+      "de": "Zum Waschen von Bademänteln, Handtüchern und unempfindlichen Schwammtüchern, wobei alle Waschmittelreste entfernt werden.",
+      "el": "Για πλύσιμο μπουρνουζιών, πετσετών και ανθεκτικών υφασμάτων μεγάλης απορρόφησης που εξασφαλίζει απόλυτη αφαίρεση του απορρυπαντικού.",
+      "es": "Para lavar albornoces, toallas y prendas esponjosas resistentes, garantizando la completa eliminación del detergente.",
+      "fr": "Pour laver peignoirs, serviettes et vêtements résistants en tissu-éponge, en assurant un rinçage parfait.",
+      "hr": "Za pranje kućnih ogrtača, ručnika i tkanina od frotira, uz potpuno uklanjanje deterdženta.",
+      "it": "Per il lavaggio di accappatoi, asciugamani e indumenti di spugna resistenti, garantendo la completa rimozione del detersivo.",
+      "nl": "Om badjassen, handdoeken en sponskleding te wassen met de waarborg om al het detergent te verwijderen.",
+      "pl": "Do prania szlafroków, ręczników zapewniając idealne wypłukanie detergentu.",
+      "pt": "Para lavar roupões, toalhas e roupas de esponja resistente, com remoção total do detergente.",
+      "ro": "Pentru a spăla halate de baie, prosoape, articole din burete rezistente, asigurând îndepărtarea completă a detergentului.",
+      "ru": "Для банных халатов, полотенец. Тщательное удаление остатков моющего средства.",
+      "sk": "Na pranie županov, osušiek a savých materiálov, zaisťuje dokonalé odstránenie pracieho prostriedku.",
+      "sl": "Za pranje kopalnih plaščev, brisač in trpežnih vpojnih tkanin, saj v celoti odstrani detergent.",
+      "sr": "Za pranje kućnih ogrtača, peškira i tkanina od frotira, uz potpuno uklanjanje deterdženta.",
+      "tr": "To wash bathrobes, towels and resistant sponge garments, ensuring the total detergent removal."
+    },
     "output_cluster": 1,
     "temperature": 40,
     "spin_speed": 1400,
     "soil_level": 2,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_COLORED_ANTI_STAIN",
@@ -274,12 +364,30 @@
       "sr": "Kućna nega",
       "tr": "Home Care"
     },
+    "description_translations": {
+      "en": "Cycle designed to remove the most common stains, even on coloured fabrics.",
+      "cs": "Cyklus navržený pro odstranění nejběžnějších skvrn i z barevných látek.",
+      "de": "Waschgang zur Entfernung der am häufigsten auftretenden Flecken, selbst bei Buntwäsche.",
+      "el": "Κύκλος σχεδιασμένος για την αφαίρεση κοινών λεκέδων, ακόμη και από έγχρωμα υφάσματα.",
+      "es": "Ciclo diseñado para eliminar las manchas más comunes, incluso en tejidos de colores.",
+      "fr": "Cycle conçu pour éliminer les taches les plus communes, même sur des textiles colorés.",
+      "hr": "Program namijenjen uklanjanju najčešćih mrlja, čak i s obojanog rublja",
+      "it": "Programma perfetto per eliminare le più comuni macchie, anche dai tessuti colorati.",
+      "nl": "Een cyclus ontworpen om de meest voorkomende vlekken te verwijderen, zelf op gekleurde stoffen.",
+      "pl": "Cykl usuwający najbardziej popularrne plamy, również z kolorowych tkanin.",
+      "pt": "Ciclo para remover as nódoas mais comuns, até de tecidos de cores.",
+      "ro": "Program destinat îndepărtării celor mai comune pete, chiar și de pe hainele colorate.",
+      "ru": "Для удаления наиболее распространенных пятен даже с цветных тканей.",
+      "sk": "Cyklus navrhnutý na odstránenie najbežnejších škvŕn z farebných látok.",
+      "sl": "Program za odstranjevanje najpogostejših madežev tudi z barvnih tkanin.",
+      "sr": "Program namenjen uklanjanju najčešćih mrlja, čak i s obojanog veša",
+      "tr": "Cycle designed to remove the most common stains, even on coloured fabrics."
+    },
     "output_cluster": 1,
     "temperature": 40,
     "spin_speed": 1200,
     "soil_level": 3,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_BED_LINEN",
@@ -321,12 +429,30 @@
       "sr": "Kućna nega",
       "tr": "Home Care"
     },
+    "description_translations": {
+      "en": "The ideal cycle for an accurate washing of your cotton or synthetic bed linen.",
+      "cs": "Ideální cyklus pro praní bavlněného nebo syntetického ložního prádla.",
+      "de": "Der ideale Waschgang zur gründlichen Reinigung Ihrer Baumwoll- und Synthetik-Bettwäsche.",
+      "el": "Ιδανικός κύκλος για τον άριστο καθαρισμό βαμβακερών ή συνθετικών καλυμμάτων κρεβατιών.",
+      "es": "Ciclo ideal para el lavado preciso de tu ropa de cama de algodón o sintética.",
+      "fr": "Le cycle parfait pour un lavage précis de votre linge de lit en coton ou en tissu synthétique.",
+      "hr": "Idealan program za učinkovito pranje pamučne ili sintetičke posteljine.",
+      "it": "Il ciclo ideale per il lavaggio accurato delle tue lenzuola di cotone o sintetiche.",
+      "nl": "Deze cyclus is ideaal voor een accurate wasbeurt van uw katoenen of synthetisch beddengoed.",
+      "pl": "Program do prania pościeli bawełnianej i z tkanin mieszanych.",
+      "pt": "Ciclo ideal para lavar a fundo a roupa de cama de algodão/sintética.",
+      "ro": "Ideal pentru spălarea lenjeriilor din bumbac sau sintetice.",
+      "ru": "Идеально для постельного белья из хлопка или синтетики.",
+      "sk": "Ideálny cyklus na pranie bavlnenej alebo syntetickej posteľnej bielizne.",
+      "sl": "Idealen program za temeljito pranje bombažne ali sintetične posteljnine.",
+      "sr": "Idealan program za efikasno pranje pamučne ili sintetičke posteljine.",
+      "tr": "The ideal cycle for an accurate washing of your cotton or synthetic bed linen."
+    },
     "output_cluster": 1,
     "temperature": 40,
     "spin_speed": 1400,
     "soil_level": 2,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_RESISTANT_ANTI_STAIN",
@@ -368,12 +494,12 @@
       "sr": "Kućna nega",
       "tr": "Home Care"
     },
+    "description_translations": {},
     "output_cluster": 1,
     "temperature": 60,
     "spin_speed": 1200,
     "soil_level": 3,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_DUVET_N_QUILTS",
@@ -415,12 +541,30 @@
       "sr": "Kućna nega",
       "tr": "Home Care"
     },
+    "description_translations": {
+      "en": "Cycle designed to wash small duvets. The high water level ensures complete cleaning of the padding.",
+      "cs": "Cyklus navržený pro praní malých přikrývek. Vysoká hladina vody zajišťuje důkladné vyprání vycpávky.",
+      "de": "Spezieller Waschgang für kleine Bettdecken. Durch den hohen Wasserstand wird eine umfassende Reinigung des Füllmaterials gewährleistet.",
+      "el": "Κύκλος σχεδιασμένος για μικρά παπλώματα. Το υψηλό επίπεδο νερού εξασφαλίζει πλήρες καθαρισμό του περιεχόμενου.",
+      "es": "Ciclo diseñado para el lavado de pequeños edredones. El gran nivel de agua garantiza la limpieza completa del relleno",
+      "fr": "Cycle conçu pour laver les couettes de petite taille. Le niveau d\\'eau élevé assure un nettoyage complet du rembourrage.",
+      "hr": "Program namijenjen pranju malih popluna i pokrivača. Visoka razina vode jamči temeljito čišćenje punjenja.",
+      "it": "Programma per il lavaggio di piccoli piumoni. L\\'alto livello d\\'acqua garantisce la completa pulizia dell\\'imbottitura.",
+      "nl": "Cyclus ontworpen voor het wassen van kleine dekbedden. De hoge waterstand verzekert een complete reiniging van uw vulling.",
+      "pl": "Do prania małych kołder. Wysoki poziom wody zapewnia lepsze rozpuszczenie detergentu i jego wypłukanie.",
+      "pt": "Ciclo criado para lavar edredãos pequenos. O nível alto de água garante a limpeza total do recheio.",
+      "ro": "Program special pentru pilote și pături mici. Cantitatea mare de apă asigură o curățare completă.",
+      "ru": "Для стирки небольших одеял. Высокий уровень воды обеспечивает удаление грязи из наполнителя.",
+      "sk": "Cyklus navrhnutý na pranie malých prikrývok. Vysoká hladina vody zabezpečuje dôkladné vypranie vypchávky.",
+      "sl": "Program za pranje manjših prešitih odej. Visok nivo vode zagotavlja temeljito čiščenje polnila.",
+      "sr": "Program namenjen pranju malih jorgana i pokrivača. Visok nivo vode garantuje temeljno čišćenje punjenja.",
+      "tr": "Cycle designed to wash small duvets. The high water level ensures complete cleaning of the padding."
+    },
     "output_cluster": 3,
     "temperature": 40,
     "spin_speed": 400,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_MATS",
@@ -462,12 +606,30 @@
       "sr": "Kućna nega",
       "tr": "Home Care"
     },
+    "description_translations": {
+      "en": "Program designed for washing bath mats, removing dirt from the fibers and preserving the colors.",
+      "cs": "Program navržený pro praní koberečků z koupelen k odstranění nečistot z vláken se zachováním barvy.",
+      "de": "Spezielles Waschprogramm für Badematten – entfernt den Schutz aus den Fasern und schützt die Farben.",
+      "el": "Πρόγραμμα σχεδιασμένο για να πλένει χαλάκια μπάνιου, αφαιρώντας τις βρωμιές από τις ίνες και να διατηρεί τα χρώματα.",
+      "es": "Programa diseñado para el lavado de las alfombrillas del lavabo, eliminando la suciedad de las fibras y manteniendo los colores.",
+      "fr": "Programme conçu pour éliminer la saleté des fibres et préserver la couleur des tapis de bain.",
+      "hr": "Program namijenjen pranju kupaonskih otirača, uklanjajući prljavštinu iz vlakana i očuvanje boja.",
+      "it": "Programma studiato per il lavaggio dei tappetini da bagno, igienizzandoli e rimuovendo lo sporco dalle fibre.",
+      "nl": "Programma ontworpen voor het wassen van badmatten, verwijdert vuil uit de vezels en behoudt de kleuren.",
+      "pl": "Program do prania mat łazienkowych, chodników. Usuwa zabrudzenia z włókien, zachowując kolory i kształt.",
+      "pt": "Programa criado para tapetes de casa de banho: remove a sujidade das fibras e preserva as cores.",
+      "ro": "Program destinat spălării covoarelor de baie, îndepărtând murdăria din fibre și protejând culorile.",
+      "ru": "Стирка ковриков для ванн, удаление грязи, сохранение цвета.",
+      "sk": "Program navrhnutý na pranie koberčekov z kúpeľní na odstránenie nečistôt z vlákien so zachovaním farby.",
+      "sl": "Program za pranje kopalniških preprog, ki odstranjuje umazanijo z vlaken in hkrati ohranja njihov barvo.",
+      "sr": "Program namenjen pranju kupatilskih otirača, uklanjajući prljavštinu iz vlakana i očuvanje boja.",
+      "tr": "Program designed for washing bath mats, removing dirt from the fibers and preserving the colors."
+    },
     "output_cluster": 1,
     "temperature": 40,
     "spin_speed": 1200,
     "soil_level": 2,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_CURTAINS",
@@ -509,12 +671,30 @@
       "sr": "Kućna nega",
       "tr": "Home Care"
     },
+    "description_translations": {
+      "en": "Programme designed to wash curtains. The low spin speed ensures a very limited creasing.",
+      "cs": "Program navržený pro praní záclon. Nízké otáčky odstředění zmírňují pomačkání.",
+      "de": "Spezielles Waschprogramm für Vorhänge. Die geringe Schleudergeschwindigkeit sorgt für eine geringstmögliche Knitterbildung.",
+      "el": "Πρόγραμμα ειδικά σχεδιασμένο για κουρτίνες. Η χαμηλή ταχύτητα στυψίματος προσφέρει τον ελάχιστο αριθμό ζαρών.",
+      "es": "Programa diseñado para la limpieza de cortinas. La baja velocidad del centrifugado garantiza las mínimas arrugas.",
+      "fr": "Programme conçu pour laver les rideaux. La vitesse d\\'essorage réduite limite fortement l\\'apparition de plis.",
+      "hr": "Program namijenjen pranju zavjesa. Mala brzina centrifuge jamči vrlo malo nabora.",
+      "it": "Programma per il lavaggio delle tende. La bassa velocità della centrifuga assicura una ridotta formazione di pieghe.",
+      "nl": "Programma ontworpen om gordijnen te wassen. De lage centrifugesnelheid minimaliseert kreuken.",
+      "pl": "Niski poziom wirowania zmniejsza ryzyko zagnieceń.",
+      "pt": "Programa especial para lavar cortinas. Velocidade de centrifugação baixa = poucos vincos.",
+      "ro": "Program pentru spălarea perdelelor. Viteza redusă de centrifugare reduce șifonarea.",
+      "ru": "Стирка занавесок. Низкая скорость отжима снижает складки.",
+      "sk": "Program navrhnutý na pranie záclon. Nízke otáčky odstredenia zmierňujú pokrčenie.",
+      "sl": "Program za pranje zaves. Majhna hitrost pri ožemanju zagotavlja, da se zavese zelo malo zmečkajo.",
+      "sr": "Program namenjen pranju zavesa. Mala brzina centrifuge garantuje vrlo malo nabora.",
+      "tr": "Programme designed to wash curtains. The low spin speed ensures a very limited creasing."
+    },
     "output_cluster": 3,
     "temperature": 30,
     "spin_speed": 400,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_TABLECLOTHS",
@@ -556,12 +736,30 @@
       "sr": "Kućna nega",
       "tr": "Home Care"
     },
+    "description_translations": {
+      "en": "Cycle designed to remove dirt from your more resistant tablecloths, ensuring a very limited creasing.",
+      "cs": "Cyklus určený pro odstranění nečistot z odolnějších ubrusů, zmírňuje pomačkání.",
+      "de": "Spezieller Waschgang zum Entfernen von Flecken aus unempfindlichen Tischdecken bei äußerst geringer Knitterbildung.",
+      "el": "Κύκλος σχεδιασμένος να αφαιρεί τις βρωμιές από τα πιο ανθεκτικά τραπεζομάντηλα, εξασφαλίζοντας ελάχιστο τσαλάκωμα.",
+      "es": "Ciclo diseñado para eliminar la suciedad de tus manteles más resistentes, garantizando un nivel de arrugas mínimo.",
+      "fr": "Cycle conçu pour éliminer la saleté de vos nappes résistantes, en assurant une formation de plis très réduite.",
+      "hr": "Program namijenjen učinkovitom uklanjanju mrlja sa stolnjaka, uz vrlo malo nabora.",
+      "it": "Ciclo studiato per la rimozione dello sporco dalle tue tovaglie più resistenti, garantendo una ridotta formazione di pieghe.",
+      "nl": "Cyclus ontworpen voor het verwijderen van vuil op uw stevige tafelkleden, met minimale kreuken.",
+      "pl": "Program do usuwania trwałych plam z obrusów, zmniejszając ilość zagnieceń.",
+      "pt": "Ciclo criado para limpar a roupa de mesa mais resistente, com formação limitada de vincos.",
+      "ro": "Program destinat îndepărtării murdăriei de pe fețele de masă rezistente, reducând șifonarea.",
+      "ru": "Для более прочных скатертей, уменьшение складок.",
+      "sk": "Cyklus určený na odstránenie nečistôt z odolnejších obrusov, zmierňuje pokrčenie.",
+      "sl": "Program za odstranjevanje umazanije z najtrpežnejših namiznih prtov, ki hkrati zagotavlja, da se prti zelo malo zmečkajo.",
+      "sr": "Program namenjen efikasnom uklanjanju mrlja sa stolnjaka, uz vrlo malo nabora.",
+      "tr": "Cycle designed to remove dirt from your more resistant tablecloths, ensuring a very limited creasing."
+    },
     "output_cluster": 1,
     "temperature": 40,
     "spin_speed": 1200,
     "soil_level": 3,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_ANTI_MITES",
@@ -603,12 +801,30 @@
       "sr": "Zdravlje & higijena",
       "tr": "Health & Hygiene"
     },
+    "description_translations": {
+      "en": "A programme created to remove dust particles from all resistant fabrics (cotton and mixed).",
+      "cs": "Program vytvořený pro odstranění prachových částic ze všech odolných látek (bavlna a směsné).",
+      "de": "Ein Programm zur Entfernen von Hausstaubmilben aus allen unempfindlichen Materialien (Baumwolle und Mischgewebe).",
+      "el": "Πρόγραμμα που σχεδιάστηκε να αφαιρεί τα σωματίδια σκόνης από όλα τα ανθεκτικά υφάσματα (βαμβακερά και μικτά)",
+      "es": "Programa creado para eliminar las partículas de suciedad en todo tipo de tejidos resistentes (algodón y mixtos)",
+      "fr": "Un programme créé pour éliminer les particules de poussière de tous les types de textiles résistants (coton et tissu mixte).",
+      "hr": "Program uklanja čestice prašine s pamučnog rublja i miješanih tkanina.",
+      "it": "Ciclo specifico per la rimozione della polvere. I risciacqui rimuovono ogni residuo dai capi resistenti di cotone e/o sintetici.",
+      "nl": "Een programma ontworpen om stofdeeltjes uit alle weefsels (katoen en gemengd) te verwijderen.",
+      "pl": "Usuwa cząsteczki kurzu, które mocno wnikły w strukturę ttkanin trwałych (bawełna, mieszane).",
+      "pt": "Programa para remover partículas de pó de todos os tecidos resistentes (algodão e mistos).",
+      "ro": "Programul este creat pentru a îndepărta particulele de praf din toate țesăturile rezistente (bumbac și mixt).",
+      "ru": "Удаляет частицы пыли с прочных тканей (хлопка и смешанных).",
+      "sk": "Program vytvorený na odstránenie prachových častíc zo všetkých odolných látok (bavlna a zmiešaná).",
+      "sl": "Program za odstranjevanje prašnih delcev z vseh trpežnih tkanin (bombažnih in z mešano sestavo).",
+      "sr": "Program uklanja čestice prašine i grinja sa pamučnog veša i mešanih tkanina.",
+      "tr": "A programme created to remove dust particles from all resistant fabrics (cotton and mixed)."
+    },
     "output_cluster": 5,
     "temperature": 60,
     "spin_speed": 1200,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_DELICATE_ANTIALLERGY",
@@ -650,12 +866,30 @@
       "sr": "Zdravlje & higijena",
       "tr": "Health & Hygiene"
     },
+    "description_translations": {
+      "en": "The programme allows to remove 80% of allergens from delicate fabrics, preserving the fibers.",
+      "cs": "Program umožňuje odstranění 80 % alergenů z jemného prádla s ochranou vláken.",
+      "de": "Mit diesem Programm lassen sich 80 % aller Allergene aus empfindlichen Textilien entfernen, während gleichzeitig die Fasern geschützt werden.",
+      "el": "Αυτό το πρόγραμμα επιτρέπει την αφαίρεση έως και 80% των αλλεργιογόνων από τα ευαίσθητα υφάσματα, διατηρώντας τις ίνες τους.",
+      "es": "El programa te ayuda a eliminar el 80% de los alérgenos en tejidos delicados, respetando las fibras.",
+      "fr": "Ce programme permet d\\'éliminer 80 % des allergènes des textiles délicats, tout en préservant les fibres.",
+      "hr": "Program uklanja 80% alergena s osjetljivih tkanina, uz očuvanje vlakana.",
+      "it": "Il programma permette di eliminare l\\'80% degli allergeni dai tessuti delicati, preservandone le fibre.",
+      "nl": "Het programma kan tot 80% van de allergenen uit fijne stoffen verwijderen zonder de vezels te beschadigen.",
+      "pl": "Ten program zapewnia usunięcie do 80% alergenów z delikatnych tkanin, zachowując troskę o jakość włókien.",
+      "pt": "O programa remove 80% dos alergénios de tecidos delicados, preservando as fibras.",
+      "ro": "Programul permite îndepărtarea a 80% din alergeni de pe rufele delicate, protejând fibrele.",
+      "ru": "Удаляет 80% аллергенов с деликатных тканей сохраняя волокна.",
+      "sk": "Program umožňuje odstránenie 80% alergénov z jemnej bielizne s ochranou vlákien.",
+      "sl": "Program odstrani 80 % alergenov z občutljivih tkanin in pri tem ohrani njihova vlakna.",
+      "sr": "Program uklanja 80% alergena sa osetljivih tkanina, uz očuvanje vlakana.",
+      "tr": "The programme allows to remove 80% of allergens from delicate fabrics, preserving the fibers."
+    },
     "output_cluster": 3,
     "temperature": 40,
     "spin_speed": 400,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_BLEACHING",
@@ -697,12 +931,30 @@
       "sr": "Zdravlje & higijena",
       "tr": "Health & Hygiene"
     },
+    "description_translations": {
+      "en": "Specific cycle for preliminary removal of stains with liquid bleach. (Pour it directly into compartment \\\"2\\\").",
+      "cs": "Speciální cyklus pro předběžné odstranění skvrn pomocí tekutého bělidla. (Nalijte přímo do zásobníku \\\"2\\\").",
+      "de": "Spezieller Waschgang zur Vorbehandlung von Flecken mit flüssiger Bleiche. (Bitte direkt in Fach \\\"2\\\" geben.)",
+      "el": "Ειδικός κύκλος για αρχική αφαίρεση λεκέδων με υγρό λευκαντικό. (Το βάζετε απευθείας στην υποδοχή \\\"2\\\").",
+      "es": "Ciclo específico para la eliminación preliminar de manchas con liquido blanqueador. (Verterlo directamente en el compartimento \\\"2\\\").",
+      "fr": "Cycle spécial pour un premier nettoyage des taches par un agent de blanchiment liquide (versez-le directement dans le compartiment \\\" 2 \\\").",
+      "hr": "Poseban program namijenjen uklanjanju mrlja uz tekući izbjeljivač (ulijte ga izravno u odjeljak \\\"2\\\").",
+      "it": "Ciclo specifico per la smacchiatura preliminare dei capi con candeggina (da introdurre direttamente nella vaschetta \\\"2\\\").",
+      "nl": "Specifieke cyclus waarbij eerst vlekken met bleekwater worden verwijderd. (Giet het rechtstreeks in het compartiment \\\"2\\\").",
+      "pl": "Specjalny program z wstępnym cyklem odplamiania z uzyciem wybielaczy. (Nalej bezpośrednio do pojemnika \\\"2\\\").",
+      "pt": "Ciclo especial para remoção prévia de nódoas com branqueador líquido. (Deite diretamente no compartimento \\\"2\\\").",
+      "ro": "Program specific pentru îndepărtarea preliminară a petelor cu înălbitor. (A se turna direct în compartimentul \\\"2\\\").",
+      "ru": "Предварительное удаления пятен с помощью жидкого отбеливателя. (Заливается в отделение \\\"2\\\").",
+      "sk": "Špeciálny cyklus na predbežné odstránenie škvŕn pomocou tekutého bielidla. (Nalejte priamo do zásobníka \\\"2\\\").",
+      "sl": "Poseben program za predhodno odstranjevanje madežev s tekočim belilom. (Nalijte ga neposredno v predelek \\\"2\\\".)",
+      "sr": "Poseban program namenjen uklanjanju mrlja uz tečni izbeljivač (sipajte ga pravo u odeljak \\\"2\\\").",
+      "tr": "Specific cycle for preliminary removal of stains with liquid bleach. (Pour it directly into compartment \\\"2\\\")."
+    },
     "output_cluster": 9,
     "temperature": 0,
     "spin_speed": 1200,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_BABY_SANITIZER",
@@ -744,12 +996,30 @@
       "sr": "Zdravlje & higijena",
       "tr": "Health & Hygiene"
     },
+    "description_translations": {
+      "en": "This cycle sanitizes at 60°C all of the resistant child clothing, without a trace of detergent.",
+      "cs": "Tento cyklus dezinfikuje při 60 °C veškeré dětské oděvy, nezanechává zbytky pracího prostředku.",
+      "de": "Bei diesem Waschgang wird unempfindliche Babykleidung bei 60 °C hygienisch gereinigt, ohne dass Waschmittelreste zurückbleiben.",
+      "el": "Αυτός ο κύκλος αποστειρώνει στους 60ο C όλα τα ανθεκτικά παιδικά ρούχα, χωρίς ίχνος απορρυπαντικού.",
+      "es": "Permite higienizar a 60°C toda la ropa infantil, sin dejar rastro de detergente.",
+      "fr": "Ce cycle désinfecte à 60 °C tous les vêtements résistants pour bébé, sans trace résiduelle de lessive.",
+      "hr": "Ovaj program dezinficira dječju odjeću na 60°C, bez ostataka deterdženta.",
+      "it": "Permette di igienizzare a 60°C tutti i vestitini resistenti dei bambini, senza traccia di detersivo.",
+      "nl": "De cyclus reinigt op 60°C alle babykleding zonder een spoor van detergent achter te laten.",
+      "pl": "Specjalny program prania dziecięcych ubrań w wysokiej temperaturze 60°C z zapewnieniem idealnego rozpuszczenia i wypłukania detergentów.",
+      "pt": "Este ciclo desinfeta a 60°C toda a roupa infantil resistente, sem resíduos de detergente.",
+      "ro": "Acest program dezinfectează la 60°C toate hainele copiilor, fără urme de detergent.",
+      "ru": "Дезинфицирует детскую одежду из прочных тканей. Тщательно удаляет остатки моющего средства.",
+      "sk": "Tento cyklus dezinfikuje pri 60°C všetky detské odevy, nezanecháva zvyšky pracieho prostriedku.",
+      "sl": "Ta program deluje na 60 °C, sterilizira vsa trpežna otroška oblačila in odstrani ves detergent.",
+      "sr": "Ovaj program dezinficira dečiju odeću na 60°C, bez ostataka deterdženta.",
+      "tr": "This cycle sanitizes at 60°C all of the resistant child clothing, without a trace of detergent."
+    },
     "output_cluster": 5,
     "temperature": 60,
     "spin_speed": 1200,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_CUDDLY_TOYS",
@@ -791,12 +1061,30 @@
       "sr": "Zdravlje & higijena",
       "tr": "Health & Hygiene"
     },
+    "description_translations": {
+      "en": "Very gentle programme for accurate washing of cuddly toys.",
+      "cs": "Velmi jemný program pro praní plyšových hraček.",
+      "de": "Besonders sanftes Programm zur gründlichen Reinigung von Stofftieren.",
+      "el": "Πολύ απαλό πρόγραμμα για πλύσιμο για το ακριβές πλύσιμο λούτρινων παιγνιδιών.",
+      "es": "Programa muy suave para el lavado de los peluches de forma precisa.",
+      "fr": "Programme très délicat pour un lavage de précision des jouets en peluche.",
+      "hr": "Veoma nježan program namijenjen učinkovitom pranju mekanih igračaka.",
+      "it": "Programma ultra delicato per il lavaggio dei peluches, rimuovendo accuratamente polvere e residui di detersivo.",
+      "nl": "Zeer zacht programma voor het nauwkeurig wassen van knuffeldieren.",
+      "pl": "Bardzo delikatny program do prania pluszowych zabawek",
+      "pt": "Programa muito suave para lavar a fundo brinquedos macios.",
+      "ro": "Program foarte delicat, pentru spălarea jucăriilor.",
+      "ru": "Очень бережная программа для стирки плюшевых игрушек.",
+      "sk": "Veľmi jemný program na pranie plyšových hračiek.",
+      "sl": "Zelo nežen program za natančno čiščenje plišastih igrač.",
+      "sr": "Veoma nežan program namenjen efikasnom pranju mekanih igračaka.",
+      "tr": "Very gentle programme for accurate washing of cuddly toys."
+    },
     "output_cluster": 3,
     "temperature": 30,
     "spin_speed": 400,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_MASK_REFRESH",
@@ -838,12 +1126,12 @@
       "sr": "Zdravlje & higijena",
       "tr": "Health & Hygiene"
     },
+    "description_translations": {},
     "output_cluster": 7,
     "temperature": 40,
     "spin_speed": 1200,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_MASK_SANIFICATION",
@@ -885,12 +1173,12 @@
       "sr": "Zdravlje & higijena",
       "tr": "Health & Hygiene"
     },
+    "description_translations": {},
     "output_cluster": 5,
     "temperature": 60,
     "spin_speed": 1200,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_SHIRTS",
@@ -932,12 +1220,30 @@
       "sr": "Posebno",
       "tr": "Özel"
     },
+    "description_translations": {
+      "en": "Cycle optimized for washing everyday shirts (cotton and mixed), limiting the creation of creases.",
+      "cs": "Cyklus optimalizovaný pro praní košil (bavlna a směsné) omezuje pomačkání.",
+      "de": "Optimaler Waschgang für gewöhnliche Hemden (Baumwolle und Mischgewebe) bei gleichzeitiger Vorbeugung von Knitterfalten.",
+      "el": "Κύκλος βελτιστοποιημένος για το πλύσιμο καθημερινών πουκάμισων (βαμβακερών και μικτών), που μειώνει την δημιουργία ζαρών.",
+      "es": "Ciclo optimizado para el lavado de las camisas del día a día (algodón o mixtas), minimizando las arrugas.",
+      "fr": "Cycle optimisé pour laver les chemises de tous les jours (en coton et en tissu mixte), en limitant l\\'apparition de plis.",
+      "hr": "Program idealan za svakodnevno pranje košulja (pamuk i miješanje tkanine), uz minimalno stvaranje nabora.",
+      "it": "Programma dedicato al lavaggio delle camicie di tutti i giorni (di cotone e sintetiche), limitando la formazione di pieghe.",
+      "nl": "Geoptimaliseerde cyclus voor het dagelijks wassen van hemden (katoen en gemengd) met minimale kreuken.",
+      "pl": "Program codzienny do prania koszul (bawełna, mieszane), zmniejsza ilość zagnieceń.",
+      "pt": "Ciclo otimizado para lavar as camisas do dia-a-dia (algodão e tecido misto), limitando a formação de vincos.",
+      "ro": "Program optimizat pentru spălarea zilnică a cămășilor (bumbac și mixte), limitând șifonarea.",
+      "ru": "Ежедневная стирка сорочек (хлопок и смешанные ткани), уменьшение сминания.",
+      "sk": "Cyklus optimalizovaný na pranie košieľ (bavlna a zmiešaná) obmedzuje pokrčenie.",
+      "sl": "Program je optimiziran za pranje običajnih srajc (bombažnih in z mešano sestavo) in poskrbi, da se te ne zmečkajo preveč.",
+      "sr": "Program idealan za svakodnevno pranje košulja (pamuk i mešanje tkanine), uz minimalno stvaranje nabora.",
+      "tr": "Cycle optimized for washing everyday shirts (cotton and mixed), limiting the creation of creases."
+    },
     "output_cluster": 2,
     "temperature": 30,
     "spin_speed": 1200,
     "soil_level": 1,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_NEW_CLOTHES",
@@ -979,12 +1285,30 @@
       "sr": "Posebno",
       "tr": "Özel"
     },
+    "description_translations": {
+      "en": "Rapid programme designed to remove possible scraps and freshen the newly purchased clothes.",
+      "cs": "Rychlý program navržený pro odstranění případných zbytků a osvěžení nového prádla.",
+      "de": "Kurzprogramm zum Entfernen möglicher Fusseln sowie zum Auffrischen neu gekaufter Kleidung.",
+      "el": "Γρήγορο πρόγραμμα σχεδιασμένο να αφαιρεί κατάλοιπα και να φρεσκάρει καινούργια ρούχα.",
+      "es": "Programa rápido diseñado para eliminar posibles residuos y refrescar la ropa recién comprada.",
+      "fr": "Programme rapide conçu pour éliminer les poussières et rafraîchir les vêtements neufs.",
+      "hr": "Brzi program namijenjen uklanjanju eventualnih ostataka i osvježavanje nove odjeće.",
+      "it": "Programma rapido studiato per la rimozione dei residui di lavorazione e rinfrescare i capi appena acquistati.",
+      "nl": "Rapid programma dat ontworpen is om eventuele restjes te verwijderen en om nieuw gekochte kleren op te frissen.",
+      "pl": "Szybki program prania do usuwania zagnieceń i odświeżenia nowej odzieży.",
+      "pt": "Programa rápido para remover eventuais restos e refrescar roupa acabada de comprar.",
+      "ro": "Program rapid, destinat îndepărtării eventualelor scame și pentru a împrospăta hainele noi.",
+      "ru": "Быстрая программа для освежения новой одежды.",
+      "sk": "Rýchly program navrhnutý na odstránenie prípadných zvyškov a osvieženie novej bielizne.",
+      "sl": "Hiter program za odstranjevanje morebitnih drobcev in osvežitev novih oblačil.",
+      "sr": "Brzi program namenjen uklanjanju eventualnih ostataka i osvežavanje nove odeće.",
+      "tr": "Rapid programme designed to remove possible scraps and freshen the newly purchased clothes."
+    },
     "output_cluster": 8,
     "temperature": 20,
     "spin_speed": 1200,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_DARK",
@@ -1026,12 +1350,30 @@
       "sr": "Posebno",
       "tr": "Özel"
     },
+    "description_translations": {
+      "en": "A cycle designed to wash all your dark clothes (cottons and mixed), with the greatest care.",
+      "cs": "Cyklus navržený pro praní veškerého tmavého prádla (bavlna a směsné) s nejvyšším stupněm ochrany.",
+      "de": "Ein Waschgang speziell zum Waschen dunkler Kleidungsstoffe (Baumwolle und Mischgewebe) mit größtmöglicher Pflegewirkung.",
+      "el": "Πρόγραμμα σχεδιασμένο να πλένει όλα τα σκούρα ρούχα (βαμβακερά και μικτά), με τη μέγιστη φροντίδα.",
+      "es": "Ciclo diseñado para el lavado de todas tus prendas oscuras (algodón y mixtos), con el mayor cuidado.",
+      "fr": "Un cycle conçu pour laver tous vos vêtements foncés (en coton et en tissu mixte) avec le plus grand soin.",
+      "hr": "Program namijenjen pranju tamne odjeće (pamuk i miješane tkanine), uz posebno očuvanje boje.",
+      "it": "Ciclo specifico per il lavaggio dei tessuti scuri (cotone e misti), con il massimo della cura.",
+      "nl": "Een cyclus dat ontworpen is om al uw donkere kleding (katoen en gemengd) te wassen, met de uiterste zorg.",
+      "pl": "Specjalny program do kolorowych tkanin (bawełna, mieszane).",
+      "pt": "Ciclo criado para lavar roupa escura (algodão/tecido misto) com o maior cuidado.",
+      "ro": "Program special pentru toate rufele închise la culoare (bumbac și mixte), cu protecție maximă.",
+      "ru": "Программа для бережного ухода за всей вашей темной одежды (хлопок и смешанные ткани).",
+      "sk": "Cyklus navrhnutý na pranie všetkej tmavej bielizne (bavlna a zmiešaná) s najvyšším stupňom ochrany.",
+      "sl": "Program za pranje vseh temnih oblačil (bombažnih in z mešano sestavo) skrbno neguje vaša oblačila.",
+      "sr": "Program namenjen pranju tamne odeće (pamuk i mešane tkanine), uz posebno očuvanje boje.",
+      "tr": "A cycle designed to wash all your dark clothes (cottons and mixed), with the greatest care."
+    },
     "output_cluster": 2,
     "temperature": 30,
     "spin_speed": 800,
     "soil_level": 1,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_DENIM_JEANS",
@@ -1073,12 +1415,30 @@
       "sr": "Posebno",
       "tr": "Özel"
     },
+    "description_translations": {
+      "en": "The programme thoroughly cleans the fibers of your jeans, respecting the colours, wash after wash.",
+      "cs": "Program důkladně vyčistí vlákna džínů s ochranou barev při opakovaném praní.",
+      "de": "Programm zur gründlichen Reinigung der Fasern Ihrer Jeans bei gleichzeitigem Farbschutz bei jeder Wäsche.",
+      "el": "Αυτό το πρόγραμμα καθαρίζει σε βάθος τις ίνες των τζην, προστατεύοντας τα χρώματα ώστε να μην χαλάνε, ακόμη και μετά από πολλές πλύσεις.",
+      "es": "El programa limpia a fondo las fibras de tus tejanos, respetando los colores, lavado tras lavado.",
+      "fr": "Ce programme nettoie soigneusement les fibres de vos jeans en protégeant les couleurs, lavage après lavage.",
+      "hr": "Ovaj program temeljito pere vlakna vašeg trapera, uz očuvanje boja.",
+      "it": "Il programma pulisce a fondo le fibre dei tuoi jeans, rispettandone i colori, lavaggio dopo lavaggio.",
+      "nl": "Het programma reinigt grondig de vezels van uw jeans, met respect voor de kleuren, was na was.",
+      "pl": "Specjalny program czyszczący do tkanin dżinsowych, dba o kolory.",
+      "pt": "Limpa as fibras dos jeans em profundidade, respeitando as cores, lavagem após lavagem.",
+      "ro": "Programul curăță în profunzime fibrele din denim, protejând culorile, spălare după spălare.",
+      "ru": "Тщательно отстирывает ткань, сохраняя цвета стирка за стиркой.",
+      "sk": "Program dôkladne vyčistí vlákna džínsov s ochranou farieb pri opakovanom praní.",
+      "sl": "Program temeljito očisti vlakna vaših kavbojk in pri tem ohrani njihovo barvo tudi po večkratnem pranju.",
+      "sr": "Ovaj program temeljno pere vlakna vašefarmerki, uz očuvanje boja.",
+      "tr": "The programme thoroughly cleans the fibers of your jeans, respecting the colours, wash after wash."
+    },
     "output_cluster": 6,
     "temperature": 40,
     "spin_speed": 1200,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_MEN_S_TROUSERS",
@@ -1120,12 +1480,30 @@
       "sr": "Posebno",
       "tr": "Özel"
     },
+    "description_translations": {
+      "en": "Programme for washing trousers (cotton and mixed), without any possible damage or creases.",
+      "cs": "Program pro praní kalhot (bavlna a směsné) bez případného poškození nebo pomačkání.",
+      "de": "Waschprogramm für Herrenhosen (Baumwolle und Mischgewebe), ohne Beschädigung der Kleidung oder Knitterbildungen.",
+      "el": "Πρόγραμμα για το πλύσιμο παντελονιών (βαμβακερά και μικτά), χωρίς να τα χαλάει και να τα ζαρώνει.",
+      "es": "Programa para el lavado de pantalones (algodón y mixtos), con el máximo cuidado y sin arrugas.",
+      "fr": "Programme de lavage des pantalons (en coton et en tissu mixte), sans aucun pli ni dommage.",
+      "hr": "Program namijenjen pranju hlača (pamuk i miješane tkanine), bez oštećenja i nabora.",
+      "it": "Ciclo ideato appositamente per il lavaggio dei pantaloni (in cotone e misti), senza danneggiarli e con pieghe al minimo.",
+      "nl": "Programma voor het wassen van mannenbroeken zonder enige beschadiging of kreuken.",
+      "pl": "Do prania spodni bez zagnieceń (bawełna, mieszane).",
+      "pt": "Programa para calças (algodão e tecido misto) em as danificar ou amachucar.",
+      "ro": "Program pentru spălarea pantalonilor (bumbac și mixt), fără deteriorare și limitând șifonarea.",
+      "ru": "Стирка брюк (хлопок и смешанные ткани), уменьшение сминания.",
+      "sk": "Program pre pranie nohavíc (bavlna a zmiešané), bez prípadného poškodenia alebo pokrčenia.",
+      "sl": "Program za pranje hlač (bombažnih in z mešano sestavo) pere brez poškodb in poskrbi, da se hlače ne zmečkajo.",
+      "sr": "Program namenjen pranju pantalona (pamuk i mešane tkanine), bez oštećenja i nabora.",
+      "tr": "Pantolonlarını (pamuklu ve karışık) zarar vermeden veya kırıştırmadan yıkayan program."
+    },
     "output_cluster": 6,
     "temperature": 30,
     "spin_speed": 800,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_SWIMSUITS_AND_BIKINIS",
@@ -1167,12 +1545,30 @@
       "sr": "Sport & razonoda",
       "tr": "Sport & Leisure"
     },
+    "description_translations": {
+      "en": "Short washing cycle, perfect to rinse the swimsuits after the sea or the pool, without any damage.",
+      "cs": "Krátký prací cyklus, perfektní k praní plavek z moře nebo bazénu, bez jakéhokoli poškození.",
+      "de": "Kurzwaschgang zum perfekten Ausspülen von Badekleidung nach einem Strand- oder Schwimmbadaufenthalt, ohne Beschädigung der Textilien.",
+      "el": "Μικρός κύκλος, ιδανικός για το τέλειο ξέβγαλμα των μαγιό μετά τη θάλασσα ή την πισίνα, χωρίς να τα χαλάει.",
+      "es": "Ciclo de lavado corto, perfecto para aclarar los bañadores después de la playa o de la piscina, sin dañarlos.",
+      "fr": "Cycle de lavage court, parfait pour rincer les maillots de bain après la mer ou la piscine, sans les endommager.",
+      "hr": "Kratki program pranja, idealan za ispiranje kupaćih kostima nakon boravka u moru ili bazenu, bez oštećenja tkanina.",
+      "it": "Breve ciclo di lavaggio, perfetto per risciacquare i costumi dopo il mare o la piscina, senza danneggiarli.",
+      "nl": "Korte wascyclus, perfect om zwempakken na een zwembeurt in de zee of het zwembad te spoelen, zonder enige schade.",
+      "pl": "Krótki program prania, idealne płukanie strojów kapielowych.",
+      "pt": "Ciclo curto, perfeito para enxaguar fatos de banho após a ida à praia ou à piscina, sem danos.",
+      "ro": "Program scurt de spălare, perfect pentru clătirea costumelor de baie după piscină sau mare, fără a le deteriora.",
+      "ru": "Короткая программа для освежения купальников после моря или бассейна.",
+      "sk": "Krátky prací cyklus, perfektný na pranie plaviek z mora alebo bazéna, bez akéhokoľvek poškodenia.",
+      "sl": "Kratek program, ki je odličen za izpiranje kopalk po kopanju v morju ali bazenu, sej ne poškoduje tkanin.",
+      "sr": "Kratki program pranja, idealan za ispiranje kupaćih kostima nakon boravka u moru ili bazenu, bez oštećenja tkanina.",
+      "tr": "Short washing cycle, perfect to rinse the swimsuits after the sea or the pool, without any damage."
+    },
     "output_cluster": 8,
     "temperature": 30,
     "spin_speed": 800,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_TECHNICAL_JACKETS",
@@ -1214,12 +1610,12 @@
       "sr": "Sport & razonoda",
       "tr": "Sport & Leisure"
     },
+    "description_translations": {},
     "output_cluster": 6,
     "temperature": 30,
     "spin_speed": 800,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_GYM_FIT",
@@ -1261,12 +1657,30 @@
       "sr": "Sport & razonoda",
       "tr": "Sport & Leisure"
     },
+    "description_translations": {
+      "en": "Dedicated programme for the quick wash of sport garments, after the gym.",
+      "cs": "Jemný program pro rychlé praní sportovního oblečení po cvičení.",
+      "de": "Spezielles Programm zum schnellen Waschen von Sportkleidung nach dem Fitnessstudio.",
+      "el": "Εξειδικευμένο πρόγραμμα για τον γρήγορο καθαρισμό αθλητικών ρούχων, μετά το γυμναστήριο.",
+      "es": "Programa dedicado para un lavado rápido de la ropa deportiva, después del gimnasio.",
+      "fr": "Programme spécial pour le lavage rapide de vêtements utilisés en salle de sport.",
+      "hr": "Poseban program namijenjen brzom pranju sportske odjeće, nakon teretane i fitnessa.",
+      "it": "Programma sviluppato per il lavaggio rapido ma accurato dei capi dopo la palestra.",
+      "nl": "Specifiek programma voor de snelle was van uw sportkledij na de sportschool.",
+      "pl": "Szybkie pranie funkcjonalnej odzieży sportowej.",
+      "pt": "Programa dedicado à lavagem rápida de roupa desportiva após a ida ao ginásio.",
+      "ro": "Program dedicat spălării rapide a articolelor sportive.",
+      "ru": "Специальная программа для быстрой стирки спортивной одежды.",
+      "sk": "Jemný program pre rýchle pranie športového oblečenia po cvičení.",
+      "sl": "Poseben program za hitro pranje športnih oblačil po telovadbi.",
+      "sr": "Poseban program namenjen brzom pranju sportske odeće, nakon teretane i fitnessa.",
+      "tr": "Dedicated programme for the quick wash of sport garments, after the gym."
+    },
     "output_cluster": 7,
     "temperature": 30,
     "spin_speed": 800,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_TRAINERS",
@@ -1308,12 +1722,30 @@
       "sr": "Sport & razonoda",
       "tr": "Sport & Leisure"
     },
+    "description_translations": {
+      "en": "Rapid programme designed to wash sport shoes and trainers.",
+      "cs": "Rychlý program navržený pro praní sportovní obuvi.",
+      "de": "Kurzprogramm zum Waschen von Sport- und Turnschuhen.",
+      "el": "Γρήγορο πρόγραμμα σχεδιασμένο να καθαρίζει αθλητικά παπούτσια",
+      "es": "Programa rápido diseñado para lavar calzado deportivo.",
+      "fr": "Programme rapide conçu pour laver les chaussures de sport et les baskets.",
+      "hr": "Brzi program namijenjen pranju trenirki i sportske obuće.",
+      "it": "Ciclo rapido studiato per la pulizia delle scarpe sportive e da ginnastica.",
+      "nl": "Rapid programma dat ontworpen is om sportschoenen en trainingspakken te wassen.",
+      "pl": "szybki program prania obuwia sportowego.",
+      "pt": "Programa rápido para lavar sapatos de desporto e ténis.",
+      "ro": "Program rapid conceput pentru a spăla pantofii sport.",
+      "ru": "Быстрая программа для спортивной обуви.",
+      "sk": "Rýchly program navrhnutý na pranie športovej obuvi.",
+      "sl": "Hiter program za pranje športne obutve in superg.",
+      "sr": "Brzi program namenjen pranju trenerki i sportske obuće.",
+      "tr": "Rapid programme designed to wash sport shoes and trainers."
+    },
     "output_cluster": 6,
     "temperature": 30,
     "spin_speed": 800,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   },
   {
     "name": "NFC_PROGRAM_NAME_BACKPACKS",
@@ -1355,11 +1787,29 @@
       "sr": "Sport & razonoda",
       "tr": "Sport & Leisure"
     },
+    "description_translations": {
+      "en": "For quick cleaning of backpacks and belt bags, this cycle removes dust and enhance the colours.",
+      "cs": "Pro rychlé praní batohů a ledvinek, tento cyklus odstraňuje prach a zvýrazňuje barvy.",
+      "de": "Waschgang zum schnellen Reinigen von Rucksäcken und Gürteltaschen, bei dem Staub entfernt und die Farben hervorgehoben werden.",
+      "el": "Για τον γρήγορο καθαρισμό σακιδίων πλάτης και μέσης που αφαιρεί τις σκόνες και τονίζει τα χρώματα.",
+      "es": "Para una limpieza rápida de mochilas y riñoneras, este ciclo elimina la suciedad realzando los colores.",
+      "fr": "Ce cycle lave rapidement les sacs à dos, les sacs bananes et les sacoches de ceinture, en élimine la poussière et en renforce les couleurs.",
+      "hr": "Namijenjen brzom pranju ruksaka, ovaj ciklus uklanja prašinu i pojačava kvalitetu boja.",
+      "it": "Per il lavaggio rapido di zaini e marsupi, questo ciclo rimuove la polvere e ne ravviva i colori.",
+      "nl": "Voor de snelle reiniging van rugzakken en riemtassen, deze cyclus verwijdert stof en verbetert de kleuren.",
+      "pl": "Szybki program prania plecaków i pasków dzianinowych, usuwa kurz i zabrudzenia, dba o kolory.",
+      "pt": "Para limpeza rápida de mochilas e bolsas de cintura, este ciclo remove pó e renova as cores.",
+      "ro": "Pentru spălarea rapidă a rucsacului, acest program îndepărtează murdăria și intensifică culorile.",
+      "ru": "Для быстрой стирки рюкзаков, убирает пыль и сохраняет цвет.",
+      "sk": "Pre rýchle pranie batohov a ľadviniek, tento cyklus odstraňuje prach a zvýrazňuje farby.",
+      "sl": "Za hitro čiščenje nahrbtnikov in opasnih torbic. Ta program odstrani prah in poudari barve.",
+      "sr": "Namenjen brzom pranju ruksaka, ovaj ciklus uklanja prašinu i pojačava kvalitet boja.",
+      "tr": "For quick cleaning of backpacks and belt bags, this cycle removes dust and enhance the colours."
+    },
     "output_cluster": 7,
     "temperature": 30,
     "spin_speed": 800,
     "soil_level": 0,
-    "avopt1": 0,
-    "duration": null
+    "avopt1": 0
   }
 ]

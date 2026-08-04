@@ -258,6 +258,9 @@
       "wash_program": {
         "name": "Wash program"
       },
+      "wash_program_description": {
+        "name": "Program description"
+      },
       "tumble_dryer": {
         "name": "Tumble dryer"
       },

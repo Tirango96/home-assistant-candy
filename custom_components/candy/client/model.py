@@ -11,12 +11,13 @@ _NFC_PROGRAMS_RAW: list[dict] = json.loads(
     (Path(__file__).parent / "nfc_programs.json").read_text(encoding="utf-8")
 )
 
-# Maps DUAL_WM_WD_PROGRAM_DOWNLOAD_NAME_* → {translations, category_translations}
+# Maps DUAL_WM_WD_PROGRAM_DOWNLOAD_NAME_* → {translations, category_translations, description_translations}
 # Used by load_downloadable_programs to filter and translate the cloud catalog.
 _DOWNLOADABLE_PROGRAM_TRANSLATIONS: dict[str, dict] = {
     e["name"].replace("NFC_PROGRAM_NAME_", "DUAL_WM_WD_PROGRAM_DOWNLOAD_NAME_"): {
         "translations": e["translations"],
         "category_translations": e["category_translations"],
+        "description_translations": e.get("description_translations", {}),
     }
     for e in _NFC_PROGRAMS_RAW
 }
@@ -371,6 +372,7 @@ class DownloadableProgram:
     steam: int
     translations: dict[str, str]
     category_translations: dict[str, str]
+    description_translations: dict[str, str]
 
     @property
     def recipe_id(self) -> str:
@@ -386,6 +388,11 @@ class DownloadableProgram:
 
     def category_prefixed(self, lang: str) -> str:
         return f"{self.category_name(lang)} - {self.display_name(lang)}"
+
+    def description(self, lang: str) -> str:
+        return self.description_translations.get(
+            lang
+        ) or self.description_translations.get("en", "")
 
 
 def load_downloadable_programs(cloud_raw: list[dict]) -> list["DownloadableProgram"]:
@@ -427,6 +434,7 @@ def load_downloadable_programs(cloud_raw: list[dict]) -> list["DownloadableProgr
                 steam=int(entry.get("steam", 0)),
                 translations=trans["translations"],
                 category_translations=trans["category_translations"],
+                description_translations=trans["description_translations"],
             )
         )
     return result

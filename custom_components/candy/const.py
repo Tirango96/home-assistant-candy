@@ -117,6 +117,7 @@ NOTIF_ID_MAINT_LIMESCALE = "candy_{0}_maint_limescale"
 NOTIF_ID_MAINT_FILTER = "candy_{0}_maint_filter"
 
 UNIQUE_ID_WASH_PROGRAM_SELECT = "{0}-wash_program_select"
+UNIQUE_ID_WASH_PROGRAM_DESCRIPTION = "{0}-wash_program_description"
 UNIQUE_ID_WASH_TEMP_SELECT = "{0}-wash_temp_select"
 UNIQUE_ID_WASH_SPIN_SELECT = "{0}-wash_spin_select"
 UNIQUE_ID_WASH_SOIL_SELECT = "{0}-wash_soil_select"

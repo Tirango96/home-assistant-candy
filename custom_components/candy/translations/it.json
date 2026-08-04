@@ -82,6 +82,9 @@
       "wash_program": {
         "name": "Programma di lavaggio"
       },
+      "wash_program_description": {
+        "name": "Descrizione programma"
+      },
       "tumble_dryer": {
         "name": "Asciugatrice"
       },

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import cast
 
 from homeassistant.components.select import SelectEntity
+from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
@@ -33,6 +34,7 @@ from .const import (
     MODE_FULL_CONTROL,
     SOIL_LABELS,
     UNIQUE_ID_WASH_NFC_SWITCH,
+    UNIQUE_ID_WASH_PROGRAM_DESCRIPTION,
     UNIQUE_ID_WASH_PROGRAM_SELECT,
     UNIQUE_ID_WASH_SOIL_SELECT,
     UNIQUE_ID_WASH_SPIN_SELECT,
@@ -69,6 +71,7 @@ async def async_setup_entry(
     temp_select = WashTempSelect(coordinator, config_entry, client, programs)
     spin_select = WashSpinSelect(coordinator, config_entry, client, programs)
     soil_select = WashSoilSelect(coordinator, config_entry, client, programs)
+    description_sensor = CandyWashProgramDescriptionSensor(coordinator, config_entry)
     program_select = WashProgramSelect(
         coordinator,
         config_entry,
@@ -77,10 +80,13 @@ async def async_setup_entry(
         temp_select,
         spin_select,
         soil_select,
+        description_sensor,
         nfc_entries,
     )
 
-    async_add_entities([program_select, temp_select, spin_select, soil_select])
+    async_add_entities(
+        [program_select, temp_select, spin_select, soil_select, description_sensor]
+    )
 
 
 class CandyWashSelectBase(CoordinatorEntity, SelectEntity):
@@ -132,12 +138,14 @@ class WashProgramSelect(CandyWashSelectBase):
         temp_select: WashTempSelect,
         spin_select: WashSpinSelect,
         soil_select: WashSoilSelect,
+        description_sensor: CandyWashProgramDescriptionSensor,
         nfc_entries: list[tuple[DownloadableProgram, WashingMachineWashProgram]],
     ) -> None:
         super().__init__(coordinator, config_entry, client, programs)
         self._temp_select = temp_select
         self._spin_select = spin_select
         self._soil_select = soil_select
+        self._description_sensor = description_sensor
         self._nfc_entries = nfc_entries
         self._current_option: str | None = None
 
@@ -220,21 +228,65 @@ class WashProgramSelect(CandyWashSelectBase):
             None,
         )
         if nfc_match is not None:
-            self._temp_select.update_for_program(None)
+            self._temp_select.update_for_program(nfc_match)
             self._spin_select.update_for_program(None)
             self._soil_select.update_for_program(None)
+            self._description_sensor.update_for_program(nfc_match)
         else:
             selected = next(
                 (p for p in self._programs if self._program_name(p) == option), None
             )
             if selected is not None:
-                self._temp_select.update_for_program(selected)
+                self._temp_select.reset_for_standard_program(selected)
                 self._spin_select.update_for_program(selected)
                 self._soil_select.update_for_program(selected)
+            self._description_sensor.reset_for_standard_program()
         self.async_write_ha_state()
         self._temp_select.async_write_ha_state()
         self._spin_select.async_write_ha_state()
         self._soil_select.async_write_ha_state()
+        self._description_sensor.async_write_ha_state()
+
+
+class CandyWashProgramDescriptionSensor(CoordinatorEntity, SensorEntity):
+    """Read-only sensor showing the description of the selected downloadable program."""
+
+    _attr_name = "Program description"
+    _attr_translation_key = "wash_program_description"
+    _attr_should_poll = False
+    _description: str | None = None
+
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        config_entry: ConfigEntry,
+    ) -> None:
+        super().__init__(coordinator)
+        self.config_entry = config_entry
+        self.config_id = config_entry.entry_id
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_PROGRAM_DESCRIPTION.format(self.config_id)
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return wash_device_info(self.config_entry)
+
+    @property
+    def available(self) -> bool:
+        return super().available and self._description is not None
+
+    @property
+    def native_value(self) -> str | None:
+        return self._description
+
+    def update_for_program(self, program: DownloadableProgram | None) -> None:
+        lang = self.config_entry.data.get(CONF_KEY_PROGRAM_LANGUAGE, "en")
+        self._description = program.description(lang) if program is not None else None
+
+    def reset_for_standard_program(self) -> None:
+        self._description = None
 
 
 class WashTempSelect(CandyWashSelectBase):
@@ -243,6 +295,9 @@ class WashTempSelect(CandyWashSelectBase):
     _current_option: str | None = None
     _current_program: WashingMachineWashProgram | None = None  # type: ignore[assignment]
     _nfc_active: bool = False
+    _nfc_temp: int | None = (
+        None  # fixed temperature for the active downloadable program
+    )
 
     @property
     def unique_id(self) -> str:
@@ -255,7 +310,11 @@ class WashTempSelect(CandyWashSelectBase):
     @property
     def available(self) -> bool:
         if self._nfc_active:
-            return False
+            return (
+                super().available
+                and self._machine_is_idle()
+                and self._nfc_temp is not None
+            )
         prog = self._active_program()
         return (
             super().available
@@ -266,6 +325,8 @@ class WashTempSelect(CandyWashSelectBase):
 
     @property
     def options(self) -> list[str]:
+        if self._nfc_active:
+            return [str(self._nfc_temp)] if self._nfc_temp is not None else []
         prog = self._active_program()
         if prog is None or prog.max_temperature == 255:
             return []
@@ -273,6 +334,8 @@ class WashTempSelect(CandyWashSelectBase):
 
     @property
     def current_option(self) -> str | None:
+        if self._nfc_active:
+            return str(self._nfc_temp) if self._nfc_temp is not None else None
         if self._current_option is not None:
             return self._current_option
         prog = self._active_program()
@@ -281,12 +344,17 @@ class WashTempSelect(CandyWashSelectBase):
         status = cast(WashingMachineStatus, self.coordinator.data)
         return str(status.temp)
 
-    def update_for_program(self, program: WashingMachineWashProgram | None) -> None:
-        self._nfc_active = program is None
+    def update_for_program(self, program: DownloadableProgram | None) -> None:
+        self._nfc_active = True
+        self._current_program = None
+        self._current_option = None
+        self._nfc_temp = program.temperature if program is not None else None
+
+    def reset_for_standard_program(self, program: WashingMachineWashProgram) -> None:
+        self._nfc_active = False
+        self._nfc_temp = None
         self._current_program = program
-        self._current_option = (
-            str(program.default_temperature) if program is not None else None
-        )
+        self._current_option = str(program.default_temperature)
 
     def _active_program(self) -> WashingMachineWashProgram | None:
         if self._current_program is not None:
@@ -298,6 +366,8 @@ class WashTempSelect(CandyWashSelectBase):
         return None
 
     async def async_select_option(self, option: str) -> None:
+        if self._nfc_active:
+            return
         self._current_option = option
         self.async_write_ha_state()
 

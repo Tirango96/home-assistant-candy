@@ -901,6 +901,7 @@ _NFC_BATHROBE = DownloadableProgram(
     steam=0,
     translations={"en": "Bathrobe"},
     category_translations={"en": "Home Care"},
+    description_translations={"en": "Wash your bathrobe."},
 )
 
 # New Clothes: parent=2 → RAPID (position=2, selector_position=2, pr_code=5, max_spin_speed=255)
@@ -916,6 +917,7 @@ _NFC_NEW_CLOTHES = DownloadableProgram(
     steam=0,
     translations={"en": "New Clothes"},
     category_translations={"en": "Special"},
+    description_translations={"en": "Wash new clothes."},
 )
 
 _NFC_PROGRAMS = [_NFC_BATHROBE, _NFC_NEW_CLOTHES]
@@ -1000,6 +1002,7 @@ def test_resolve_downloadable_programs_skips_unresolvable():
         steam=0,
         translations={"en": "Unknown"},
         category_translations={"en": "Cat"},
+        description_translations={},
     )
     programs = parse_wash_programs(_PROGRAMS)
     resolved = resolve_downloadable_programs([unknown], programs)
@@ -1084,9 +1087,7 @@ async def test_nfc_select_disables_sub_selects(
         blocking=True,
     )
 
-    assert (
-        _state(hass, entry, "select", UNIQUE_ID_WASH_TEMP_SELECT).state == "unavailable"
-    )
+    assert _state(hass, entry, "select", UNIQUE_ID_WASH_TEMP_SELECT).state == "40"
     assert (
         _state(hass, entry, "select", UNIQUE_ID_WASH_SPIN_SELECT).state == "unavailable"
     )
@@ -1111,9 +1112,7 @@ async def test_standard_select_after_nfc_re_enables_sub_selects(
         {"entity_id": program_eid, "option": "Home Care - Bathrobe"},
         blocking=True,
     )
-    assert (
-        _state(hass, entry, "select", UNIQUE_ID_WASH_TEMP_SELECT).state == "unavailable"
-    )
+    assert _state(hass, entry, "select", UNIQUE_ID_WASH_TEMP_SELECT).state == "40"
 
     # Then switch back to a standard program — sub-selects must re-enable
     await hass.services.async_call(

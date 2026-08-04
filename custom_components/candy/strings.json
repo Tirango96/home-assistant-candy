@@ -176,6 +176,9 @@
       "wash_program": {
         "name": "Wash program"
       },
+      "wash_program_description": {
+        "name": "Program description"
+      },
       "wash_cycle_status": {
         "name": "Cycle status"
       },
