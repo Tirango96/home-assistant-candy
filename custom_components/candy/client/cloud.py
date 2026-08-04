@@ -39,6 +39,7 @@ class CloudApplianceData:
     serial_number: str
     programs: list[dict]
     interface_type: str
+    downloadable_programs: list[dict]
 
 
 class SimplyFiCloudError(Exception):
@@ -58,7 +59,8 @@ async def fetch_appliance_data(
     """
     tokens = await _authenticate(session, email, password)
     appliances = await _fetch_appliances(session, tokens)
-    return _match_appliance(appliances, device_ip)
+    downloadable_programs = await _fetch_downloadable_programs(session, tokens)
+    return _match_appliance(appliances, device_ip, downloadable_programs)
 
 
 async def _authenticate(
@@ -143,7 +145,39 @@ async def _fetch_appliances(
     return data
 
 
-def _match_appliance(appliances: list[dict], device_ip: str) -> CloudApplianceData:
+async def _fetch_downloadable_programs(
+    session: aiohttp.ClientSession,
+    tokens: dict,
+) -> list[dict]:
+    """Fetch global downloadable programs catalog from Simply-Fi."""
+    headers = {
+        "id-token": tokens["id_token"],
+        "cognito-token": tokens["cognito_token"],
+        "Authorization": f"Bearer {tokens['id_token']}",
+        "Salesforce-Auth": "1",
+        "User-Agent": _HON_USER_AGENT,
+    }
+    async with session.get(
+        f"{_SIMPLY_FI_BASE}/api/v1/wm_wd_programs.json",
+        headers=headers,
+    ) as resp:
+        if resp.status != 200:
+            text = await resp.text()
+            raise SimplyFiCloudError(
+                f"Simply-Fi downloadable programs fetch failed (HTTP {resp.status}): {text[:200]}"
+            )
+        data = await resp.json()
+
+    programs = data if isinstance(data, list) else data.get("wm_wd_programs", [])
+    _LOGGER.debug("Fetched %d downloadable program(s) from Simply-Fi", len(programs))
+    return programs
+
+
+def _match_appliance(
+    appliances: list[dict],
+    device_ip: str,
+    downloadable_programs: list[dict],
+) -> CloudApplianceData:
     """Find the appliance that matches device_ip via current_status_parameters.
 
     Falls back to the first appliance if only one is registered and IP cannot be matched,
@@ -192,4 +226,5 @@ def _match_appliance(appliances: list[dict], device_ip: str) -> CloudApplianceDa
         serial_number=matched.get("sixteen_digits_code", ""),
         programs=programs,
         interface_type=matched.get("interface_type", ""),
+        downloadable_programs=downloadable_programs,
     )

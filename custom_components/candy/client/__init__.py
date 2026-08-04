@@ -1,5 +1,4 @@
 import asyncio
-from dataclasses import replace
 import json
 from json import JSONDecodeError
 import logging
@@ -14,13 +13,13 @@ import backoff
 from .decryption import Encryption, decrypt, find_key
 from .model import (
     DishwasherStatus,
-    NfcProgram as NfcProgram,
+    DownloadableProgram as DownloadableProgram,
     OvenStatus,
     TumbleDryerStatus,
     WashingMachineStatistics,
     WashingMachineStatus,
     WashingMachineWashProgram as WashingMachineWashProgram,
-    load_nfc_programs as load_nfc_programs,
+    load_downloadable_programs as load_downloadable_programs,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -32,26 +31,16 @@ def parse_wash_programs(raw: list[dict]) -> list[WashingMachineWashProgram]:
     return [p for p in programs if p.position != 0]
 
 
-def resolve_nfc_programs(
-    nfc_list: list[NfcProgram],
+def resolve_downloadable_programs(
+    programs: list[DownloadableProgram],
     standard_programs: list[WashingMachineWashProgram],
-    nfc_cluster_to_program: dict[int, list[str]],
-) -> list[tuple[NfcProgram, WashingMachineWashProgram]]:
-    result = []
-    for nfc in nfc_list:
-        patterns = nfc_cluster_to_program.get(nfc.output_cluster, [])
-        base = next(
-            (p for pattern in patterns for p in standard_programs if pattern in p.name),
-            None,
-        )
-        if base is not None:
-            resolved = (
-                replace(nfc, duration=base.default_duration)
-                if base.default_duration > 0
-                else nfc
-            )
-            result.append((resolved, base))
-    return result
+) -> list[tuple[DownloadableProgram, WashingMachineWashProgram]]:
+    pos_to_prog = {p.selector_position: p for p in standard_programs}
+    return [
+        (dl, base)
+        for dl in programs
+        if (base := pos_to_prog.get(dl.parent)) is not None
+    ]
 
 
 # Some devices reportedly can't handle too frequent requests and respond with BAD_REQUEST

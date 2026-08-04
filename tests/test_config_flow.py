@@ -457,6 +457,7 @@ _MOCK_APPLIANCE = CloudApplianceData(
             }
         }
     ],
+    downloadable_programs=[],
 )
 
 

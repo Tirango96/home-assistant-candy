@@ -14,15 +14,16 @@ from homeassistant.helpers.update_coordinator import (
 
 from .client import (
     CandyClient,
-    NfcProgram,
+    DownloadableProgram,
     WashingMachineStatus,
     WashingMachineWashProgram,
-    load_nfc_programs,
+    load_downloadable_programs,
     parse_wash_programs,
-    resolve_nfc_programs,
+    resolve_downloadable_programs,
 )
 from .client.model import MachineState
 from .const import (
+    CONF_KEY_DOWNLOADABLE_PROGRAMS,
     CONF_KEY_MODE,
     CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
@@ -30,7 +31,6 @@ from .const import (
     DATA_KEY_COORDINATOR,
     DOMAIN,
     MODE_FULL_CONTROL,
-    NFC_CLUSTER_TO_PROGRAM,
     SOIL_LABELS,
     UNIQUE_ID_WASH_NFC_SWITCH,
     UNIQUE_ID_WASH_PROGRAM_SELECT,
@@ -61,8 +61,9 @@ async def async_setup_entry(
     client: CandyClient = hass.data[DOMAIN][config_id][DATA_KEY_CLIENT]
     programs = parse_wash_programs(config_entry.data.get(CONF_KEY_PROGRAMS, []))
 
-    nfc_entries = resolve_nfc_programs(
-        load_nfc_programs(), programs, NFC_CLUSTER_TO_PROGRAM
+    raw_dl = config_entry.data.get(CONF_KEY_DOWNLOADABLE_PROGRAMS, [])
+    nfc_entries = resolve_downloadable_programs(
+        load_downloadable_programs(raw_dl), programs
     )
 
     temp_select = WashTempSelect(coordinator, config_entry, client, programs)
@@ -131,7 +132,7 @@ class WashProgramSelect(CandyWashSelectBase):
         temp_select: WashTempSelect,
         spin_select: WashSpinSelect,
         soil_select: WashSoilSelect,
-        nfc_entries: list[tuple[NfcProgram, WashingMachineWashProgram]],
+        nfc_entries: list[tuple[DownloadableProgram, WashingMachineWashProgram]],
     ) -> None:
         super().__init__(coordinator, config_entry, client, programs)
         self._temp_select = temp_select
@@ -195,14 +196,14 @@ class WashProgramSelect(CandyWashSelectBase):
         )
         nfc_match = next(
             (
-                nfc
-                for nfc, _ in self._nfc_entries
+                (nfc, base)
+                for nfc, base in self._nfc_entries
                 if nfc.category_prefixed(lang) == option
             ),
             None,
         )
-        if nfc_match is not None and nfc_match.duration:
-            return {"duration_minutes": nfc_match.duration}
+        if nfc_match is not None and nfc_match[1].default_duration:
+            return {"duration_minutes": nfc_match[1].default_duration}
         return None
 
     async def async_select_option(self, option: str) -> None:

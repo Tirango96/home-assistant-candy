@@ -13,16 +13,19 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.candy import CONF_KEY_USE_ENCRYPTION, DOMAIN
-from custom_components.candy.client import parse_wash_programs, resolve_nfc_programs
-from custom_components.candy.client.model import MachineState, NfcProgram
+from custom_components.candy.client import (
+    parse_wash_programs,
+    resolve_downloadable_programs,
+)
+from custom_components.candy.client.model import DownloadableProgram, MachineState
 from custom_components.candy.const import (
+    CONF_KEY_DOWNLOADABLE_PROGRAMS,
     CONF_KEY_INTERFACE_TYPE,
     CONF_KEY_MODE,
     CONF_KEY_PROGRAMS,
     DATA_KEY_COORDINATOR,
     MODE_FULL_CONTROL,
     MODE_READ_ONLY,
-    NFC_CLUSTER_TO_PROGRAM,
     UNIQUE_ID_WASH_DELAY_NUMBER,
     UNIQUE_ID_WASH_ESTIMATED_DURATION,
     UNIQUE_ID_WASH_NFC_SWITCH,
@@ -885,32 +888,34 @@ async def test_scheduled_sensors_absent_or_unavailable_in_read_only_mode(
 # NFC special programs
 # ---------------------------------------------------------------------------
 
-# A COTTON-compatible NFC program: output_cluster=1 maps to COTTON via NFC_CLUSTER_TO_PROGRAM.
-# Category "Home Care", display name "Bathrobe". soil_level=2 (non-zero → used directly).
-_NFC_BATHROBE = NfcProgram(
-    name="NFC_PROGRAM_NAME_BATHROBE",
+# Bathrobe: parent=1 → COTTON (selector_position=1, pr_code=136, max_spin_speed=1400)
+# position=56, spin_speed=1000, soil_level=2 (non-zero → used directly), options=16
+_NFC_BATHROBE = DownloadableProgram(
+    position=56,
+    name="DUAL_WM_WD_PROGRAM_DOWNLOAD_NAME_BATHROBE",
+    parent=1,
+    temperature=40,
+    spin_speed=1000,
+    soil_level=2,
+    options=16,
+    steam=0,
     translations={"en": "Bathrobe"},
     category_translations={"en": "Home Care"},
-    output_cluster=1,
-    temperature=40,
-    spin_speed=1400,
-    soil_level=2,
-    avopt1=0,
-    duration=90,  # COTTON.default_duration
 )
 
-# A RAPID-compatible NFC program: output_cluster=8 maps to RAPID. soil_level=0 → fallback to
-# base.default_soil_level.
-_NFC_NEW_CLOTHES = NfcProgram(
-    name="NFC_PROGRAM_NAME_NEW_CLOTHES",
+# New Clothes: parent=2 → RAPID (selector_position=2, pr_code=5, max_spin_speed=255)
+# position=83, spin_speed=1000, soil_level=0 → fallback to base.default_soil_level=0
+_NFC_NEW_CLOTHES = DownloadableProgram(
+    position=83,
+    name="DUAL_WM_WD_PROGRAM_DOWNLOAD_NAME_NEW_CLOTHES",
+    parent=2,
+    temperature=20,
+    spin_speed=1000,
+    soil_level=0,
+    options=0,
+    steam=0,
     translations={"en": "New Clothes"},
     category_translations={"en": "Special"},
-    output_cluster=8,
-    temperature=20,
-    spin_speed=1200,
-    soil_level=0,
-    avopt1=0,
-    duration=14,  # RAPID.default_duration
 )
 
 _NFC_PROGRAMS = [_NFC_BATHROBE, _NFC_NEW_CLOTHES]
@@ -929,6 +934,7 @@ async def _init_full_control_nfc(
             CONF_PASSWORD: "",
             CONF_KEY_MODE: MODE_FULL_CONTROL,
             CONF_KEY_PROGRAMS: _PROGRAMS,
+            CONF_KEY_DOWNLOADABLE_PROGRAMS: [],
         },
     )
     aioclient_mock.get(f"http://{TEST_IP}/http-read.json?encrypted=0", text=status_json)
@@ -936,11 +942,11 @@ async def _init_full_control_nfc(
     entry.add_to_hass(hass)
     with (
         patch(
-            "custom_components.candy.select.load_nfc_programs",
+            "custom_components.candy.select.load_downloadable_programs",
             return_value=_NFC_PROGRAMS,
         ),
         patch(
-            "custom_components.candy.button.load_nfc_programs",
+            "custom_components.candy.button.load_downloadable_programs",
             return_value=_NFC_PROGRAMS,
         ),
     ):
@@ -961,43 +967,42 @@ async def _init_full_control_nfc(
     return entry
 
 
-# --- _resolve_nfc_programs unit tests ---
+# --- resolve_downloadable_programs unit tests ---
 
 
-def test_resolve_nfc_programs_matches_cotton():
+def test_resolve_downloadable_programs_matches_cotton():
     programs = parse_wash_programs(_PROGRAMS)
-    resolved = resolve_nfc_programs([_NFC_BATHROBE], programs, NFC_CLUSTER_TO_PROGRAM)
+    resolved = resolve_downloadable_programs([_NFC_BATHROBE], programs)
     assert len(resolved) == 1
     nfc, base = resolved[0]
-    assert nfc.name == "NFC_PROGRAM_NAME_BATHROBE"
+    assert nfc.name == "DUAL_WM_WD_PROGRAM_DOWNLOAD_NAME_BATHROBE"
     assert base.name == "COTTON"
 
 
-def test_resolve_nfc_programs_matches_rapid():
+def test_resolve_downloadable_programs_matches_rapid():
     programs = parse_wash_programs(_PROGRAMS)
-    resolved = resolve_nfc_programs(
-        [_NFC_NEW_CLOTHES], programs, NFC_CLUSTER_TO_PROGRAM
-    )
+    resolved = resolve_downloadable_programs([_NFC_NEW_CLOTHES], programs)
     assert len(resolved) == 1
     nfc, base = resolved[0]
-    assert nfc.name == "NFC_PROGRAM_NAME_NEW_CLOTHES"
+    assert nfc.name == "DUAL_WM_WD_PROGRAM_DOWNLOAD_NAME_NEW_CLOTHES"
     assert base.name == "RAPID"
 
 
-def test_resolve_nfc_programs_skips_unresolvable():
-    unknown = NfcProgram(
-        name="UNKNOWN",
-        translations={"en": "Unknown"},
-        category_translations={"en": "Cat"},
-        output_cluster=99,
+def test_resolve_downloadable_programs_skips_unresolvable():
+    unknown = DownloadableProgram(
+        position=99,
+        name="DUAL_WM_WD_PROGRAM_DOWNLOAD_NAME_UNKNOWN",
+        parent=999,
         temperature=30,
         spin_speed=600,
         soil_level=0,
-        avopt1=0,
-        duration=None,
+        options=0,
+        steam=0,
+        translations={"en": "Unknown"},
+        category_translations={"en": "Cat"},
     )
     programs = parse_wash_programs(_PROGRAMS)
-    resolved = resolve_nfc_programs([unknown], programs, NFC_CLUSTER_TO_PROGRAM)
+    resolved = resolve_downloadable_programs([unknown], programs)
     assert resolved == []
 
 
@@ -1131,8 +1136,8 @@ async def test_standard_select_after_nfc_re_enables_sub_selects(
 async def test_start_button_sends_nfc_command(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    # Bathrobe: output_cluster=1 → base=COTTON (PrNm=1, PrCode=136)
-    # temp=40, spin_speed=1400 → SpdTgt=14, soil_level=2 → SLevTgt=2, Stm=0
+    # Bathrobe: parent=1 → base=COTTON (PrNm=1, PrCode=136)
+    # temp=40, spin_speed=1000 → SpdTgt=10, soil_level=2 → SLevTgt=2, options=16, Stm=0
     entry = await _init_full_control_nfc(hass, aioclient_mock, _IDLE_JSON)
     registry = er.async_get(hass)
 
@@ -1165,15 +1170,17 @@ async def test_start_button_sends_nfc_command(
     assert "PrCode=136" in qs  # COTTON pr_code
     assert "PrStr=Bathrobe" in qs
     assert "TmpTgt=40" in qs
-    assert "SpdTgt=14" in qs  # 1400 // 100
+    assert "SpdTgt=10" in qs  # 1000 // 100
     assert "SLevTgt=2" in qs  # nfc.soil_level=2 (non-zero, used directly)
+    assert "OptMsk1=16" in qs  # nfc.options=16, no user options active
+    assert "RecipeId=D_56" in qs
     assert "Stm=0" in qs
 
 
 async def test_start_button_nfc_soil_fallback_to_base_default(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    # New Clothes: output_cluster=8 → base=RAPID, soil_level=0 → falls back to RAPID
+    # New Clothes: parent=2 → base=RAPID, soil_level=0 → falls back to RAPID
     # default_soil_level=0. RAPID selector_position=2, PrCode=5.
     entry = await _init_full_control_nfc(hass, aioclient_mock, _IDLE_JSON)
     registry = er.async_get(hass)
@@ -1204,8 +1211,9 @@ async def test_start_button_nfc_soil_fallback_to_base_default(
     assert "PrCode=5" in qs
     assert "PrStr=New%20Clothes" in qs
     assert "TmpTgt=20" in qs
-    assert "SpdTgt=12" in qs  # 1200 // 100
+    assert "SpdTgt=10" in qs  # 1000 // 100
     assert "SLevTgt=0" in qs  # soil fallback: base.default_soil_level = 0
+    assert "RecipeId=D_83" in qs
 
 
 # ---------------------------------------------------------------------------

@@ -18,13 +18,13 @@ from homeassistant.util import dt as dt_util
 
 from .client import (
     CandyClient,
-    NfcProgram,
+    DownloadableProgram,
     WashingMachineStatistics,
     WashingMachineStatus,
     WashingMachineWashProgram,
-    load_nfc_programs,
+    load_downloadable_programs,
     parse_wash_programs,
-    resolve_nfc_programs,
+    resolve_downloadable_programs,
 )
 from .client.model import MachineState
 from .const import (
@@ -33,6 +33,7 @@ from .const import (
     CONF_KEY_CHECKUP_ENABLED,
     CONF_KEY_CHECKUP_LAST_DATE,
     CONF_KEY_CHECKUP_SCHEDULE,
+    CONF_KEY_DOWNLOADABLE_PROGRAMS,
     CONF_KEY_INTERFACE_TYPE,
     CONF_KEY_MAINTENANCE_ENABLED,
     CONF_KEY_MAINTENANCE_FILTER_ENABLED,
@@ -49,7 +50,6 @@ from .const import (
     DATA_KEY_WRITE_PENDING,
     DOMAIN,
     MODE_FULL_CONTROL,
-    NFC_CLUSTER_TO_PROGRAM,
     SOIL_LABELS_REVERSE,
     UNIQUE_ID_WASH_DELAY_NUMBER,
     UNIQUE_ID_WASH_MAINT_FILTER_BUTTON,
@@ -102,8 +102,9 @@ async def async_setup_entry(
 
     client: CandyClient = hass.data[DOMAIN][config_id][DATA_KEY_CLIENT]
     programs = parse_wash_programs(config_entry.data.get(CONF_KEY_PROGRAMS, []))
-    nfc_entries = resolve_nfc_programs(
-        load_nfc_programs(), programs, NFC_CLUSTER_TO_PROGRAM
+    raw_dl = config_entry.data.get(CONF_KEY_DOWNLOADABLE_PROGRAMS, [])
+    nfc_entries = resolve_downloadable_programs(
+        load_downloadable_programs(raw_dl), programs
     )
 
     interface_type = config_entry.data.get(CONF_KEY_INTERFACE_TYPE, "")
@@ -209,7 +210,7 @@ class WashStartButton(CandyWashButtonBase):
         config_entry: ConfigEntry,
         client: CandyClient,
         programs: list[WashingMachineWashProgram],
-        nfc_entries: list[tuple[NfcProgram, WashingMachineWashProgram]],
+        nfc_entries: list[tuple[DownloadableProgram, WashingMachineWashProgram]],
     ) -> None:
         super().__init__(coordinator, config_entry, client)
         self._programs = programs
@@ -313,14 +314,16 @@ class WashStartButton(CandyWashButtonBase):
                 "SLevTgt": nfc.soil_level
                 if nfc.soil_level > 0
                 else base.default_soil_level,
-                "SpdTgt": nfc.spin_speed // 100,
-                "OptMsk1": nfc.avopt1 | opt_mask,
+                "SpdTgt": nfc.spin_speed // 100
+                if nfc.spin_speed is not None
+                else base.max_spin_speed // 100,
+                "OptMsk1": nfc.options | opt_mask,
                 "OptMsk2": 0,
                 "Lang": 0,
                 "Stm": 1 if steam else 0,
                 "Dry": 0,
                 "ED": 0,
-                "RecipeId": 0,
+                "RecipeId": nfc.recipe_id,
                 "StartCheckUp": _should_send_checkup(
                     self.config_entry, dt_util.utcnow()
                 ),

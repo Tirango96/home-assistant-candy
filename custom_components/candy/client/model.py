@@ -11,6 +11,16 @@ _NFC_PROGRAMS_RAW: list[dict] = json.loads(
     (Path(__file__).parent / "nfc_programs.json").read_text(encoding="utf-8")
 )
 
+# Maps DUAL_WM_WD_PROGRAM_DOWNLOAD_NAME_* → {translations, category_translations}
+# Used by load_downloadable_programs to filter and translate the cloud catalog.
+_DOWNLOADABLE_PROGRAM_TRANSLATIONS: dict[str, dict] = {
+    e["name"].replace("NFC_PROGRAM_NAME_", "DUAL_WM_WD_PROGRAM_DOWNLOAD_NAME_"): {
+        "translations": e["translations"],
+        "category_translations": e["category_translations"],
+    }
+    for e in _NFC_PROGRAMS_RAW
+}
+
 
 class StatusCode(Enum):
     def __init__(self, code: int, label: str):
@@ -344,16 +354,27 @@ class WashingMachineWashProgram:
 
 
 @dataclass
-class NfcProgram:
+class DownloadableProgram:
+    """A special/downloadable program fetched from the Simply-Fi cloud catalog.
+
+    Write-command parameters come from cloud wm_wd_programs; display translations
+    come from nfc_programs.json (APK-sourced, explicit per-language strings).
+    """
+
+    position: int
     name: str
+    parent: int  # selector_position of the base standard program
+    temperature: int
+    spin_speed: int | None  # RPM; None means "MAX" → use base.max_spin_speed
+    soil_level: int
+    options: int
+    steam: int
     translations: dict[str, str]
     category_translations: dict[str, str]
-    output_cluster: int
-    temperature: int
-    spin_speed: int
-    soil_level: int
-    avopt1: int
-    duration: int | None = None  # minutes; resolved from base program at runtime
+
+    @property
+    def recipe_id(self) -> str:
+        return f"D_{self.position}"
 
     def display_name(self, lang: str) -> str:
         return self.translations.get(lang) or self.translations.get("en", self.name)
@@ -367,21 +388,50 @@ class NfcProgram:
         return f"{self.category_name(lang)} - {self.display_name(lang)}"
 
 
-def load_nfc_programs() -> list["NfcProgram"]:
-    return [
-        NfcProgram(
-            name=e["name"],
-            translations=e["translations"],
-            category_translations=e["category_translations"],
-            output_cluster=e["output_cluster"],
-            temperature=e["temperature"],
-            spin_speed=e["spin_speed"],
-            soil_level=e["soil_level"],
-            avopt1=e["avopt1"],
-            duration=e["duration"],
+def load_downloadable_programs(cloud_raw: list[dict]) -> list["DownloadableProgram"]:
+    """Build DownloadableProgram list from cloud wm_wd_programs response.
+
+    Only programs present in nfc_programs.json (APK allowlist) are included,
+    since those are the only ones with user-visible translated display names.
+    Dry-only programs (position >= 147) are skipped.
+    """
+    result = []
+    for entry in cloud_raw:
+        position_str = entry.get("position", "")
+        try:
+            position = int(position_str)
+        except (ValueError, TypeError):
+            continue
+        if position >= 147:
+            continue
+        name = entry.get("name", "")
+        trans = _DOWNLOADABLE_PROGRAM_TRANSLATIONS.get(name)
+        if trans is None:
+            continue
+        spin_raw = entry.get("spin_speed", "0")
+        spin: int | None
+        if str(spin_raw).upper() == "MAX":
+            spin = None
+        else:
+            try:
+                spin = int(spin_raw)
+            except (ValueError, TypeError):
+                spin = None
+        result.append(
+            DownloadableProgram(
+                position=position,
+                name=name,
+                parent=int(entry.get("parent", 0)),
+                temperature=int(entry.get("temperature", 0)),
+                spin_speed=spin,
+                soil_level=int(entry.get("soil_level", 0)),
+                options=int(entry.get("options", 0)),
+                steam=int(entry.get("steam", 0)),
+                translations=trans["translations"],
+                category_translations=trans["category_translations"],
+            )
         )
-        for e in _NFC_PROGRAMS_RAW
-    ]
+    return result
 
 
 @dataclass

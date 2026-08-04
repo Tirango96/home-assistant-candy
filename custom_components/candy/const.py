@@ -22,6 +22,7 @@ MODE_FULL_CONTROL = "full_control"
 # Config entry fields populated from Simply-Fi cloud in Full Control mode
 CONF_KEY_MAC_ADDRESS = "mac_address"
 CONF_KEY_PROGRAMS = "simply_fi_programs"
+CONF_KEY_DOWNLOADABLE_PROGRAMS = "simply_fi_downloadable_programs"
 CONF_KEY_DEVICE_MODEL = "device_model"
 CONF_KEY_SERIAL_NUMBER = "serial_number"
 CONF_KEY_PROGRAM_LANGUAGE = "program_language"
@@ -165,16 +166,3 @@ DEVICE_NAME_DISHWASHER = "Dishwasher"
 
 SUGGESTED_AREA_BATHROOM = "Bathroom"
 SUGGESTED_AREA_KITCHEN = "Kitchen"
-
-# Maps NFC OutputCluster id → substrings to match against WashingMachineWashProgram.name
-NFC_CLUSTER_TO_PROGRAM: dict[int, list[str]] = {
-    1: ["RESISTANT_COTTONS", "COTTON"],
-    2: ["SYNTHETIC_AND_COLOURED"],
-    3: ["DELICATI_59", "DELICATI"],
-    4: ["HANDWASH_WOOL"],
-    5: ["HYGIENE_60"],
-    6: ["MIX_AND_COLOUR", "PERFECT_COTTON", "SPECIAL_39"],
-    7: ["SPORT_PLUS"],
-    8: ["RAPID"],
-    9: ["RINSE"],
-}
