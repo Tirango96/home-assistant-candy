@@ -307,13 +307,11 @@ class WashStartButton(CandyWashButtonBase):
                 "Write": 1,
                 "StSt": 1,
                 "DelVl": delay // 30,
-                "PrNm": base.selector_position,
+                "PrNm": nfc.position,
                 "PrCode": base.pr_code,
                 "PrStr": nfc.display_name(lang),
                 "TmpTgt": nfc.temperature,
-                "SLevTgt": nfc.soil_level
-                if nfc.soil_level > 0
-                else base.default_soil_level,
+                "SLevTgt": nfc.soil_level,
                 "SpdTgt": nfc.spin_speed // 100
                 if nfc.spin_speed is not None
                 else base.max_spin_speed // 100,

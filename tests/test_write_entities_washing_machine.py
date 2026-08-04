@@ -1135,8 +1135,8 @@ async def test_standard_select_after_nfc_re_enables_sub_selects(
 async def test_start_button_sends_nfc_command(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    # Bathrobe: parent=1 → base=COTTON (PrNm=1, PrCode=136)
-    # temp=40, spin_speed=1000 → SpdTgt=10, soil_level=2 → SLevTgt=2, options=16, Stm=0
+    # Bathrobe: position=56, parent=1 → base=COTTON (PrCode=136)
+    # PrNm=56 (nfc.position), temp=40, spin_speed=1000 → SpdTgt=10, soil_level=2 → SLevTgt=2, options=16, Stm=0
     entry = await _init_full_control_nfc(hass, aioclient_mock, _IDLE_JSON)
     registry = er.async_get(hass)
 
@@ -1165,7 +1165,7 @@ async def test_start_button_sends_nfc_command(
     qs: str = mock_send.call_args[0][0]
     assert "Write=1" in qs
     assert "StSt=1" in qs
-    assert "PrNm=1" in qs  # COTTON selector_position
+    assert "PrNm=56" in qs  # nfc.position
     assert "PrCode=136" in qs  # COTTON pr_code
     assert "PrStr=Bathrobe" in qs
     assert "TmpTgt=40" in qs
@@ -1176,11 +1176,11 @@ async def test_start_button_sends_nfc_command(
     assert "Stm=0" in qs
 
 
-async def test_start_button_nfc_soil_fallback_to_base_default(
+async def test_start_button_nfc_zero_soil_level_sent_directly(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    # New Clothes: parent=2 → base=RAPID, soil_level=0 → falls back to RAPID
-    # default_soil_level=0. RAPID selector_position=2, PrCode=5.
+    # New Clothes: position=83, parent=2 → base=RAPID (PrCode=5)
+    # PrNm=83 (nfc.position), soil_level=0 → sent as SLevTgt=0 (no fallback)
     entry = await _init_full_control_nfc(hass, aioclient_mock, _IDLE_JSON)
     registry = er.async_get(hass)
 
@@ -1206,12 +1206,12 @@ async def test_start_button_nfc_soil_fallback_to_base_default(
         )
 
     qs: str = mock_send.call_args[0][0]
-    assert "PrNm=2" in qs  # RAPID selector_position
+    assert "PrNm=83" in qs  # nfc.position
     assert "PrCode=5" in qs
     assert "PrStr=New%20Clothes" in qs
     assert "TmpTgt=20" in qs
     assert "SpdTgt=10" in qs  # 1000 // 100
-    assert "SLevTgt=0" in qs  # soil fallback: base.default_soil_level = 0
+    assert "SLevTgt=0" in qs  # nfc.soil_level=0, sent directly
     assert "RecipeId=D_83" in qs
 
 
