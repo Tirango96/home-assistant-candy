@@ -160,6 +160,7 @@ async def _fetch_downloadable_programs(
     async with session.get(
         f"{_SIMPLY_FI_BASE}/api/v1/wm_wd_programs.json",
         headers=headers,
+        params={"interface_type": "Bianca"},
     ) as resp:
         if resp.status != 200:
             text = await resp.text()

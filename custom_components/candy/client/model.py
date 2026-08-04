@@ -393,7 +393,7 @@ def load_downloadable_programs(cloud_raw: list[dict]) -> list["DownloadableProgr
 
     Only programs present in nfc_programs.json (APK allowlist) are included,
     since those are the only ones with user-visible translated display names.
-    Dry-only programs (position >= 147) are skipped.
+    Dry-only programs are skipped via the nfc_programs.json allowlist (they have no translations).
     """
     result = []
     for entry in cloud_raw:
@@ -401,8 +401,6 @@ def load_downloadable_programs(cloud_raw: list[dict]) -> list["DownloadableProgr
         try:
             position = int(position_str)
         except (ValueError, TypeError):
-            continue
-        if position >= 147:
             continue
         name = entry.get("name", "")
         trans = _DOWNLOADABLE_PROGRAM_TRANSLATIONS.get(name)
