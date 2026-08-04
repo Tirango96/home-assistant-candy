@@ -189,9 +189,17 @@ class CandyWashButtonBase(CoordinatorEntity, ButtonEntity):
             await asyncio.sleep(5)
             raise
         finally:
-            data[DATA_KEY_WRITE_PENDING] -= 1
-            if data[DATA_KEY_WRITE_PENDING] == 0:
-                await self.coordinator.async_request_refresh()
+            # Keep the counter elevated through the refresh so update_status() skips
+            # the short 7s offline-inference timeout while the machine processes the command.
+            try:
+                if data.get(DATA_KEY_WRITE_PENDING, 0) > 0:
+                    await self.coordinator.async_request_refresh()
+            finally:
+                data[DATA_KEY_WRITE_PENDING] = max(
+                    0, data.get(DATA_KEY_WRITE_PENDING, 1) - 1
+                )
+                if data[DATA_KEY_WRITE_PENDING] == 0:
+                    self.coordinator.async_update_listeners()
 
     @property
     def device_info(self) -> DeviceInfo:

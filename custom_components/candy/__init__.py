@@ -53,6 +53,7 @@ from .const import (
     DATA_KEY_MAINT_UNSUB,
     DATA_KEY_STATS_COORDINATOR,
     DATA_KEY_STATS_REFRESH_UNSUB,
+    DATA_KEY_WRITE_PENDING,
     DOMAIN,
     MAINTENANCE_FILTER_THRESHOLD,
     MAINTENANCE_HARDNESS_THRESHOLDS,
@@ -270,7 +271,12 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     async def update_status():
         nonlocal last_known_status
         prev_state = getattr(last_known_status, "machine_state", None)
-        can_infer_off = (
+        write_pending = (
+            hass.data.get(DOMAIN, {})
+            .get(config_entry.entry_id, {})
+            .get(DATA_KEY_WRITE_PENDING, 0)
+        )
+        can_infer_off = write_pending == 0 and (
             prev_state in _OFF_INFERRED_STATES or prev_state == MachineState.OFF
         )
         # When we can fall back to Off, use a short timeout — this cuts the stall caused by
