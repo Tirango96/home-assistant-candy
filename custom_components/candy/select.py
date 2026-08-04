@@ -283,6 +283,24 @@ class CandyWashProgramDescriptionSensor(CoordinatorEntity, SensorEntity):
     def native_value(self) -> str | None:
         return self._description
 
+    def _handle_coordinator_update(self) -> None:
+        if self._description is None:
+            self._seed_from_coordinator()
+        super()._handle_coordinator_update()
+
+    def _seed_from_coordinator(self) -> None:
+        if not isinstance(self.coordinator.data, WashingMachineStatus):
+            return
+        status = cast(WashingMachineStatus, self.coordinator.data)
+        lang = self.config_entry.data.get(CONF_KEY_PROGRAM_LANGUAGE, "en")
+        programs = parse_wash_programs(
+            self.config_entry.data.get(CONF_KEY_PROGRAMS, [])
+        )
+        for p in programs:
+            if p.selector_position == status.program:
+                self._description = p.localized_description(lang)
+                return
+
     def update_for_program(self, program: DownloadableProgram | None) -> None:
         lang = self.config_entry.data.get(CONF_KEY_PROGRAM_LANGUAGE, "en")
         self._description = program.description(lang) if program is not None else None
