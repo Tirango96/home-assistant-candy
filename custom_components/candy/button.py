@@ -185,6 +185,7 @@ class CandyWashButtonBase(CoordinatorEntity, ButtonEntity):
         self.coordinator.async_update_listeners()
         try:
             await self._client.send_command(query_string)
+            await asyncio.sleep(5)
         except Exception:
             await asyncio.sleep(5)
             raise
