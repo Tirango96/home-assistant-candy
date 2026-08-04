@@ -191,11 +191,9 @@ class CandyWashButtonBase(CoordinatorEntity, ButtonEntity):
         finally:
             # Keep the counter elevated through the refresh so update_status() skips
             # the short 7s offline-inference timeout while the machine processes the command.
-            # async_refresh() (not async_request_refresh) is used so we await the actual
-            # fetch completion — the debounced variant just schedules and returns immediately.
             try:
                 if data.get(DATA_KEY_WRITE_PENDING, 0) > 0:
-                    await self.coordinator.async_refresh()
+                    await self.coordinator.async_request_refresh()
             finally:
                 data[DATA_KEY_WRITE_PENDING] = max(
                     0, data.get(DATA_KEY_WRITE_PENDING, 1) - 1
