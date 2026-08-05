@@ -51,11 +51,11 @@ from .common import TEST_IP
 # Minimal program catalog used across all tests
 # ---------------------------------------------------------------------------
 
-# COTTON: pos=1, sel=1, supports temp/spin/soil selection, supports steam
+# RESISTANT_COTTONS: pos=1, sel=1, supports temp/spin/soil selection, supports steam
 _COTTON = {
     "program": {
         "position": 1,
-        "name": "DUAL_WM_WD_PROGRAM_NAME_COTTON",
+        "name": "DUAL_WM_WD_PROGRAM_NAME_RESISTANT_COTTONS",
         "command_parameters": [
             {"command_parameter": {"name": "selector_position", "validation": "1"}},
             {"command_parameter": {"name": "pr_code", "validation": "136"}},
@@ -90,11 +90,11 @@ _COTTON = {
     }
 }
 
-# RAPID: pos=2, sel=2, temp and spin fixed (255 = not selectable), soil fixed, no steam
+# RAPID_30_MIN: pos=2, sel=2, temp and spin fixed (255 = not selectable), soil fixed, no steam
 _RAPID = {
     "program": {
         "position": 2,
-        "name": "DUAL_WM_WD_PROGRAM_NAME_RAPID",
+        "name": "DUAL_WM_WD_PROGRAM_NAME_RAPID_30_MIN",
         "command_parameters": [
             {"command_parameter": {"name": "selector_position", "validation": "2"}},
             {"command_parameter": {"name": "pr_code", "validation": "5"}},
@@ -228,8 +228,8 @@ async def test_program_select_options(
     entry = await _init_full_control(hass, aioclient_mock, _IDLE_JSON)
     state = _state(hass, entry, "select", UNIQUE_ID_WASH_PROGRAM_SELECT)
     assert state is not None
-    assert "Cotton" in state.attributes["options"]
-    assert "Rapid" in state.attributes["options"]
+    assert "Whites" in state.attributes["options"]
+    assert "Rapid 30 Min." in state.attributes["options"]
 
 
 async def test_program_select_available_when_idle(
@@ -458,7 +458,7 @@ async def test_start_button_sends_command(
     assert "StSt=1" in query_string
     assert "PrNm=1" in query_string
     assert "PrCode=136" in query_string
-    assert "PrStr=Cotton" in query_string
+    assert "PrStr=Whites" in query_string
 
 
 # ---------------------------------------------------------------------------
@@ -888,12 +888,12 @@ async def test_scheduled_sensors_absent_or_unavailable_in_read_only_mode(
 # NFC special programs
 # ---------------------------------------------------------------------------
 
-# Bathrobe: parent=1 → COTTON (selector_position=1, pr_code=136, max_spin_speed=1400)
+# Bathrobe: parent=1 → Output 1 → RESISTANT_COTTONS (pos=1, pr_code=136, max_spin_speed=1400)
 # position=56, spin_speed=1000, soil_level=2 (non-zero → used directly), options=16
 _NFC_BATHROBE = DownloadableProgram(
     position=56,
     name="DUAL_WM_WD_PROGRAM_DOWNLOAD_NAME_BATHROBE",
-    parent=1,  # matches standard program position=1 (COTTON)
+    parent=1,  # Output 1 → RESISTANT_COTTONS
     temperature=40,
     spin_speed=1000,
     soil_level=2,
@@ -904,12 +904,12 @@ _NFC_BATHROBE = DownloadableProgram(
     description_translations={"en": "Wash your bathrobe."},
 )
 
-# New Clothes: parent=2 → RAPID (position=2, selector_position=2, pr_code=5, max_spin_speed=255)
-# position=83, spin_speed=1000, soil_level=0 → fallback to base.default_soil_level=0
+# New Clothes: parent=6 → Output 6 → RAPID_30_MIN (pos=2, selector_position=2, pr_code=5, max_spin_speed=255)
+# position=33, spin_speed=1000, soil_level=0 → sent as SLevTgt=0 (no fallback)
 _NFC_NEW_CLOTHES = DownloadableProgram(
-    position=83,
+    position=33,
     name="DUAL_WM_WD_PROGRAM_DOWNLOAD_NAME_NEW_CLOTHES",
-    parent=2,
+    parent=6,
     temperature=20,
     spin_speed=1000,
     soil_level=0,
@@ -978,7 +978,7 @@ def test_resolve_downloadable_programs_matches_cotton():
     assert len(resolved) == 1
     nfc, base = resolved[0]
     assert nfc.name == "DUAL_WM_WD_PROGRAM_DOWNLOAD_NAME_BATHROBE"
-    assert base.name == "COTTON"
+    assert base.name == "RESISTANT_COTTONS"
 
 
 def test_resolve_downloadable_programs_matches_rapid():
@@ -987,7 +987,7 @@ def test_resolve_downloadable_programs_matches_rapid():
     assert len(resolved) == 1
     nfc, base = resolved[0]
     assert nfc.name == "DUAL_WM_WD_PROGRAM_DOWNLOAD_NAME_NEW_CLOTHES"
-    assert base.name == "RAPID"
+    assert base.name == "RAPID_30_MIN"
 
 
 def test_resolve_downloadable_programs_skips_unresolvable():
@@ -1020,8 +1020,8 @@ async def test_nfc_program_options_appear_in_select(
     assert state is not None
     options = state.attributes["options"]
     # Standard programs still present
-    assert "Cotton" in options
-    assert "Rapid" in options
+    assert "Whites" in options
+    assert "Rapid 30 Min." in options
     # NFC programs appended with category prefix
     assert "Home Care - Bathrobe" in options
     assert "Special - New Clothes" in options
@@ -1062,7 +1062,7 @@ async def test_nfc_program_duration_attribute(
     await hass.services.async_call(
         "select",
         "select_option",
-        {"entity_id": program_eid, "option": "Cotton"},
+        {"entity_id": program_eid, "option": "Whites"},
         blocking=True,
     )
     state = _state(hass, entry, "select", UNIQUE_ID_WASH_PROGRAM_SELECT)
@@ -1118,7 +1118,7 @@ async def test_standard_select_after_nfc_re_enables_sub_selects(
     await hass.services.async_call(
         "select",
         "select_option",
-        {"entity_id": program_eid, "option": "Cotton"},
+        {"entity_id": program_eid, "option": "Whites"},
         blocking=True,
     )
     assert (
@@ -1135,7 +1135,7 @@ async def test_standard_select_after_nfc_re_enables_sub_selects(
 async def test_start_button_sends_nfc_command(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    # Bathrobe: position=56, parent=1 → base=COTTON (PrCode=136)
+    # Bathrobe: position=56, parent=1 → Output 1 → base=RESISTANT_COTTONS (PrCode=136)
     # PrNm=56 (nfc.position), temp=40, spin_speed=1000 → SpdTgt=10, soil_level=2 → SLevTgt=2, options=16, Stm=0
     entry = await _init_full_control_nfc(hass, aioclient_mock, _IDLE_JSON)
     registry = er.async_get(hass)
@@ -1179,8 +1179,8 @@ async def test_start_button_sends_nfc_command(
 async def test_start_button_nfc_zero_soil_level_sent_directly(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    # New Clothes: position=83, parent=2 → base=RAPID (PrCode=5)
-    # PrNm=83 (nfc.position), soil_level=0 → sent as SLevTgt=0 (no fallback)
+    # New Clothes: position=33, parent=6 → base=RAPID_30_MIN (PrCode=5)
+    # PrNm=33 (nfc.position), soil_level=0 → sent as SLevTgt=0 (no fallback)
     entry = await _init_full_control_nfc(hass, aioclient_mock, _IDLE_JSON)
     registry = er.async_get(hass)
 
@@ -1206,13 +1206,13 @@ async def test_start_button_nfc_zero_soil_level_sent_directly(
         )
 
     qs: str = mock_send.call_args[0][0]
-    assert "PrNm=83" in qs  # nfc.position
+    assert "PrNm=33" in qs  # nfc.position
     assert "PrCode=5" in qs
     assert "PrStr=New%20Clothes" in qs
     assert "TmpTgt=20" in qs
     assert "SpdTgt=10" in qs  # 1000 // 100
     assert "SLevTgt=0" in qs  # nfc.soil_level=0, sent directly
-    assert "RecipeId=D_83" in qs
+    assert "RecipeId=D_33" in qs
 
 
 # ---------------------------------------------------------------------------
@@ -1454,7 +1454,7 @@ async def test_wash_option_resets_on_program_change(
     await hass.services.async_call(
         "select",
         "select_option",
-        {"entity_id": program_eid, "option": "Rapid"},
+        {"entity_id": program_eid, "option": "Rapid 30 Min."},
         blocking=True,
     )
     await hass.async_block_till_done()

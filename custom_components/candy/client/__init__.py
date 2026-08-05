@@ -1,4 +1,6 @@
 import asyncio
+import functools
+import importlib.resources
 import json
 from json import JSONDecodeError
 import logging
@@ -25,6 +27,18 @@ from .model import (
 _LOGGER = logging.getLogger(__name__)
 
 
+@functools.lru_cache(maxsize=1)
+def _get_parent_to_program() -> dict[int, list[str]]:
+    """Load and index the parentToProgram.json asset (output → priority-ordered name list)."""
+    ref = importlib.resources.files(__package__).joinpath("parent_to_program.json")
+    entries = json.loads(ref.read_text(encoding="utf-8"))
+    result: dict[int, list[str]] = {}
+    for entry in sorted(entries, key=lambda e: e["Priority"]):
+        output = entry["Output"]
+        result.setdefault(output, []).append(entry["Name"])
+    return result
+
+
 def parse_wash_programs(raw: list[dict]) -> list[WashingMachineWashProgram]:
     """Parse and filter the raw program list stored in a config entry."""
     programs = [WashingMachineWashProgram.from_dict(p) for p in raw]
@@ -35,12 +49,34 @@ def resolve_downloadable_programs(
     programs: list[DownloadableProgram],
     standard_programs: list[WashingMachineWashProgram],
 ) -> list[tuple[DownloadableProgram, WashingMachineWashProgram]]:
-    pos_to_prog = {p.position: p for p in standard_programs}
-    return [
-        (dl, base)
-        for dl in programs
-        if (base := pos_to_prog.get(dl.parent)) is not None
-    ]
+    """Match each downloadable program to its base standard program via parentToProgram.json.
+
+    parent is an Output index in parentToProgram.json, not a position. The app walks the
+    priority-ordered list of program names for that output and picks the first one present
+    in the device's own catalog. That program's pr_code and position go into the write command.
+    """
+    parent_map = _get_parent_to_program()
+    # Build lookup by full API name (parentToProgram.json uses full names with prefix)
+    _PREFIXES = ("DUAL_WM_WD_PROGRAM_NAME_", "DUAL_WM_WD_")
+    name_to_prog: dict[str, WashingMachineWashProgram] = {}
+    for p in standard_programs:
+        # p.name is already stripped; reconstruct the full name for each possible prefix
+        for prefix in _PREFIXES:
+            name_to_prog[prefix + p.name] = p
+
+    result = []
+    for dl in programs:
+        candidates = parent_map.get(dl.parent, [])
+        base = next((name_to_prog[n] for n in candidates if n in name_to_prog), None)
+        if base is not None:
+            result.append((dl, base))
+        else:
+            _LOGGER.warning(
+                "Downloadable program %s (parent=%d) did not match any standard program",
+                dl.name,
+                dl.parent,
+            )
+    return result
 
 
 # Some devices reportedly can't handle too frequent requests and respond with BAD_REQUEST

@@ -1,0 +1,482 @@
+[
+  {
+    "Output": 1,
+    "Priority": 1,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_COTTONS"
+  },
+  {
+    "Output": 1,
+    "Priority": 2,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_RESISTANT_COTTONS"
+  },
+  {
+    "Output": 1,
+    "Priority": 3,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_ECO_COTTONS"
+  },
+  {
+    "Output": 1,
+    "Priority": 4,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_RESISTANT_ECO_COTTONS"
+  },
+  {
+    "Output": 1,
+    "Priority": 5,
+    "Name": "WA_PROG_RESISTANT_COTTON"
+  },
+  {
+    "Output": 1,
+    "Priority": 6,
+    "Name": "WA_PROG_COTTON"
+  },
+  {
+    "Output": 2,
+    "Priority": 1,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_MIXED"
+  },
+  {
+    "Output": 2,
+    "Priority": 2,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_SYNTHETICS"
+  },
+  {
+    "Output": 2,
+    "Priority": 3,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_MIXED_ALL_IN_ONE"
+  },
+  {
+    "Output": 2,
+    "Priority": 4,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_MIXED_AND_COLOURED"
+  },
+  {
+    "Output": 2,
+    "Priority": 5,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_COLOURED_40"
+  },
+  {
+    "Output": 2,
+    "Priority": 6,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_COLOURED"
+  },
+  {
+    "Output": 2,
+    "Priority": 7,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_MIXED_PLUS_EASY_IRON"
+  },
+  {
+    "Output": 2,
+    "Priority": 8,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_PERFECT_MIX"
+  },
+  {
+    "Output": 2,
+    "Priority": 9,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_SYNTHETIC_AND_COLOURED"
+  },
+  {
+    "Output": 2,
+    "Priority": 10,
+    "Name": "WA_PROG_DARK_COLOURS"
+  },
+  {
+    "Output": 2,
+    "Priority": 11,
+    "Name": "WA_PROG_MIXED"
+  },
+  {
+    "Output": 3,
+    "Priority": 1,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_WOOL"
+  },
+  {
+    "Output": 3,
+    "Priority": 2,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_HAND_WASH"
+  },
+  {
+    "Output": 3,
+    "Priority": 3,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_HANDWASH_WOOL"
+  },
+  {
+    "Output": 3,
+    "Priority": 4,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_HANDWASH_SILK"
+  },
+  {
+    "Output": 3,
+    "Priority": 5,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_WOOL_AND_SILK"
+  },
+  {
+    "Output": 3,
+    "Priority": 6,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_WOOL_AND_DELICATES_49"
+  },
+  {
+    "Output": 3,
+    "Priority": 7,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_WOOL_SOFT_CARE"
+  },
+  {
+    "Output": 3,
+    "Priority": 8,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_SILK"
+  },
+  {
+    "Output": 3,
+    "Priority": 9,
+    "Name": "WA_PROG_HAND_SILK"
+  },
+  {
+    "Output": 3,
+    "Priority": 10,
+    "Name": "WA_PROG_HAND"
+  },
+  {
+    "Output": 3,
+    "Priority": 11,
+    "Name": "WA_PROG_SILK"
+  },
+  {
+    "Output": 3,
+    "Priority": 12,
+    "Name": "WA_PROG_WOOL"
+  },
+  {
+    "Output": 4,
+    "Priority": 1,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_ALL_DELICATES"
+  },
+  {
+    "Output": 4,
+    "Priority": 2,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_DELICATES"
+  },
+  {
+    "Output": 4,
+    "Priority": 3,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_DELICATI_59"
+  },
+  {
+    "Output": 4,
+    "Priority": 4,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_SOFT_CARE"
+  },
+  {
+    "Output": 4,
+    "Priority": 5,
+    "Name": "WA_PROG_DELICATES"
+  },
+  {
+    "Output": 5,
+    "Priority": 1,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_RAPID_14_MIN"
+  },
+  {
+    "Output": 5,
+    "Priority": 2,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_SAVING_14"
+  },
+  {
+    "Output": 5,
+    "Priority": 3,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_CARE_14"
+  },
+  {
+    "Output": 5,
+    "Priority": 4,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_ECO_CARE_14"
+  },
+  {
+    "Output": 5,
+    "Priority": 5,
+    "Name": "WA_PROG_RAPID_14_MIN"
+  },
+  {
+    "Output": 6,
+    "Priority": 1,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_RAPID_30_MIN"
+  },
+  {
+    "Output": 6,
+    "Priority": 2,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_SAVING_30"
+  },
+  {
+    "Output": 6,
+    "Priority": 3,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_CARE_30"
+  },
+  {
+    "Output": 6,
+    "Priority": 4,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_ECO_CARE_30"
+  },
+  {
+    "Output": 6,
+    "Priority": 5,
+    "Name": "WA_PROG_RAPID_30_MIN"
+  },
+  {
+    "Output": 7,
+    "Priority": 1,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_SPECIAL_49"
+  },
+  {
+    "Output": 7,
+    "Priority": 2,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_RAPID_44_MIN"
+  },
+  {
+    "Output": 7,
+    "Priority": 3,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_SAVING_44"
+  },
+  {
+    "Output": 7,
+    "Priority": 4,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_CARE_44"
+  },
+  {
+    "Output": 7,
+    "Priority": 5,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_ECO_CARE_44"
+  },
+  {
+    "Output": 7,
+    "Priority": 6,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_ALL_IN_ONE_49_MIN"
+  },
+  {
+    "Output": 7,
+    "Priority": 7,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_ALL_IN_ONE_59_MIN"
+  },
+  {
+    "Output": 7,
+    "Priority": 8,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_PERFECT_RAPID_59"
+  },
+  {
+    "Output": 7,
+    "Priority": 9,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_DAILY_59_MIN"
+  },
+  {
+    "Output": 7,
+    "Priority": 10,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_RAPID_59_MIN"
+  },
+  {
+    "Output": 7,
+    "Priority": 11,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_COTTON_CARE_59"
+  },
+  {
+    "Output": 7,
+    "Priority": 12,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_ULTRA_39_MIN"
+  },
+  {
+    "Output": 7,
+    "Priority": 13,
+    "Name": "WA_PROG_RAPID_44_MIN"
+  },
+  {
+    "Output": 7,
+    "Priority": 14,
+    "Name": "WA_PROG_PERFECT_RAPID_59_MIN"
+  },
+  {
+    "Output": 7,
+    "Priority": 15,
+    "Name": "WA_PROG_ALL_IN_ONE_59_MIN"
+  },
+  {
+    "Output": 7,
+    "Priority": 16,
+    "Name": "WA_PROG_DAILY_59"
+  },
+  {
+    "Output": 8,
+    "Priority": 1,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_RINSE"
+  },
+  {
+    "Output": 8,
+    "Priority": 2,
+    "Name": "WA_PROG_RINSE"
+  },
+  {
+    "Output": 9,
+    "Priority": 1,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_ALL_IN_ONE_49_MIN"
+  },
+  {
+    "Output": 9,
+    "Priority": 2,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_ALL_IN_ONE_59_MIN"
+  },
+  {
+    "Output": 9,
+    "Priority": 3,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_MIX_AND_COLOUR_59"
+  },
+  {
+    "Output": 9,
+    "Priority": 4,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_DAILY_CARE"
+  },
+  {
+    "Output": 9,
+    "Priority": 5,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_PERFECT_RAPID_59"
+  },
+  {
+    "Output": 9,
+    "Priority": 6,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_DAILY_59_MIN"
+  },
+  {
+    "Output": 9,
+    "Priority": 7,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_RAPID_59_MIN"
+  },
+  {
+    "Output": 9,
+    "Priority": 8,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_COTTON_CARE_59"
+  },
+  {
+    "Output": 9,
+    "Priority": 9,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_ULTRA_39_MIN"
+  },
+  {
+    "Output": 9,
+    "Priority": 10,
+    "Name": "WA_PROG_PERFECT_RAPID_59_MIN"
+  },
+  {
+    "Output": 9,
+    "Priority": 11,
+    "Name": "WA_PROG_ALL_IN_ONE_59_MIN"
+  },
+  {
+    "Output": 9,
+    "Priority": 12,
+    "Name": "WA_PROG_DAILY_59"
+  },
+  {
+    "Output": 10,
+    "Priority": 1,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_COLOURED"
+  },
+  {
+    "Output": 10,
+    "Priority": 2,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_COTTONS"
+  },
+  {
+    "Output": 10,
+    "Priority": 3,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_RESISTANT_COTTONS"
+  },
+  {
+    "Output": 10,
+    "Priority": 4,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_ECO_COTTONS"
+  },
+  {
+    "Output": 10,
+    "Priority": 5,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_RESISTANT_ECO_COTTONS"
+  },
+  {
+    "Output": 10,
+    "Priority": 6,
+    "Name": "WA_PROG_RESISTANT_COTTON"
+  },
+  {
+    "Output": 10,
+    "Priority": 7,
+    "Name": "WA_PROG_COTTON"
+  },
+  {
+    "Output": 11,
+    "Priority": 1,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_DELICATI_59"
+  },
+  {
+    "Output": 11,
+    "Priority": 2,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_ALL_DELICATES"
+  },
+  {
+    "Output": 11,
+    "Priority": 3,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_DELICATES"
+  },
+  {
+    "Output": 11,
+    "Priority": 4,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_SOFT_CARE"
+  },
+  {
+    "Output": 11,
+    "Priority": 5,
+    "Name": "WA_PROG_DELICATES"
+  },
+  {
+    "Output": 12,
+    "Priority": 1,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_RAPID_44_MIN"
+  },
+  {
+    "Output": 12,
+    "Priority": 2,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_SAVING_44"
+  },
+  {
+    "Output": 12,
+    "Priority": 3,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_CARE_44"
+  },
+  {
+    "Output": 12,
+    "Priority": 4,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_ECO_CARE_44"
+  },
+  {
+    "Output": 12,
+    "Priority": 5,
+    "Name": "WA_PROG_RAPID_44_MIN"
+  },
+  {
+    "Output": 101,
+    "Priority": 1,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_DRY_HIGH_HEAT"
+  },
+  {
+    "Output": 101,
+    "Priority": 2,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_HIGH_DRY"
+  },
+  {
+    "Output": 102,
+    "Priority": 1,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_DRY_LOW_HEAT"
+  },
+  {
+    "Output": 102,
+    "Priority": 2,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_LOW_DRY"
+  },
+  {
+    "Output": 103,
+    "Priority": 1,
+    "Name": "DUAL_WM_WD_PROGRAM_NAME_WOOL_DRY"
+  }
+]
