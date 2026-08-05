@@ -29,7 +29,12 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import dt as dt_util
 
-from .client import WashingMachineStatus, WashingMachineWashProgram, parse_wash_programs
+from .client import (
+    WashingMachineStatus,
+    WashingMachineWashProgram,
+    load_downloadable_programs,
+    parse_wash_programs,
+)
 from .client.model import (
     DishwasherState,
     DishwasherStatus,
@@ -43,6 +48,7 @@ from .const import (
     CONF_KEY_CHECKUP_ENABLED,
     CONF_KEY_CHECKUP_LAST_DATE,
     CONF_KEY_DEVICE_MODEL,
+    CONF_KEY_DOWNLOADABLE_PROGRAMS,
     CONF_KEY_MAC_ADDRESS,
     CONF_KEY_MAINTENANCE_ENABLED,
     CONF_KEY_MAINTENANCE_FILTER_ENABLED,
@@ -328,6 +334,9 @@ class CandyWashProgramSensor(CandyBaseSensor):
     @property
     def native_value(self) -> StateType:
         status = cast(WashingMachineStatus, self.coordinator.data)
+        lang = self.config_entry.data.get(
+            CONF_KEY_PROGRAM_LANGUAGE, self.hass.config.language
+        )
         raw = self.config_entry.data.get(CONF_KEY_PROGRAMS)
         if raw:
             programs = parse_wash_programs(raw)
@@ -335,10 +344,15 @@ class CandyWashProgramSensor(CandyBaseSensor):
                 (p for p in programs if p.selector_position == status.program), None
             )
             if match is not None:
-                lang = self.config_entry.data.get(
-                    CONF_KEY_PROGRAM_LANGUAGE, self.hass.config.language
-                )
                 return match.localized_name(lang)
+        dl_raw = self.config_entry.data.get(CONF_KEY_DOWNLOADABLE_PROGRAMS)
+        if dl_raw:
+            dl_programs = load_downloadable_programs(dl_raw)
+            dl_match = next(
+                (p for p in dl_programs if p.position == status.program), None
+            )
+            if dl_match is not None:
+                return dl_match.display_name(lang)
         return status.program
 
     @property
