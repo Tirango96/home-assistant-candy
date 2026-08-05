@@ -65,7 +65,7 @@ To use them, copy the card YAML into a new manual card in your Lovelace dashboar
 
 ### Compatibility
 
-Full functionality has been tested on the **RAPIDO'** series (RO41274DWMSE/1-S). Other washing machine series may behave differently. If you encounter issues or unexpected behaviour, please share your findings in the [Discussions](https://github.com/bigmoby/home-assistant-candy/discussions/categories/device-support-improvements) section — feedback is very welcome.
+Full functionality has been tested on the **RAPIDO'** series. Other washing machine series may behave differently. If you encounter issues or unexpected behaviour, please share your findings in the [Discussions](https://github.com/bigmoby/home-assistant-candy/discussions/categories/device-support-improvements) section or open an Issue — feedback is very welcome.
 
 ---
 
