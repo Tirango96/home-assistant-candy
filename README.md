@@ -54,6 +54,15 @@ At setup, you choose between **Read-Only** (sensors only) and **Full Control**. 
 - **Accurate end-time calculation:** The integration computes the actual scheduled finish timestamp, accounting for delay-start and remaining cycle time.
 - **Always-on visibility:** Machine state and controls are available on your dashboard without opening the app.
 
+### Dashboard cards
+
+Ready-made Lovelace cards are included in the [`dashboard/`](dashboard/) folder. They require the [Mushroom](https://github.com/piitaya/lovelace-mushroom) custom card collection.
+
+- [`washing-machine.yaml`](dashboard/washing-machine.yaml) — main control card: status, running info, program selector, options, start/pause/stop buttons, and scheduled start/finish times.
+- [`maintenance.yaml`](dashboard/maintenance.yaml) — maintenance card: self-clean, limescale, and filter counters with reset buttons and check-up result.
+
+To use them, copy the card YAML into a new manual card in your Lovelace dashboard and replace every occurrence of `<machine_name>` with your own machine's entity ID prefix (e.g. `my_washing_machine`).
+
 ### Compatibility
 
 Full functionality has been tested on the **RAPIDO'** series (RO41274DWMSE/1-S). Other washing machine series may behave differently. If you encounter issues or unexpected behaviour, please share your findings in the [Discussions](https://github.com/bigmoby/home-assistant-candy/discussions/categories/device-support-improvements) section — feedback is very welcome.
