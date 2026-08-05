@@ -369,7 +369,7 @@ class DownloadableProgram:
 
     position: int
     name: str
-    parent: int  # selector_position of the base standard program
+    parent: int  # Output index into parentToProgram.json; resolved to base program via priority walk
     temperature: int
     spin_speed: int | None  # RPM; None means "MAX" → use base.max_spin_speed
     soil_level: int

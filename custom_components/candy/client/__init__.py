@@ -1,9 +1,8 @@
 import asyncio
-import functools
-import importlib.resources
 import json
 from json import JSONDecodeError
 import logging
+from pathlib import Path
 from typing import Union
 
 import aiohttp
@@ -26,17 +25,13 @@ from .model import (
 
 _LOGGER = logging.getLogger(__name__)
 
-
-@functools.lru_cache(maxsize=1)
-def _get_parent_to_program() -> dict[int, list[str]]:
-    """Load and index the parentToProgram.json asset (output → priority-ordered name list)."""
-    ref = importlib.resources.files(__package__).joinpath("parent_to_program.json")
-    entries = json.loads(ref.read_text(encoding="utf-8"))
-    result: dict[int, list[str]] = {}
-    for entry in sorted(entries, key=lambda e: e["Priority"]):
-        output = entry["Output"]
-        result.setdefault(output, []).append(entry["Name"])
-    return result
+_raw_parent_map = json.loads(
+    (Path(__file__).parent / "parent_to_program.json").read_text(encoding="utf-8")
+)
+_PARENT_TO_PROGRAM: dict[int, list[str]] = {}
+for _entry in sorted(_raw_parent_map, key=lambda e: e["Priority"]):
+    _PARENT_TO_PROGRAM.setdefault(_entry["Output"], []).append(_entry["Name"])
+del _raw_parent_map, _entry
 
 
 def parse_wash_programs(raw: list[dict]) -> list[WashingMachineWashProgram]:
@@ -55,7 +50,7 @@ def resolve_downloadable_programs(
     priority-ordered list of program names for that output and picks the first one present
     in the device's own catalog. That program's pr_code and position go into the write command.
     """
-    parent_map = _get_parent_to_program()
+    parent_map = _PARENT_TO_PROGRAM
     # Build lookup by full API name (parentToProgram.json uses full names with prefix)
     _PREFIXES = ("DUAL_WM_WD_PROGRAM_NAME_", "DUAL_WM_WD_")
     name_to_prog: dict[str, WashingMachineWashProgram] = {}
