@@ -302,12 +302,17 @@ class CandyWashProgramDescriptionSensor(CoordinatorEntity, SensorEntity):
         )
         for p in programs:
             if p.selector_position == status.program:
-                self._description = p.localized_description(lang)
+                self._description = self._truncate(p.localized_description(lang))
                 return
+
+    @staticmethod
+    def _truncate(value: str | None) -> str | None:
+        return value[:255] if value is not None else None
 
     def update_for_program(self, program: DownloadableProgram | None) -> None:
         lang = self.config_entry.data.get(CONF_KEY_PROGRAM_LANGUAGE, "en")
-        self._description = program.description(lang) if program is not None else None
+        raw = program.description(lang) if program is not None else None
+        self._description = self._truncate(raw)
 
     def reset_for_standard_program(
         self, program: WashingMachineWashProgram | None
@@ -316,7 +321,7 @@ class CandyWashProgramDescriptionSensor(CoordinatorEntity, SensorEntity):
             self._description = None
             return
         lang = self.config_entry.data.get(CONF_KEY_PROGRAM_LANGUAGE, "en")
-        self._description = program.localized_description(lang)
+        self._description = self._truncate(program.localized_description(lang))
 
 
 class WashTempSelect(CandyWashSelectBase):
