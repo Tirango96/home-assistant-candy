@@ -14,7 +14,7 @@ Fully compliant with strictly-typed Home Assistant (>= 2024.x) development stand
 ## ✨ Features
 
 - **Supported appliances**:
-  - 🧺 Washing Machine
+  - 🧺 Washing Machine — with optional **Full Remote Control** (see below)
   - 🌫️ Tumble Dryer
   - 🔪 Dishwasher
   - 🍳 Oven
@@ -22,6 +22,41 @@ Fully compliant with strictly-typed Home Assistant (>= 2024.x) development stand
 - **Strict HA Compatibility:** Follows the rigorous MyPy styling standards enforced by Home Assistant 2025.
 - Uses the local device API for real-time responsiveness.
 - Creates dedicated, native semantic sensors (e.g., remaining time, current status, machine cycle) and exposes granular information cleanly as sensor attributes.
+
+---
+
+## 🧺 Washing Machine — Full Control
+
+Full Control mode turns the integration into a complete remote panel, going beyond status monitoring to let you program, start, and track your machine from Home Assistant. The protocol was reverse-engineered from the official Candy/Simply-Fi app, and the feature set matches everything the mobile app offers.
+
+### How it works
+
+At setup, you choose between **Read-Only** (sensors only) and **Full Control**. Full Control prompts for your Simply-Fi cloud credentials once — they are used to download the program catalog, encryption key, and device metadata, then immediately discarded and never stored. Program names, descriptions, and option labels come directly from the official app, available in 17 languages, and default to your Home Assistant language.
+
+### Setup flow
+
+1. Device is discovered automatically on the local network (or enter the IP manually).
+2. Choose mode: **Read-Only** or **Full Control**.
+3. *(Full Control)* Enter your Simply-Fi email and password — programs and device info are downloaded, credentials are discarded.
+4. Select the display language for program names and description, pick your favourite language indipendently the Home Assistant language.
+5. Optionally enable maintenance cycle counters (self-clean, limescale, filter) and set water hardness.
+6. Optionally enable automatic self-diagnostic scheduling (every cycle / weekly / monthly).
+
+### What you get
+
+**Control entities:** program selector (all localized program names), temperature, spin speed, soil level, delay start, option switches (Prewash, Hygiene, Steam, Anti-crease, Good Night, Extra Rinse, AquaPlus), and Start / Pause / Stop buttons.
+
+**Maintenance & diagnostics:** mirrors the Candy app's built-in reminders — self-clean, limescale, and filter counters with configurable water hardness thresholds; self-diagnostic result sensor and last check-up timestamp.
+
+### Improvements over the official app
+
+- **Faster feedback:** Home Assistant refreshes device state immediately after a command is sent, rather than waiting for the next polling cycle.
+- **Accurate end-time calculation:** The integration computes the actual scheduled finish timestamp, accounting for delay-start and remaining cycle time.
+- **Always-on visibility:** Machine state and controls are available on your dashboard without opening the app.
+
+### Compatibility
+
+Full functionality has been tested on the **RAPIDO'** series (RO41274DWMSE/1-S). Other washing machine series may behave differently. If you encounter issues or unexpected behaviour, please share your findings in the [Discussions](https://github.com/bigmoby/home-assistant-candy/discussions/categories/device-support-improvements) section — feedback is very welcome.
 
 ---
 
