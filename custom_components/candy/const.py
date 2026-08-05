@@ -88,6 +88,7 @@ CONF_KEY_MAINTENANCE_LAST_FILTER = "maintenance_last_filter"
 CONF_KEY_CHECKUP_ENABLED = "checkup_enabled"
 CONF_KEY_CHECKUP_SCHEDULE = "checkup_schedule"
 CONF_KEY_CHECKUP_LAST_DATE = "checkup_last_date"
+CONF_KEY_CHECKUP_LAST_RESULT = "checkup_last_result"
 
 CHECKUP_SCHEDULE_EVERY_CYCLE = 0
 CHECKUP_SCHEDULE_WEEKLY = 1

@@ -47,6 +47,7 @@ from .client.model import (
 from .const import (
     CONF_KEY_CHECKUP_ENABLED,
     CONF_KEY_CHECKUP_LAST_DATE,
+    CONF_KEY_CHECKUP_LAST_RESULT,
     CONF_KEY_DEVICE_MODEL,
     CONF_KEY_DOWNLOADABLE_PROGRAMS,
     CONF_KEY_MAC_ADDRESS,
@@ -748,10 +749,16 @@ class CandyWashCheckUpResultSensor(CandyBaseSensor, RestoreSensor):
 
     @property
     def native_value(self) -> StateType:
+        _code_to_state = {1: "ok", 2: "problem"}
         if self.coordinator.data is not None:
             result = cast(WashingMachineStatus, self.coordinator.data).dis_test_res
             if result is not None:
-                return {0: "not_run", 1: "ok", 2: "problem"}.get(result.code)
+                if result.code != 0:
+                    return _code_to_state.get(result.code)
+                cached = self.config_entry.data.get(CONF_KEY_CHECKUP_LAST_RESULT)
+                if cached in _code_to_state:
+                    return _code_to_state[cached]
+                return "not_run"
         return self._restored_state
 
     @property
