@@ -37,6 +37,7 @@ class CloudApplianceData:
     encryption_key: str
     appliance_model: str
     serial_number: str
+    purchase_date: str
     programs: list[dict]
     interface_type: str
     downloadable_programs: list[dict]
@@ -226,6 +227,7 @@ def _match_appliance(
         encryption_key=encryption_key,
         appliance_model=matched.get("appliance_model", ""),
         serial_number=matched.get("sixteen_digits_code", ""),
+        purchase_date=matched.get("purchase_date", ""),
         programs=programs,
         interface_type=matched.get("interface_type", ""),
         downloadable_programs=downloadable_programs,

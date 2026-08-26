@@ -44,6 +44,7 @@ from .const import (
     CONF_KEY_MODE,
     CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
+    CONF_KEY_PURCHASE_DATE,
     CONF_KEY_SERIAL_NUMBER,
     CONF_KEY_USE_ENCRYPTION,
     CONF_KEY_WATER_HARDNESS,
@@ -550,6 +551,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             new_data[CONF_KEY_DEVICE_MODEL] = appliance.appliance_model
         if appliance.serial_number:
             new_data[CONF_KEY_SERIAL_NUMBER] = appliance.serial_number
+        if appliance.purchase_date:
+            new_data[CONF_KEY_PURCHASE_DATE] = appliance.purchase_date
         new_data[CONF_KEY_PROGRAMS] = appliance.programs
         new_data[CONF_KEY_DOWNLOADABLE_PROGRAMS] = appliance.downloadable_programs
         if appliance.interface_type:
@@ -804,6 +807,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
             self._config_data[CONF_KEY_DEVICE_MODEL] = appliance.appliance_model
         if appliance.serial_number:
             self._config_data[CONF_KEY_SERIAL_NUMBER] = appliance.serial_number
+        if appliance.purchase_date:
+            self._config_data[CONF_KEY_PURCHASE_DATE] = appliance.purchase_date
         self._config_data[CONF_KEY_PROGRAMS] = appliance.programs
         self._config_data[CONF_KEY_DOWNLOADABLE_PROGRAMS] = (
             appliance.downloadable_programs

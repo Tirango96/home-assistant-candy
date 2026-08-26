@@ -60,6 +60,7 @@ from .const import (
     CONF_KEY_MODE,
     CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
+    CONF_KEY_PURCHASE_DATE,
     CONF_KEY_SERIAL_NUMBER,
     CONF_KEY_WATER_HARDNESS,
     DATA_KEY_COORDINATOR,
@@ -259,6 +260,8 @@ class CandyBaseSensor(CoordinatorEntity, SensorEntity):
                 info["model"] = self.config_entry.data[CONF_KEY_DEVICE_MODEL]
             if self.config_entry.data.get(CONF_KEY_SERIAL_NUMBER):
                 info["serial_number"] = self.config_entry.data[CONF_KEY_SERIAL_NUMBER]
+            if self.config_entry.data.get(CONF_KEY_PURCHASE_DATE):
+                info["hw_version"] = self.config_entry.data[CONF_KEY_PURCHASE_DATE]
         return info
 
     @abstractmethod

@@ -25,6 +25,7 @@ CONF_KEY_PROGRAMS = "simply_fi_programs"
 CONF_KEY_DOWNLOADABLE_PROGRAMS = "simply_fi_downloadable_programs"
 CONF_KEY_DEVICE_MODEL = "device_model"
 CONF_KEY_SERIAL_NUMBER = "serial_number"
+CONF_KEY_PURCHASE_DATE = "purchase_date"
 CONF_KEY_PROGRAM_LANGUAGE = "program_language"
 
 PROGRAM_LANGUAGES: dict[str, str] = {
