@@ -396,5 +396,15 @@
       }
     }
   },
+  "device_automation": {
+    "trigger_type": {
+      "washing_started": "Washing started",
+      "washing_completed": "Washing completed",
+      "error_reported": "Error reported",
+      "maintenance_selfclean_due": "Self-clean reminder",
+      "maintenance_limescale_due": "Limescale cleaning reminder",
+      "maintenance_filter_due": "Filter cleaning reminder"
+    }
+  },
   "title": "Candy"
 }
