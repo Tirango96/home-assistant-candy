@@ -1,3 +1,4 @@
+import asyncio
 from unittest.mock import AsyncMock, patch
 
 from homeassistant import config_entries, data_entry_flow
@@ -19,8 +20,12 @@ from custom_components.candy.client.model import (
 )
 from custom_components.candy.config_flow import MANUAL_IP_OPTION
 from custom_components.candy.const import (
+    CHECKUP_SCHEDULE_EVERY_CYCLE,
+    CHECKUP_SCHEDULE_WEEKLY,
     CONF_KEY_CHECKUP_ENABLED,
+    CONF_KEY_CHECKUP_SCHEDULE,
     CONF_KEY_DEVICE_MODEL,
+    CONF_KEY_DOWNLOADABLE_PROGRAMS,
     CONF_KEY_IS_WASHING_MACHINE,
     CONF_KEY_MAINTENANCE_ENABLED,
     CONF_KEY_MAINTENANCE_FILTER_ENABLED,
@@ -882,3 +887,349 @@ async def test_maintenance_limescale_only(hass, no_discovery, detect_no_encrypti
     # limescale:  40 - (100 - 57) = -3   (hardness=2 → threshold=100)
     assert data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] == -43
     assert data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] == -3
+
+
+# ---------------------------------------------------------------------------
+# Options flow — FULL_CONTROL paths
+# ---------------------------------------------------------------------------
+
+_FC_BASE_DATA = {
+    CONF_IP_ADDRESS: "192.168.0.66",
+    CONF_KEY_USE_ENCRYPTION: True,
+    CONF_PASSWORD: "key",
+    CONF_KEY_MODE: MODE_FULL_CONTROL,
+    CONF_KEY_IS_WASHING_MACHINE: True,
+}
+
+
+async def test_options_flow_full_control_init_shows_menu(hass):
+    """FULL_CONTROL options flow init shows the action menu."""
+    entry = MockConfigEntry(domain=DOMAIN, unique_id="fc-menu", data=_FC_BASE_DATA)
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "init"
+
+
+async def test_options_flow_full_control_switch_to_read_only(hass):
+    """switch_to_read_only removes programs keys and sets mode to READ_ONLY."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="fc-switch-ro",
+        data={
+            **_FC_BASE_DATA,
+            CONF_KEY_PROGRAMS: [{"program": {}}],
+            CONF_KEY_DOWNLOADABLE_PROGRAMS: [],
+        },
+    )
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], user_input={"next_step": "switch_to_read_only"}
+    )
+    assert result["step_id"] == "switch_to_read_only"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], user_input={}
+    )
+    assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
+    updated = hass.config_entries.async_get_entry(entry.entry_id)
+    assert updated.data[CONF_KEY_MODE] == MODE_READ_ONLY
+    assert CONF_KEY_PROGRAMS not in updated.data
+    assert CONF_KEY_DOWNLOADABLE_PROGRAMS not in updated.data
+
+
+async def test_options_flow_full_control_checkup_disabled(hass):
+    """checkup_settings → checkup_enabled=False saves and exits."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="fc-checkup-dis",
+        data={**_FC_BASE_DATA, CONF_KEY_CHECKUP_ENABLED: True},
+    )
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], user_input={"next_step": "checkup_settings"}
+    )
+    assert result["step_id"] == "checkup"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], user_input={CONF_KEY_CHECKUP_ENABLED: False}
+    )
+    assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
+    updated = hass.config_entries.async_get_entry(entry.entry_id)
+    assert updated.data[CONF_KEY_CHECKUP_ENABLED] is False
+
+
+async def test_options_flow_full_control_checkup_with_schedule(hass):
+    """checkup_settings → checkup_enabled=True proceeds to schedule step."""
+    entry = MockConfigEntry(
+        domain=DOMAIN, unique_id="fc-checkup-sched", data=_FC_BASE_DATA
+    )
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], user_input={"next_step": "checkup_settings"}
+    )
+    assert result["step_id"] == "checkup"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], user_input={CONF_KEY_CHECKUP_ENABLED: True}
+    )
+    assert result["step_id"] == "checkup_schedule"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={CONF_KEY_CHECKUP_SCHEDULE: str(CHECKUP_SCHEDULE_WEEKLY)},
+    )
+    assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
+    updated = hass.config_entries.async_get_entry(entry.entry_id)
+    assert updated.data[CONF_KEY_CHECKUP_ENABLED] is True
+    assert updated.data[CONF_KEY_CHECKUP_SCHEDULE] == CHECKUP_SCHEDULE_WEEKLY
+
+
+async def test_options_flow_full_control_update_cloud_data_success(
+    hass, mock_cloud_success
+):
+    """update_cloud_data → success → language form → CREATE_ENTRY."""
+    entry = MockConfigEntry(domain=DOMAIN, unique_id="fc-cloud-ok", data=_FC_BASE_DATA)
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], user_input={"next_step": "update_cloud_data"}
+    )
+    assert result["step_id"] == "update_cloud_data"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"email": "user@example.com", "password": "pass"},
+    )
+    assert result["step_id"] == "language"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], user_input={CONF_KEY_PROGRAM_LANGUAGE: "en"}
+    )
+    assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
+    updated = hass.config_entries.async_get_entry(entry.entry_id)
+    assert updated.data[CONF_PASSWORD] == "testenckey"  # from _MOCK_APPLIANCE
+    assert updated.data[CONF_KEY_DEVICE_MODEL] == "RO41274DWMSE/1-S"
+
+
+async def test_options_flow_full_control_update_cloud_data_error(
+    hass, mock_cloud_error
+):
+    """update_cloud_data cloud error re-displays the form with cloud_auth error."""
+    entry = MockConfigEntry(domain=DOMAIN, unique_id="fc-cloud-err", data=_FC_BASE_DATA)
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], user_input={"next_step": "update_cloud_data"}
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"email": "bad@example.com", "password": "wrong"},
+    )
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "update_cloud_data"
+    assert result["errors"] == {"base": "cloud_auth"}
+
+
+async def test_options_flow_non_washing_machine(hass):
+    """Options flow for non-washing-machine entry creates entry immediately."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="opts-non-wm",
+        data={
+            CONF_IP_ADDRESS: "192.168.0.66",
+            CONF_KEY_USE_ENCRYPTION: False,
+            CONF_PASSWORD: "",
+            CONF_KEY_MODE: MODE_READ_ONLY,
+        },
+    )
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
+
+
+async def test_options_flow_maintenance_limescale_disabled(hass):
+    """maintenance_types with limescale=False skips hardness and goes to baselines."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="opts-no-lime",
+        data={
+            CONF_IP_ADDRESS: "192.168.0.66",
+            CONF_KEY_USE_ENCRYPTION: False,
+            CONF_PASSWORD: "",
+            CONF_KEY_MODE: MODE_READ_ONLY,
+            CONF_KEY_IS_WASHING_MACHINE: True,
+            CONF_KEY_MAINTENANCE_ENABLED: True,
+            CONF_KEY_WATER_HARDNESS: 2,
+            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 0,
+            CONF_KEY_MAINTENANCE_LAST_FILTER: 0,
+        },
+    )
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["step_id"] == "maintenance"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], user_input={CONF_KEY_MAINTENANCE_ENABLED: True}
+    )
+    assert result["step_id"] == "maintenance_types"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED: False,
+            CONF_KEY_MAINTENANCE_FILTER_ENABLED: True,
+        },
+    )
+    # limescale=False → hardness step skipped
+    assert result["step_id"] == "maintenance_baselines"
+
+
+# ---------------------------------------------------------------------------
+# Config flow — exception and edge paths
+# ---------------------------------------------------------------------------
+
+
+async def test_config_flow_discovery_exception_fallback(hass):
+    """Discovery exception falls back silently to manual IP form."""
+    with (
+        patch(
+            "custom_components.candy.config_flow.async_get_source_ip",
+            new_callable=AsyncMock,
+            return_value="192.168.1.100",
+        ),
+        patch(
+            "custom_components.candy.config_flow.discover_devices",
+            new_callable=AsyncMock,
+            side_effect=asyncio.TimeoutError,
+        ),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_USER}
+        )
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "user"
+
+
+async def test_configure_local_statistics_exception(
+    hass, no_discovery, detect_no_encryption
+):
+    """Statistics fetch failure defaults total_cycles to 0 and flow continues to mode."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert result["step_id"] == "user"
+
+    with patch(
+        "custom_components.candy.config_flow.CandyClient.statistics_with_retry",
+        new_callable=AsyncMock,
+        side_effect=Exception("stats fail"),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], user_input={CONF_IP_ADDRESS: "192.168.0.66"}
+        )
+
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "mode"
+
+
+async def test_configure_local_status_exception(
+    hass, no_discovery, detect_no_encryption
+):
+    """Device status probe failure defaults is_washing_machine=False → immediate entry."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert result["step_id"] == "user"
+
+    with patch(
+        "custom_components.candy.config_flow.CandyClient.status",
+        new_callable=AsyncMock,
+        side_effect=Exception("probe fail"),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], user_input={CONF_IP_ADDRESS: "192.168.0.66"}
+        )
+
+    assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
+
+
+async def test_cloud_step_unexpected_exception(
+    hass, no_discovery, detect_no_encryption
+):
+    """Non-SimplyFiCloudError in cloud step shows cloud_auth error."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_IP_ADDRESS: "192.168.0.66"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_MODE: MODE_FULL_CONTROL}
+    )
+    assert result["step_id"] == "cloud"
+
+    with patch(
+        "custom_components.candy.config_flow.fetch_appliance_data",
+        new_callable=AsyncMock,
+        side_effect=RuntimeError("unexpected"),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={"email": "user@example.com", "password": "pass"},
+        )
+
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "cloud"
+    assert result["errors"] == {"base": "cloud_auth"}
+
+
+async def test_full_control_flow_with_checkup_schedule(
+    hass, no_discovery, detect_no_encryption, mock_cloud_success
+):
+    """Full Control flow with checkup_enabled=True proceeds through checkup_schedule."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_IP_ADDRESS: "192.168.0.66"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_MODE: MODE_FULL_CONTROL}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={"email": "user@example.com", "password": "pass"},
+    )
+    assert result["step_id"] == "language"
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_PROGRAM_LANGUAGE: "en"}
+    )
+    assert result["step_id"] == "maintenance"
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_MAINTENANCE_ENABLED: False}
+    )
+    assert result["step_id"] == "checkup"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={CONF_KEY_CHECKUP_ENABLED: True}
+    )
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "checkup_schedule"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={CONF_KEY_CHECKUP_SCHEDULE: str(CHECKUP_SCHEDULE_EVERY_CYCLE)},
+    )
+    assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_KEY_CHECKUP_ENABLED] is True
+    assert result["data"][CONF_KEY_CHECKUP_SCHEDULE] == CHECKUP_SCHEDULE_EVERY_CYCLE
