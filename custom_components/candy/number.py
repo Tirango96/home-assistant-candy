@@ -22,7 +22,7 @@ from .const import (
     MODE_FULL_CONTROL,
     UNIQUE_ID_WASH_DELAY_NUMBER,
 )
-from .helpers import wash_device_info
+from .helpers import remote_control_enabled, wash_device_info
 
 
 async def async_setup_entry(
@@ -72,6 +72,8 @@ class WashDelayNumber(CoordinatorEntity, NumberEntity):
     @property
     def available(self) -> bool:
         if not super().available:
+            return False
+        if not remote_control_enabled(self.coordinator.data):
             return False
         status = cast(WashingMachineStatus, self.coordinator.data)
         return status.machine_state in {MachineState.IDLE, MachineState.OFF}

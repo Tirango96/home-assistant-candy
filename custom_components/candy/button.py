@@ -66,7 +66,7 @@ from .const import (
     UNIQUE_ID_WASH_TEMP_SELECT,
     WASH_OPTIONS,
 )
-from .helpers import wash_device_info
+from .helpers import remote_control_enabled, wash_device_info
 
 
 def _should_send_checkup(config_entry: ConfigEntry, now: datetime) -> int:
@@ -176,9 +176,9 @@ class CandyWashButtonBase(CoordinatorEntity, ButtonEntity):
 
     @property
     def available(self) -> bool:
-        return (
-            self.hass.data[DOMAIN][self.config_id].get(DATA_KEY_WRITE_PENDING, 0) == 0
-        )
+        return self.hass.data[DOMAIN][self.config_id].get(
+            DATA_KEY_WRITE_PENDING, 0
+        ) == 0 and remote_control_enabled(self.coordinator.data)
 
     async def _send_command_and_refresh(self, query_string: str) -> None:
         data = self.hass.data[DOMAIN][self.config_id]

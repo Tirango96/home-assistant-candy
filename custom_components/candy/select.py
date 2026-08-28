@@ -40,7 +40,7 @@ from .const import (
     UNIQUE_ID_WASH_SPIN_SELECT,
     UNIQUE_ID_WASH_TEMP_SELECT,
 )
-from .helpers import wash_device_info
+from .helpers import remote_control_enabled, wash_device_info
 
 _TEMP_STEPS = [0, 20, 30, 40, 60, 90]
 _SPIN_STEPS = [0, 400, 600, 800, 1000, 1200, 1400]
@@ -112,6 +112,10 @@ class CandyWashSelectBase(CoordinatorEntity, SelectEntity):
     @property
     def device_info(self) -> DeviceInfo:
         return wash_device_info(self.config_entry)
+
+    @property
+    def available(self) -> bool:
+        return super().available and remote_control_enabled(self.coordinator.data)
 
     def _current_program(self) -> WashingMachineWashProgram | None:
         status = cast(WashingMachineStatus, self.coordinator.data)

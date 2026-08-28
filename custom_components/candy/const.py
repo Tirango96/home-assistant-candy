@@ -1,7 +1,7 @@
 """Constants for the Candy integration."""
 
 DOMAIN = "candy"
-PLATFORMS = ["sensor", "select", "number", "button", "switch"]
+PLATFORMS = ["sensor", "binary_sensor", "select", "number", "button", "switch"]
 
 DATA_KEY_COORDINATOR = "coordinator"
 DATA_KEY_STATS_COORDINATOR = "stats_coordinator"
@@ -65,6 +65,7 @@ UNIQUE_ID_WASH_TOTAL_CYCLES = "{0}-wash_total_cycles"
 UNIQUE_ID_WASH_SOIL_LEVEL = "{0}-wash_soil_level"
 UNIQUE_ID_WASH_CHECKUP_RESULT = "{0}-wash_checkup_result"
 UNIQUE_ID_WASH_LAST_CHECKUP = "{0}-wash_last_checkup"
+UNIQUE_ID_WASH_REMOTE_CONTROL = "{0}-wash_remote_control"
 
 SOIL_LABELS: dict[int, str] = {1: "low", 2: "normal", 3: "high"}
 SOIL_LABELS_REVERSE: dict[str, int] = {v: k for k, v in SOIL_LABELS.items()}

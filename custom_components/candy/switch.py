@@ -35,7 +35,7 @@ from .const import (
     UNIQUE_ID_WASH_STEAM_SWITCH,
     WASH_OPTIONS,
 )
-from .helpers import wash_device_info
+from .helpers import remote_control_enabled, wash_device_info
 
 
 async def async_setup_entry(
@@ -126,6 +126,10 @@ class _WashSwitchBase(CoordinatorEntity, SwitchEntity):
     @property
     def device_info(self) -> DeviceInfo:
         return wash_device_info(self.config_entry)
+
+    @property
+    def available(self) -> bool:
+        return super().available and remote_control_enabled(self.coordinator.data)
 
     def _active_program(self) -> WashingMachineWashProgram | None:
         registry = er.async_get(self.hass)

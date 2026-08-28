@@ -1564,3 +1564,30 @@ async def test_pause_button_present_when_no_interface_type(
     entry = await _init_full_control(hass, aioclient_mock, _IDLE_JSON)
     state = _state(hass, entry, "button", UNIQUE_ID_WASH_PAUSE_BUTTON)
     assert state is not None
+
+
+# ---------------------------------------------------------------------------
+# Remote control gate: every control entity is unavailable when the machine
+# is idle but not in Remote Control mode (WiFiStatus=0).
+# ---------------------------------------------------------------------------
+
+
+async def test_controls_unavailable_when_remote_control_off(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    entry = await _init_full_control(hass, aioclient_mock, _OFF_JSON)
+
+    gated = [
+        ("select", UNIQUE_ID_WASH_PROGRAM_SELECT),
+        ("select", UNIQUE_ID_WASH_TEMP_SELECT),
+        ("select", UNIQUE_ID_WASH_SPIN_SELECT),
+        ("select", UNIQUE_ID_WASH_SOIL_SELECT),
+        ("number", UNIQUE_ID_WASH_DELAY_NUMBER),
+        ("button", UNIQUE_ID_WASH_START_BUTTON),
+        ("button", UNIQUE_ID_WASH_STOP_BUTTON),
+        ("switch", UNIQUE_ID_WASH_STEAM_SWITCH),
+    ]
+    for platform, uid_tpl in gated:
+        state = _state(hass, entry, platform, uid_tpl)
+        assert state is not None, f"{uid_tpl} not registered"
+        assert state.state == "unavailable", f"{uid_tpl} should be unavailable"

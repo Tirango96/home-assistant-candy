@@ -169,6 +169,11 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "remote_control": {
+        "name": "Remote control"
+      }
+    },
     "sensor": {
       "washing_machine": {
         "name": "Washing machine"

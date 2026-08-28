@@ -4,6 +4,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
 
+from .client.model import WashingMachineStatus
 from .const import (
     CONF_KEY_DEVICE_MODEL,
     CONF_KEY_MAC_ADDRESS,
@@ -15,6 +16,11 @@ from .const import (
     MODE_FULL_CONTROL,
     SUGGESTED_AREA_BATHROOM,
 )
+
+
+def remote_control_enabled(data: object) -> bool:
+    """Return True when the washing machine accepts remote commands."""
+    return isinstance(data, WashingMachineStatus) and data.remote_control
 
 
 def cycles_remaining(total: int, last_reset: int, threshold: int) -> int:
