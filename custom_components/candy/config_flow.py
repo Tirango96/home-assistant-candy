@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -645,18 +646,25 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
         unaffected.
         """
         target_mac = format_mac(discovery_info.macaddress)
+        coordinator = None
         for entry in self._async_current_entries():
             stored_mac = entry.data.get(CONF_KEY_MAC_ADDRESS)
             if stored_mac and format_mac(stored_mac) == target_mac:
                 entry_data = self.hass.data.get(DOMAIN, {}).get(entry.entry_id)
                 if entry_data:
                     coordinator = entry_data[DATA_KEY_COORDINATOR]
-                    self.hass.async_create_task(coordinator.async_request_refresh())
-                    _LOGGER.debug(
-                        "DHCP wakeup for %s — requesting immediate refresh",
-                        discovery_info.ip,
-                    )
                 break
+        if coordinator is not None:
+
+            async def _delayed_refresh() -> None:
+                await asyncio.sleep(10)
+                await coordinator.async_request_refresh()
+
+            self.hass.async_create_task(_delayed_refresh())
+            _LOGGER.debug(
+                "DHCP wakeup for %s — requesting refresh in 10 s",
+                discovery_info.ip,
+            )
         return self.async_abort(reason="already_configured")
 
     async def async_step_user(

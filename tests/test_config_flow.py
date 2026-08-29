@@ -1243,7 +1243,7 @@ async def test_full_control_flow_with_checkup_schedule(
 
 
 async def test_dhcp_wakeup_triggers_coordinator_refresh(hass):
-    """DHCP broadcast from a known MAC triggers immediate coordinator refresh."""
+    """DHCP broadcast from a known MAC triggers a delayed coordinator refresh."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={
@@ -1256,21 +1256,22 @@ async def test_dhcp_wakeup_triggers_coordinator_refresh(hass):
     coordinator = AsyncMock()
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {"coordinator": coordinator}
 
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={"source": config_entries.SOURCE_DHCP},
-        data=DhcpServiceInfo(
-            ip="192.168.1.10",
-            hostname="candy-washer",
-            macaddress="aabbccddeeff",
-        ),
-    )
+    with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_DHCP},
+            data=DhcpServiceInfo(
+                ip="192.168.1.10",
+                hostname="candy-washer",
+                macaddress="aabbccddeeff",
+            ),
+        )
 
-    assert result["type"] == data_entry_flow.FlowResultType.ABORT
-    assert result["reason"] == "already_configured"
-    # Give the task a chance to run
-    await hass.async_block_till_done()
-    coordinator.async_request_refresh.assert_called_once()
+        assert result["type"] == data_entry_flow.FlowResultType.ABORT
+        assert result["reason"] == "already_configured"
+        await hass.async_block_till_done()
+        mock_sleep.assert_any_call(10)
+        coordinator.async_request_refresh.assert_called_once()
 
 
 async def test_dhcp_wakeup_unknown_mac_does_not_refresh(hass):
