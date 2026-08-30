@@ -80,6 +80,11 @@ _OFF_INFERRED_STATES = {
     MachineState.IDLE,
 }
 
+# Poll fast while the machine is unreachable (synthetic OFF) so wakeup is detected quickly.
+# 60 s while the machine is reachable and running any cycle.
+SCAN_INTERVAL_ACTIVE = timedelta(seconds=60)
+SCAN_INTERVAL_RESTING = timedelta(seconds=20)
+
 
 def _make_off_status(
     last_status: Union[
@@ -287,6 +292,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
                 status = await fetch
                 _LOGGER.debug("Fetched status: %s", status)
                 last_known_status = status
+                coordinator.update_interval = SCAN_INTERVAL_ACTIVE
                 return status
         except (TimeoutError, aiohttp.ClientError) as err:
             if can_infer_off:
@@ -296,6 +302,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
                     ip_address,
                     prev_state,
                 )
+                coordinator.update_interval = SCAN_INTERVAL_RESTING
                 return _make_off_status(last_known_status)
             raise UpdateFailed(f"Error communicating with API: {repr(err)}") from err
         except Exception as err:
@@ -305,7 +312,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
         hass,
         _LOGGER,
         name=DOMAIN,
-        update_interval=timedelta(seconds=60),
+        update_interval=SCAN_INTERVAL_ACTIVE,
         update_method=update_status,
     )
 

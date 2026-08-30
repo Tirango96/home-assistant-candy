@@ -13,7 +13,11 @@ from pytest_homeassistant_custom_component.common import (
 )
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
-from custom_components.candy import CONF_KEY_USE_ENCRYPTION
+from custom_components.candy import (
+    CONF_KEY_USE_ENCRYPTION,
+    SCAN_INTERVAL_ACTIVE,
+    SCAN_INTERVAL_RESTING,
+)
 from custom_components.candy.const import (
     CONF_KEY_IS_WASHING_MACHINE,
     CONF_KEY_MAINTENANCE_ENABLED,
@@ -742,3 +746,63 @@ async def test_detergent_sensors_present_with_dose_data(
         _detergent_entity_id(hass, entry.entry_id, UNIQUE_ID_WASH_POWDER_DETERGENT)
         is not None
     )
+
+
+# ---------------------------------------------------------------------------
+# Adaptive polling interval tests
+# ---------------------------------------------------------------------------
+
+
+async def test_poll_interval_active_when_reachable(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Coordinator uses 60 s interval after a successful poll."""
+    entry = await init_integration(
+        hass, aioclient_mock, load_fixture("washing_machine/idle.json")
+    )
+    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR]
+    assert coordinator.update_interval == SCAN_INTERVAL_ACTIVE
+
+
+async def test_poll_interval_resting_when_unreachable(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Coordinator switches to 20 s interval when device becomes unreachable."""
+    entry = await init_integration(
+        hass, aioclient_mock, load_fixture("washing_machine/idle.json")
+    )
+    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR]
+
+    with patch(
+        "custom_components.candy.client.CandyClient.status",
+        side_effect=TimeoutError,
+    ):
+        await coordinator.async_refresh()
+        await hass.async_block_till_done()
+
+    assert coordinator.update_interval == SCAN_INTERVAL_RESTING
+
+
+async def test_poll_interval_restores_active_on_recovery(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Coordinator returns to 60 s interval once the device responds again."""
+    entry = await init_integration(
+        hass, aioclient_mock, load_fixture("washing_machine/idle.json")
+    )
+    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR]
+
+    with patch(
+        "custom_components.candy.client.CandyClient.status",
+        side_effect=TimeoutError,
+    ):
+        await coordinator.async_refresh()
+        await hass.async_block_till_done()
+
+    assert coordinator.update_interval == SCAN_INTERVAL_RESTING
+
+    # Device comes back online — aioclient_mock URL is still registered from init
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    assert coordinator.update_interval == SCAN_INTERVAL_ACTIVE
