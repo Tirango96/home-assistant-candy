@@ -3,7 +3,6 @@ from unittest.mock import AsyncMock, patch
 
 from homeassistant import config_entries, data_entry_flow
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
-from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -28,7 +27,6 @@ from custom_components.candy.const import (
     CONF_KEY_DEVICE_MODEL,
     CONF_KEY_DOWNLOADABLE_PROGRAMS,
     CONF_KEY_IS_WASHING_MACHINE,
-    CONF_KEY_MAC_ADDRESS,
     CONF_KEY_MAINTENANCE_ENABLED,
     CONF_KEY_MAINTENANCE_FILTER_ENABLED,
     CONF_KEY_MAINTENANCE_LAST_FILTER,
@@ -1235,70 +1233,3 @@ async def test_full_control_flow_with_checkup_schedule(
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_KEY_CHECKUP_ENABLED] is True
     assert result["data"][CONF_KEY_CHECKUP_SCHEDULE] == CHECKUP_SCHEDULE_EVERY_CYCLE
-
-
-# ---------------------------------------------------------------------------
-# DHCP wakeup detection tests
-# ---------------------------------------------------------------------------
-
-
-async def test_dhcp_wakeup_triggers_coordinator_refresh(hass):
-    """DHCP broadcast from a known MAC triggers a delayed coordinator refresh."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={
-            CONF_IP_ADDRESS: "192.168.1.10",
-            CONF_KEY_MAC_ADDRESS: "aa:bb:cc:dd:ee:ff",
-        },
-    )
-    entry.add_to_hass(hass)
-
-    coordinator = AsyncMock()
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {"coordinator": coordinator}
-
-    with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN,
-            context={"source": config_entries.SOURCE_DHCP},
-            data=DhcpServiceInfo(
-                ip="192.168.1.10",
-                hostname="candy-washer",
-                macaddress="aabbccddeeff",
-            ),
-        )
-
-        assert result["type"] == data_entry_flow.FlowResultType.ABORT
-        assert result["reason"] == "already_configured"
-        await hass.async_block_till_done()
-        mock_sleep.assert_any_call(10)
-        coordinator.async_request_refresh.assert_called_once()
-
-
-async def test_dhcp_wakeup_unknown_mac_does_not_refresh(hass):
-    """DHCP broadcast from an unknown MAC does not trigger a refresh."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={
-            CONF_IP_ADDRESS: "192.168.1.10",
-            CONF_KEY_MAC_ADDRESS: "aa:bb:cc:dd:ee:ff",
-        },
-    )
-    entry.add_to_hass(hass)
-
-    coordinator = AsyncMock()
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {"coordinator": coordinator}
-
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={"source": config_entries.SOURCE_DHCP},
-        data=DhcpServiceInfo(
-            ip="192.168.1.20",
-            hostname="other-device",
-            macaddress="112233445566",
-        ),
-    )
-
-    assert result["type"] == data_entry_flow.FlowResultType.ABORT
-    assert result["reason"] == "already_configured"
-    await hass.async_block_till_done()
-    coordinator.async_request_refresh.assert_not_called()

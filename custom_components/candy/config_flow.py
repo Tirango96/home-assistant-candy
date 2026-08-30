@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 
@@ -12,14 +11,12 @@ from homeassistant.components.network import async_get_source_ip
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.selector import (
     SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
 )
-from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 import voluptuous as vol
 
 from .client import CandyClient, detect_encryption, discover_devices
@@ -51,7 +48,6 @@ from .const import (
     CONF_KEY_SERIAL_NUMBER,
     CONF_KEY_USE_ENCRYPTION,
     CONF_KEY_WATER_HARDNESS,
-    DATA_KEY_COORDINATOR,
     DATA_KEY_STATS_COORDINATOR,
     DOMAIN,
     MAINTENANCE_FILTER_THRESHOLD,
@@ -633,39 +629,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
         self._total_cycles: int = (
             0  # fetched once after device probe; used for baselines
         )
-
-    async def async_step_dhcp(
-        self, discovery_info: DhcpServiceInfo
-    ) -> ConfigFlowResult:
-        """Handle a DHCP broadcast from an already-configured device.
-
-        Candy WiFi modules send a DHCP request when they power on. Use that as
-        an early wakeup signal to refresh the coordinator instead of waiting
-        for the next 60s poll. Fires only for devices registered via
-        CONNECTION_NETWORK_MAC (Full Control mode), so Read-Only entries are
-        unaffected.
-        """
-        target_mac = format_mac(discovery_info.macaddress)
-        coordinator = None
-        for entry in self._async_current_entries():
-            stored_mac = entry.data.get(CONF_KEY_MAC_ADDRESS)
-            if stored_mac and format_mac(stored_mac) == target_mac:
-                entry_data = self.hass.data.get(DOMAIN, {}).get(entry.entry_id)
-                if entry_data:
-                    coordinator = entry_data[DATA_KEY_COORDINATOR]
-                break
-        if coordinator is not None:
-
-            async def _delayed_refresh() -> None:
-                await asyncio.sleep(10)
-                await coordinator.async_request_refresh()
-
-            self.hass.async_create_task(_delayed_refresh())
-            _LOGGER.debug(
-                "DHCP wakeup for %s — requesting refresh in 10 s",
-                discovery_info.ip,
-            )
-        return self.async_abort(reason="already_configured")
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
