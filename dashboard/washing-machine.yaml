@@ -364,81 +364,87 @@ cards:
           icon_color: green
           tap_action:
             action: more-info
-  - type: horizontal-stack
-    cards:
-      - type: conditional
-        conditions:
-          - condition: state
-            entity: sensor.<machine_name>
-            state_not:
-              - Running
-              - running
-              - Delayed start programmed
-              - delayed_start_programmed
-              - delayed
-              - Delayed
-              - "Off"
-              - "off"
-              - Sending command
-              - sending command
-              - sending_command
-        card:
-          type: custom:mushroom-template-card
-          primary: Start
-          icon: mdi:play-circle-outline
-          tap_action:
-            action: perform-action
-            perform_action: button.press
-            target:
-              entity_id: button.<machine_name>_start_wash
-          vertical: true
-          features_position: bottom
-          color: green
-      - type: conditional
-        conditions:
-          - condition: state
-            entity: sensor.<machine_name>
-            state:
-              - Running
-              - running
-          - condition: state
-            entity: sensor.<machine_name>
-            state_not:
-              - "Off"
-              - "off"
-        card:
-          type: custom:mushroom-template-card
-          primary: Pause
-          icon: mdi:pause-circle-outline
-          icon_color: orange
-          layout: vertical
-          tap_action:
-            action: perform-action
-            perform_action: button.press
-            target:
-              entity_id: button.<machine_name>_pause_wash
-      - type: conditional
-        conditions:
-          - condition: state
-            entity: sensor.<machine_name>
-            state_not:
-              - Idle
-              - idle
-              - Finished
-              - finished
-              - "Off"
-              - "off"
-              - Sending command
-              - sending command
-              - sending_command
-        card:
-          type: custom:mushroom-template-card
-          primary: Stop
-          icon: mdi:stop-circle-outline
-          icon_color: red
-          layout: vertical
-          tap_action:
-            action: perform-action
-            perform_action: button.press
-            target:
-              entity_id: button.<machine_name>_stop_wash
+  - type: conditional
+    conditions:
+      - condition: state
+        entity: binary_sensor.<machine_name>_remote_control
+        state: "on"
+    card:
+      type: horizontal-stack
+      cards:
+        - type: conditional
+          conditions:
+            - condition: state
+              entity: sensor.<machine_name>
+              state_not:
+                - Running
+                - running
+                - Delayed start programmed
+                - delayed_start_programmed
+                - delayed
+                - Delayed
+                - "Off"
+                - "off"
+                - Sending command
+                - sending command
+                - sending_command
+          card:
+            type: custom:mushroom-template-card
+            primary: Start
+            icon: mdi:play-circle-outline
+            tap_action:
+              action: perform-action
+              perform_action: button.press
+              target:
+                entity_id: button.<machine_name>_start_wash
+            vertical: true
+            features_position: bottom
+            color: green
+        - type: conditional
+          conditions:
+            - condition: state
+              entity: sensor.<machine_name>
+              state:
+                - Running
+                - running
+            - condition: state
+              entity: sensor.<machine_name>
+              state_not:
+                - "Off"
+                - "off"
+          card:
+            type: custom:mushroom-template-card
+            primary: Pause
+            icon: mdi:pause-circle-outline
+            icon_color: orange
+            layout: vertical
+            tap_action:
+              action: perform-action
+              perform_action: button.press
+              target:
+                entity_id: button.<machine_name>_pause_wash
+        - type: conditional
+          conditions:
+            - condition: state
+              entity: sensor.<machine_name>
+              state_not:
+                - Idle
+                - idle
+                - Finished
+                - finished
+                - "Off"
+                - "off"
+                - Sending command
+                - sending command
+                - sending_command
+          card:
+            type: custom:mushroom-template-card
+            primary: Stop
+            icon: mdi:stop-circle-outline
+            icon_color: red
+            layout: vertical
+            tap_action:
+              action: perform-action
+              perform_action: button.press
+              target:
+                entity_id: button.<machine_name>_stop_wash
