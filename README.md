@@ -51,7 +51,7 @@ At setup, you choose between **Read-Only** (sensors only) and **Full Control**. 
 ### Improvements over the official app
 
 - **Faster feedback:** Home Assistant refreshes device state immediately after a command is sent, rather than waiting for the next polling cycle.
-- **Faster Wake-up** Home Assistant intercepts the machine's network connection when turned on and gets its data rather than waiting for the next polling cycle.
+- **Faster Wake-up** When the machine is off, Home Assistant polls its state every 20 seconds instead of 60, for a faster wake-up.
 - **Accurate end-time calculation:** The integration computes the actual scheduled finish timestamp, accounting for delay-start and remaining cycle time.
 - **Always-on visibility:** Machine state and controls are available on your dashboard without opening the app.
 
