@@ -99,6 +99,7 @@ class WashingMachineStatus:
 
 class DryerProgramState(StatusCode):
     STOPPED = (0, "Stopped")
+    PRE_HEATING = (1, "Pre-heating")
     RUNNING = (2, "Running")
     END = (3, "End")
 

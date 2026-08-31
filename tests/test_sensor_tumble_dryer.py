@@ -105,6 +105,25 @@ async def test_cycle_sensor_running(
     }
 
 
+async def test_cycle_sensor_pre_heating(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """When the dryer is in program phase 1 (pre-heating), sensors should stay available."""
+    pre_heating_fixture = load_fixture("tumble_dryer/running.json").replace(
+        '"PrPh": "2"', '"PrPh": "1"'
+    )
+    await init_integration(hass, aioclient_mock, pre_heating_fixture)
+
+    state = hass.states.get("sensor.dryer_cycle_status")
+
+    assert state
+    assert state.state == "Pre-heating"
+    assert state.attributes == {
+        "friendly_name": "Dryer cycle status",
+        "icon": "mdi:tumble-dryer",
+    }
+
+
 async def test_remaining_time_sensor_idle(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
