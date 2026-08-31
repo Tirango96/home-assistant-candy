@@ -55,7 +55,7 @@ def get_candy_simplyfi_data(device_ip: str, method: str, port: int = 80) -> byte
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.settimeout(10)
             sock.connect((device_ip, port))
-            message = f"GET /http-{method}.json?encrypted=1 HTTP/1.1\nHost: {device_ip}\n\nConnection: close\r\n\r\n"
+            message = f"GET /http-{method}.json?encrypted=1 HTTP/1.1\r\nHost: {device_ip}\r\nConnection: close\r\n\r\n"
             sock.sendall(message.encode('utf-8'))
 
             response = b""
@@ -110,13 +110,37 @@ def main():
             "{\"WiFiStatus\":\"1\"",
             "{\"StatoWiFi\":\"0\"",
             "{\"StatoWiFi\":\"1\"",
+            "\"WiFiStatus\":\"0\"",
+            "\"WiFiStatus\":\"1\"",
+            "\"StatoWiFi\":\"0\",",
+            "\"StatoWiFi\":\"1\",",
+            "\"CodiceErrore\":\"",
             "\"CheckUpState\":\"",
+            "{\r\n\t\"statusWCool",
+            "{\r\n\t\"statusLavat",
+            "{\r\n\t\"statusTD\":{",
+            "{\r\n\t\"statusForno",
+            "{\r\n\t\"statusDWash",
+            "{\r\n  \"statusWCool",
+            "{\r\n  \"statusLavat",
+            "{\r\n  \"statusTD\":{",
+            "{\r\n  \"statusForno",
+            "{\r\n  \"statusDWash",
+            "{\n\t\"statusWCool\"",
+            "{\n\t\"statusLavatri",
+            "{\n\t\"statusForno\":",
+            "{\n\t\"statusDWash\":",
+            "{\n  \"statusWCool\":",
+            "{\n  \"statusLavatri",
+            "{\n  \"statusForno\":",
+            "{\n  \"statusDWash\":",
             "{\"statusWCool\":{",
+            "{\"statusLavatrice",
+            "{\"statusTD\":{",
+            "{\"statusForno\":{",
+            "{\"statusDWash\":{",
             "\"statusWCool\":{",
             "\"statusWCool\": {",
-            "\"r1\":\"1\"",
-            "\"r1\":\"0\"",
-            "\"r2\":\"E0\"",
         ])
 
         if not key:

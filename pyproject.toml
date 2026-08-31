@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name        = "home-assistant-candy"
-version     = "1.4.2"
+version     = "1.4.3"
 license     = {text = "MIT License"}
 description = "Candy Simply-Fi integration for Home Assistant"
 readme      = "README.md"
