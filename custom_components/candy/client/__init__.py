@@ -147,6 +147,42 @@ class CandyClient:
 
             return WashingMachineStatistics.from_json(resp_json["statusCounters"])
 
+    async def set_wine_cooler_light(
+        self, turn_on: bool, current_status: WineCoolerStatus
+    ) -> None:
+        """Control wine cooler light state."""
+        params: dict[str, str] = {
+            "Write": "1",
+            "w1": str(current_status.program.code),
+            "w2": str(current_status.temp),
+        }
+        if current_status.program_down is not None:
+            params["w4"] = str(current_status.program_down.code)
+        if current_status.temp_down is not None:
+            params["w5"] = str(current_status.temp_down)
+        params["w7"] = "1" if turn_on else "0"
+
+        encoded_query = "&".join(f"{k}={v}" for k, v in params.items())
+
+        if self.use_encryption and self.encryption_key != "":
+            encrypted_data = _xor_encrypt(encoded_query, self.encryption_key)
+            url = f"http://{self.device_ip}/http-write.json?encrypted=1&data={encrypted_data}"
+        else:
+            url = f"http://{self.device_ip}/http-write.json?encrypted=0&{encoded_query}"
+
+        async with _LIMITER, self.session.get(url) as resp:
+            resp.raise_for_status()
+
+
+def _xor_encrypt(plaintext: str, key: str) -> str:
+    """Encrypt plaintext string using sliding XOR key and return uppercase hex string."""
+    pt_bytes = plaintext.encode("utf-8")
+    k_bytes = key.encode("utf-8")
+    encrypted = bytes(
+        [pt_bytes[i] ^ k_bytes[i % len(k_bytes)] for i in range(len(pt_bytes))]
+    )
+    return encrypted.hex().upper()
+
 
 async def detect_encryption(
     session: aiohttp.ClientSession, device_ip: str

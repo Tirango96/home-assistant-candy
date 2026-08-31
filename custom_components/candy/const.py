@@ -1,10 +1,11 @@
 """Constants for the Candy integration."""
 
 DOMAIN = "candy"
-PLATFORMS = ["sensor"]
+PLATFORMS = ["sensor", "light"]
 
 DATA_KEY_COORDINATOR = "coordinator"
 DATA_KEY_STATS_COORDINATOR = "stats_coordinator"
+DATA_KEY_CLIENT = "client"
 
 CONF_INTEGRATION_TITLE = "Candy"
 CONF_KEY_USE_ENCRYPTION = "use_encryption"
@@ -40,6 +41,7 @@ UNIQUE_ID_WINE_COOLER = "{0}-wine_cooler"
 UNIQUE_ID_WINE_COOLER_PROGRAM = "{0}-wine_cooler_program"
 UNIQUE_ID_WINE_COOLER_TEMP = "{0}-wine_cooler_temp"
 UNIQUE_ID_WINE_COOLER_LIGHT = "{0}-wine_cooler_light"
+UNIQUE_ID_WINE_COOLER_LIGHT_ENTITY = "{0}-wine_cooler_light_control"
 UNIQUE_ID_WINE_COOLER_ERROR = "{0}-wine_cooler_error"
 UNIQUE_ID_WINE_COOLER_TEMP_DOWN = "{0}-wine_cooler_temp_down"
 UNIQUE_ID_WINE_COOLER_PROGRAM_DOWN = "{0}-wine_cooler_program_down"

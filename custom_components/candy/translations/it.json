@@ -105,6 +105,11 @@
       "wine_cooler_error_code": {
         "name": "Codice errore cantinetta vino"
       }
+    },
+    "light": {
+      "wine_cooler_light": {
+        "name": "Luce"
+      }
     }
   },
   "title": "Candy"

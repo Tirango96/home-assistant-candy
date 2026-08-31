@@ -37,6 +37,7 @@ from .client.model import (
 )
 from .const import (
     CONF_KEY_USE_ENCRYPTION,
+    DATA_KEY_CLIENT,
     DATA_KEY_COORDINATOR,
     DATA_KEY_STATS_COORDINATOR,
     DOMAIN,
@@ -336,7 +337,8 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})[config_entry.entry_id] = {
-        DATA_KEY_COORDINATOR: coordinator
+        DATA_KEY_COORDINATOR: coordinator,
+        DATA_KEY_CLIENT: client,
     }
 
     if isinstance(coordinator.data, WashingMachineStatus):

@@ -93,6 +93,11 @@
       "wine_cooler_error_code": {
         "name": "Wine cooler error code"
       }
+    },
+    "light": {
+      "wine_cooler_light": {
+        "name": "Light"
+      }
     }
   }
 }
