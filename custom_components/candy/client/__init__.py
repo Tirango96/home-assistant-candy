@@ -2,7 +2,7 @@ import asyncio
 import json
 from json import JSONDecodeError
 import logging
-from typing import Union
+from typing import Any, Union
 
 import aiohttp
 from aiohttp import ClientSession
@@ -25,6 +25,14 @@ _LOGGER = logging.getLogger(__name__)
 # This global limiter makes sure we don't call the API too fast
 # https://github.com/ofalvai/home-assistant-candy/issues/61
 _LIMITER = AsyncLimiter(max_rate=1, time_period=3)
+
+
+def _parse_json_safe(text: str | bytes) -> dict[str, Any]:
+    """Safely decode and parse JSON, stripping leading/trailing whitespace and null bytes."""
+    if isinstance(text, bytes):
+        text = text.decode("utf-8", errors="ignore")
+    text = text.strip().strip("\x00").strip()
+    return json.loads(text)
 
 
 class CandyClient:
@@ -72,6 +80,7 @@ class CandyClient:
                 resp_hex = (
                     await resp.text()
                 )  # Response is hex encoded, either encrypted or not
+                resp_hex = resp_hex.strip().strip("\x00").strip()
                 if self.encryption_key != "":
                     decrypted_text = decrypt(
                         self.encryption_key.encode(), bytes.fromhex(resp_hex)
@@ -79,9 +88,10 @@ class CandyClient:
                 else:
                     # Response is just hex encoded without encryption (details in detect_encryption())
                     decrypted_text = bytes.fromhex(resp_hex)
-                resp_json = json.loads(decrypted_text)
+                resp_json = _parse_json_safe(decrypted_text)
             else:
-                resp_json = await resp.json(content_type="text/html")
+                text = await resp.text()
+                resp_json = _parse_json_safe(text)
 
             _LOGGER.debug(resp_json)
 
@@ -115,15 +125,17 @@ class CandyClient:
         async with _LIMITER, self.session.get(url) as resp:
             if self.use_encryption:
                 resp_hex = await resp.text()
+                resp_hex = resp_hex.strip().strip("\x00").strip()
                 if self.encryption_key != "":
                     decrypted_text = decrypt(
                         self.encryption_key.encode(), bytes.fromhex(resp_hex)
                     )
                 else:
                     decrypted_text = bytes.fromhex(resp_hex)
-                resp_json = json.loads(decrypted_text)
+                resp_json = _parse_json_safe(decrypted_text)
             else:
-                resp_json = await resp.json(content_type="text/html")
+                text = await resp.text()
+                resp_json = _parse_json_safe(text)
 
             _LOGGER.debug(resp_json)
 
@@ -144,7 +156,8 @@ async def detect_encryption(
         _LOGGER.info("Trying to get a response without encryption (encrypted=0)...")
         url = _status_url(device_ip, use_encryption=False)
         async with _LIMITER, session.get(url) as resp:
-            resp_json = await resp.json(content_type="text/html")
+            text = await resp.text()
+            resp_json = _parse_json_safe(text)
             assert resp_json.get("response") != "BAD REQUEST"
             _LOGGER.info(
                 "Received unencrypted JSON response, no need to use key for decryption"
@@ -158,9 +171,11 @@ async def detect_encryption(
         url = _status_url(device_ip, use_encryption=True)
         async with _LIMITER, session.get(url) as resp:
             resp_hex = await resp.text()  # Response is hex encoded encrypted data
+            resp_hex = resp_hex.strip().strip("\x00").strip()
             try:
-                json.loads(bytes.fromhex(resp_hex))
-            except JSONDecodeError as json_err:
+                unhexed = bytes.fromhex(resp_hex)
+                _parse_json_safe(unhexed)
+            except Exception as json_err:
                 _LOGGER.info(
                     "Brute force decryption key from the encrypted response..."
                 )
@@ -213,7 +228,8 @@ async def discover_devices(
             ) as resp:
                 if resp.status != 200:
                     return None
-                data = await resp.json(content_type=None)
+                text = await resp.text()
+                data = _parse_json_safe(text)
                 for key, label in _DEVICE_TYPE_LABELS.items():
                     if key in data:
                         return ip, label

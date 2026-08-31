@@ -191,3 +191,17 @@ async def test_status_wine_cooler(hass, aioclient_mock):
     assert status.light is True
     assert status.remote_control is True
     assert status.error is None
+
+
+async def test_detect_encryption_with_trailing_null_bytes(hass, aioclient_mock):
+    """Test detect_encryption when device appends trailing null bytes."""
+    aioclient_mock.get(
+        f"http://{TEST_IP}/http-read.json?encrypted=0",
+        text='{"statusWCool":{"r1":"1","r2":"E0","r3":"1","r4":"16","r5":"2","r6":"0","r7":"0","r8":"0","r9":"0","r10":"0"}}\x00',
+    )
+
+    encryption_type, key = await detect_encryption(
+        async_get_clientsession(hass), device_ip=TEST_IP
+    )
+    assert encryption_type is Encryption.NO_ENCRYPTION
+    assert key is None
