@@ -109,7 +109,13 @@ def main():
             "{\"WiFiStatus\":\"1\"",
             "{\"StatoWiFi\":\"0\"",
             "{\"StatoWiFi\":\"1\"",
-            "\"CheckUpState\":\""
+            "\"CheckUpState\":\"",
+            "{\"statusWCool\":{",
+            "\"statusWCool\":{",
+            "\"statusWCool\": {",
+            "\"r1\":\"1\"",
+            "\"r1\":\"0\"",
+            "\"r2\":\"E0\"",
         ])
 
         if not key:

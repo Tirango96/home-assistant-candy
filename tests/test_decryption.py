@@ -1,5 +1,4 @@
-# pylint: disable=line-too-long
-from custom_components.candy.client.decryption import find_key
+from custom_components.candy.client.decryption import decrypt, find_key
 
 
 def test_find_key_1():
@@ -27,3 +26,11 @@ def test_find_key_error():
     key = find_key(response)
 
     assert key is None
+
+
+def test_find_key_wine_cooler():
+    payload = b'{"statusWCool":{"r1":"1","r2":"E0","r3":"1","r4":"16","r5":"2","r6":"0","r7":"0","r8":"0","r9":"0","r10":"0"}}'
+    expected_key = "abcdefghijklmnop"
+    encrypted = decrypt(expected_key.encode(), payload)
+
+    assert find_key(encrypted) == expected_key

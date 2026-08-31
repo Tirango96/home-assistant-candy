@@ -25,6 +25,15 @@ KNOWN_PLAINTEXTS = [
     '"StatoWiFi":"1",',
     '"CodiceErrore":"',
     '"CheckUpState":"',
+    '{"statusWCool":{',
+    '"statusWCool":{',
+    '"statusWCool": {',
+    '"r1":"1"',
+    '"r1":"0"',
+    '"r1": "1"',
+    '"r1": "0"',
+    '"r2":"E0"',
+    '"r2": "E0"',
 ]
 
 
@@ -106,6 +115,6 @@ def decrypt(key: bytes, encrypted_response: bytes) -> bytes:
 def _is_valid_json(decrypted: bytes) -> bool:
     try:
         json.loads(decrypted)
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
         return False
     return True
