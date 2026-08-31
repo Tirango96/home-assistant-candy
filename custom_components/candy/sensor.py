@@ -1040,13 +1040,13 @@ class CandyWineCoolerSensor(CandyBaseSensor):
         status = cast(WineCoolerStatus, self.coordinator.data)
         attributes: dict[str, Any] = {
             "program": str(status.program),
-            "temperature": status.temp,
+            "target_temperature": status.temp,
             "light": status.light,
             "remote_control": status.remote_control,
             "error": status.error,
         }
         if status.temp_down is not None:
-            attributes["temperature_zone_down"] = status.temp_down
+            attributes["target_temperature_zone_down"] = status.temp_down
         if status.program_down is not None:
             attributes["program_zone_down"] = str(status.program_down)
         return attributes
@@ -1086,7 +1086,7 @@ class CandyWineCoolerTempSensor(CandyBaseSensor):
 
     @property
     def name(self) -> str:
-        return "Wine cooler temperature"
+        return "Wine cooler target temperature"
 
     @property
     def unique_id(self) -> str:
@@ -1178,7 +1178,7 @@ class CandyWineCoolerTempDownSensor(CandyBaseSensor):
 
     @property
     def name(self) -> str:
-        return "Wine cooler lower zone temperature"
+        return "Wine cooler lower zone target temperature"
 
     @property
     def unique_id(self) -> str:

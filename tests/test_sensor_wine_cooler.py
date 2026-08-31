@@ -22,7 +22,7 @@ async def test_main_sensor_on(hass: HomeAssistant, aioclient_mock: AiohttpClient
     assert state.state == "On"
     assert state.attributes == {
         "program": "Red wine",
-        "temperature": 16,
+        "target_temperature": 16,
         "light": True,
         "remote_control": True,
         "error": None,
@@ -51,7 +51,7 @@ async def test_temp_sensor(hass: HomeAssistant, aioclient_mock: AiohttpClientMoc
         hass, aioclient_mock, load_fixture("wine_cooler/on_single_zone.json")
     )
 
-    state = hass.states.get("sensor.wine_cooler_temperature")
+    state = hass.states.get("sensor.wine_cooler_target_temperature")
 
     assert state
     assert state.state == "16"
@@ -59,7 +59,7 @@ async def test_temp_sensor(hass: HomeAssistant, aioclient_mock: AiohttpClientMoc
         "device_class": "temperature",
         "state_class": "measurement",
         "unit_of_measurement": "°C",
-        "friendly_name": "Wine cooler temperature",
+        "friendly_name": "Wine cooler target temperature",
         "icon": "mdi:thermometer",
     }
 
@@ -120,10 +120,10 @@ async def test_dual_zone(hass: HomeAssistant, aioclient_mock: AiohttpClientMocke
 
     state = hass.states.get("sensor.wine_cooler")
     assert state
-    assert state.attributes["temperature_zone_down"] == 12
+    assert state.attributes["target_temperature_zone_down"] == 12
     assert state.attributes["program_zone_down"] == "White wine"
 
-    temp_down = hass.states.get("sensor.wine_cooler_lower_zone_temperature")
+    temp_down = hass.states.get("sensor.wine_cooler_lower_zone_target_temperature")
     assert temp_down
     assert temp_down.state == "12"
     assert temp_down.attributes["unit_of_measurement"] == "°C"
@@ -195,6 +195,6 @@ async def test_temp_sensor_fallback_from_program(
     payload = '{"statusWCool":{"r1":"1","r2":"E0","r3":"1","r4":"0","r5":"2","r6":"0","r7":"0","r8":"0","r9":"0","r10":"0"}}'
     await init_integration(hass, aioclient_mock, payload)
 
-    temp_state = hass.states.get("sensor.wine_cooler_temperature")
+    temp_state = hass.states.get("sensor.wine_cooler_target_temperature")
     assert temp_state is not None
     assert temp_state.state == "16"

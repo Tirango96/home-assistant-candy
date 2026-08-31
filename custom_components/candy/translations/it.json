@@ -97,7 +97,7 @@
         "name": "Programma cantinetta vino"
       },
       "wine_cooler_temperature": {
-        "name": "Temperatura cantinetta vino"
+        "name": "Temperatura target cantinetta vino"
       },
       "wine_cooler_light": {
         "name": "Luce cantinetta vino"

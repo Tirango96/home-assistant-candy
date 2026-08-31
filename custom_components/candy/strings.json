@@ -85,7 +85,7 @@
         "name": "Wine cooler program"
       },
       "wine_cooler_temperature": {
-        "name": "Wine cooler temperature"
+        "name": "Wine cooler target temperature"
       },
       "wine_cooler_light": {
         "name": "Wine cooler light"
