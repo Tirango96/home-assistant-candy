@@ -67,6 +67,7 @@ _COTTON = {
             {"command_parameter": {"name": "maximum_soil_level", "validation": "3"}},
             {"command_parameter": {"name": "default_soil_level", "validation": "2"}},
             {"command_parameter": {"name": "steam", "validation": "5"}},
+            {"command_parameter": {"name": "steam_type", "validation": "C"}},
             {"command_parameter": {"name": "default_duration", "validation": "90"}},
             {
                 "command_parameter": {
@@ -718,6 +719,82 @@ async def test_estimated_duration_rapid_uses_default_duration(
     assert state.state == "14"
 
 
+async def test_estimated_duration_steam_off_no_change(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    # Steam switch off (default) → base duration unchanged (default soil=2 → medium=90)
+    entry = await _init_full_control(hass, aioclient_mock, _IDLE_JSON)
+    state = _state(hass, entry, "sensor", UNIQUE_ID_WASH_ESTIMATED_DURATION)
+    assert state is not None
+    assert state.state == "90"
+
+
+async def test_estimated_duration_steam_on_adds_offset_default_soil(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    # Cotton steam_type=C, steam switch on, default soil=2 → medium=90 + 37 = 127
+    entry = await _init_full_control(hass, aioclient_mock, _IDLE_JSON)
+    registry = er.async_get(hass)
+    steam_eid = registry.async_get_entity_id(
+        "switch", DOMAIN, UNIQUE_ID_WASH_STEAM_SWITCH.format(entry.entry_id)
+    )
+    assert steam_eid is not None
+    await hass.services.async_call(
+        "switch", "turn_on", {"entity_id": steam_eid}, blocking=True
+    )
+    # Force the duration sensor to re-render by triggering a coordinator update.
+    # The steam subscription may not have been set up yet if the switch platform
+    # registered after the sensor's deferred _subscribe_steam task ran.
+    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR]
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+    state = _state(hass, entry, "sensor", UNIQUE_ID_WASH_ESTIMATED_DURATION)
+    assert state is not None
+    assert state.state == "127"
+
+
+async def test_estimated_duration_steam_on_adds_offset_heavy_soil(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    # Cotton steam_type=C, steam on, SLevel=3 → max=120 + 37 = 157
+    slevel3 = _IDLE_JSON.replace('"SLevel": "0"', '"SLevel": "3"')
+    entry = await _init_full_control(hass, aioclient_mock, slevel3)
+    registry = er.async_get(hass)
+    steam_eid = registry.async_get_entity_id(
+        "switch", DOMAIN, UNIQUE_ID_WASH_STEAM_SWITCH.format(entry.entry_id)
+    )
+    await hass.services.async_call(
+        "switch", "turn_on", {"entity_id": steam_eid}, blocking=True
+    )
+    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR]
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+    state = _state(hass, entry, "sensor", UNIQUE_ID_WASH_ESTIMATED_DURATION)
+    assert state is not None
+    assert state.state == "157"
+
+
+async def test_estimated_duration_steam_on_adds_offset_light_soil(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    # Cotton steam_type=C, steam on, SLevel=1 → min=60 + 37 = 97
+    slevel1 = _IDLE_JSON.replace('"SLevel": "0"', '"SLevel": "1"')
+    entry = await _init_full_control(hass, aioclient_mock, slevel1)
+    registry = er.async_get(hass)
+    steam_eid = registry.async_get_entity_id(
+        "switch", DOMAIN, UNIQUE_ID_WASH_STEAM_SWITCH.format(entry.entry_id)
+    )
+    await hass.services.async_call(
+        "switch", "turn_on", {"entity_id": steam_eid}, blocking=True
+    )
+    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR]
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+    state = _state(hass, entry, "sensor", UNIQUE_ID_WASH_ESTIMATED_DURATION)
+    assert state is not None
+    assert state.state == "97"
+
+
 async def test_estimated_duration_not_registered_in_read_only(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
@@ -1236,6 +1313,7 @@ _COTTON_WITH_OPTIONS = {
             {"command_parameter": {"name": "maximum_soil_level", "validation": "3"}},
             {"command_parameter": {"name": "default_soil_level", "validation": "2"}},
             {"command_parameter": {"name": "steam", "validation": "5"}},
+            {"command_parameter": {"name": "steam_type", "validation": "C"}},
             {"command_parameter": {"name": "default_duration", "validation": "90"}},
             {
                 "command_parameter": {

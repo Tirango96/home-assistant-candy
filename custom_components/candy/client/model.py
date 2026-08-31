@@ -274,6 +274,7 @@ class WashingMachineWashProgram:
     max_soil_level: int
     default_soil_level: int
     steam: bool
+    steam_type: str
     default_duration: int
     duration_soil_max: int
     duration_soil_medium: int
@@ -327,6 +328,7 @@ class WashingMachineWashProgram:
             max_soil_level=_int("maximum_soil_level"),
             default_soil_level=_int("default_soil_level"),
             steam=_int("steam") != 0,
+            steam_type=params.get("steam_type", ""),
             default_duration=_int("default_duration"),
             duration_soil_max=_int("remaining_time_soil_max"),
             duration_soil_medium=_int("remaining_time_soil_medium"),

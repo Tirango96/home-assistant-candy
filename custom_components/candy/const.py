@@ -69,6 +69,10 @@ UNIQUE_ID_WASH_REMOTE_CONTROL = "{0}-wash_remote_control"
 
 SOIL_LABELS: dict[int, str] = {1: "low", 2: "normal", 3: "high"}
 SOIL_LABELS_REVERSE: dict[str, int] = {v: k for k, v in SOIL_LABELS.items()}
+
+# Additive minutes when steam (steam=5) is enabled, keyed by program steam_type.
+# Source: APK assets/assisted/full_remaining_time_value_v11.json, programType "Wash + Steam".
+STEAM_DURATION_OFFSETS: dict[str, int] = {"C": 37, "S": 29, "R": 35}
 UNIQUE_ID_WASH_ESTIMATED_DURATION = "{0}-wash_estimated_duration"
 UNIQUE_ID_WASH_SCHEDULED_START = "{0}-wash_scheduled_start"
 UNIQUE_ID_WASH_SCHEDULED_FINISH = "{0}-wash_scheduled_finish"

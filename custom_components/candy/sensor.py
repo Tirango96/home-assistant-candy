@@ -77,6 +77,7 @@ from .const import (
     MODE_FULL_CONTROL,
     SOIL_LABELS,
     SOIL_LABELS_REVERSE,
+    STEAM_DURATION_OFFSETS,
     SUGGESTED_AREA_BATHROOM,
     SUGGESTED_AREA_KITCHEN,
     UNIQUE_ID_DISHWASHER,
@@ -114,6 +115,7 @@ from .const import (
     UNIQUE_ID_WASH_SOIL_LEVEL,
     UNIQUE_ID_WASH_SOIL_SELECT,
     UNIQUE_ID_WASH_SPIN_SPEED,
+    UNIQUE_ID_WASH_STEAM_SWITCH,
     UNIQUE_ID_WASH_TEMPERATURE,
     UNIQUE_ID_WASH_TOTAL_CYCLES,
     UNIQUE_ID_WASHING_MACHINE,
@@ -1015,9 +1017,29 @@ class CandyWashEstimatedDurationSensor(CandyBaseSensor):
                 )
             )
 
+        async def _subscribe_steam() -> None:
+            steam_eid = registry.async_get_entity_id(
+                "switch", DOMAIN, UNIQUE_ID_WASH_STEAM_SWITCH.format(self.config_id)
+            )
+            if steam_eid:
+                self.async_on_remove(
+                    async_track_state_change_event(
+                        self.hass, [steam_eid], self._on_select_changed
+                    )
+                )
+
+        self.hass.async_create_task(_subscribe_steam())
+
     @callback
     def _on_select_changed(self, event) -> None:
         self.async_write_ha_state()
+
+    def _steam_selected(self, registry) -> bool:
+        eid = registry.async_get_entity_id(
+            "switch", DOMAIN, UNIQUE_ID_WASH_STEAM_SWITCH.format(self.config_id)
+        )
+        state = self.hass.states.get(eid) if eid else None
+        return state is not None and state.state == "on"
 
     @property
     def available(self) -> bool:
@@ -1105,6 +1127,13 @@ class CandyWashEstimatedDurationSensor(CandyBaseSensor):
                 minutes = program.duration_soil_max
         else:
             minutes = program.default_duration
+
+        if (
+            minutes > 0
+            and program.steam_type in STEAM_DURATION_OFFSETS
+            and self._steam_selected(registry)
+        ):
+            minutes += STEAM_DURATION_OFFSETS[program.steam_type]
 
         return minutes if minutes > 0 else None
 
