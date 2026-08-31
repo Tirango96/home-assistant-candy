@@ -186,3 +186,15 @@ async def test_offline_startup(
     state = hass.states.get(wc_entry.entity_id)
     assert state is not None
     assert state.state == "Off"
+
+
+async def test_temp_sensor_fallback_from_program(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Test that r4='0' falls back to program default temperature."""
+    payload = '{"statusWCool":{"r1":"1","r2":"E0","r3":"1","r4":"0","r5":"2","r6":"0","r7":"0","r8":"0","r9":"0","r10":"0"}}'
+    await init_integration(hass, aioclient_mock, payload)
+
+    temp_state = hass.states.get("sensor.wine_cooler_temperature")
+    assert temp_state is not None
+    assert temp_state.state == "16"

@@ -255,6 +255,16 @@ class WineCoolerProgram(StatusCode):
     WHITE_WINE = (2, "White wine")
     SPARKLING = (3, "Sparkling")
 
+    @property
+    def default_temp(self) -> int:
+        if self == WineCoolerProgram.RED_WINE:
+            return 16
+        if self == WineCoolerProgram.WHITE_WINE:
+            return 12
+        if self == WineCoolerProgram.SPARKLING:
+            return 8
+        return 12
+
 
 @dataclass
 class WineCoolerStatus:
@@ -271,20 +281,32 @@ class WineCoolerStatus:
     def from_json(cls, json):
         wc_state_code = int(json["r5"]) if "r5" in json else 2
         error_val = json.get("r2")
+        program = WineCoolerProgram.from_code(int(json["r3"]))
+        raw_temp = int(json["r4"]) if "r4" in json and str(json["r4"]).isdigit() else 0
+        temp = raw_temp if raw_temp > 0 else program.default_temp
+
         program_down = None
         if "r7" in json and json["r7"] not in ("0", ""):
             try:
                 program_down = WineCoolerProgram.from_code(int(json["r7"]))
             except ValueError:
                 program_down = None
+
+        raw_temp_down = (
+            int(json["r8"])
+            if "r8" in json and str(json["r8"]).isdigit() and json["r8"] != "0"
+            else None
+        )
         temp_down = (
-            int(json["r8"]) if "r8" in json and json["r8"] not in ("0", "") else None
+            raw_temp_down
+            if (raw_temp_down is not None and raw_temp_down > 0)
+            else (program_down.default_temp if program_down else None)
         )
 
         return cls(
             machine_state=WineCoolerState.from_code(wc_state_code),
-            program=WineCoolerProgram.from_code(int(json["r3"])),
-            temp=int(json["r4"]),
+            program=program,
+            temp=temp,
             light=json.get("r10") == "1",
             error=error_val if error_val and error_val != "E0" else None,
             remote_control=json.get("r1") == "1",
