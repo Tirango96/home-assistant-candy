@@ -1264,6 +1264,19 @@ class CandyWashScheduledFinishSensor(CandyBaseSensor):
                 )
             )
 
+        async def _subscribe_steam() -> None:
+            steam_eid = registry.async_get_entity_id(
+                "switch", DOMAIN, UNIQUE_ID_WASH_STEAM_SWITCH.format(self.config_id)
+            )
+            if steam_eid:
+                self.async_on_remove(
+                    async_track_state_change_event(
+                        self.hass, [steam_eid], self._on_dep_changed
+                    )
+                )
+
+        self.hass.async_create_task(_subscribe_steam())
+
     @callback
     def _on_dep_changed(self, event) -> None:
         self.async_write_ha_state()
