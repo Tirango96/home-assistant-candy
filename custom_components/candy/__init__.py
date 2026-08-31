@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 import copy
 from datetime import timedelta
+import json
 import logging
 from typing import Union
 
@@ -27,17 +28,20 @@ from .client.model import (
     OvenState,
     OvenStatus,
     TumbleDryerStatus,
+    WashingMachineStatistics,
     WashingMachineStatus,
     WashProgramState,
 )
 from .const import (
     CONF_KEY_USE_ENCRYPTION,
     DATA_KEY_COORDINATOR,
+    DATA_KEY_STATS_COORDINATOR,
     DOMAIN,
     PLATFORMS,
     UNIQUE_ID_DISHWASHER,
     UNIQUE_ID_OVEN,
     UNIQUE_ID_TUMBLE_DRYER,
+    UNIQUE_ID_WASH_TOTAL_CYCLES,
     UNIQUE_ID_WASHING_MACHINE,
 )
 
@@ -120,6 +124,31 @@ def _restore_last_known_status(
     return None
 
 
+def _restore_last_known_statistics(
+    hass: HomeAssistant,
+    config_entry_id: str,
+) -> WashingMachineStatistics | None:
+    """Read the persisted total-cycles value from HA's state machine.
+
+    Returns a WashingMachineStatistics populated from the last known sensor state,
+    or None if the entity was never registered or its state is not a valid integer.
+    """
+    registry = er.async_get(hass)
+    unique_id = UNIQUE_ID_WASH_TOTAL_CYCLES.format(config_entry_id)
+    entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+    if entity_id is None:
+        return None
+    state = hass.states.get(entity_id)
+    if state is None or not state.state.isdigit():
+        return None
+    _LOGGER.debug(
+        "Restored total_cycles from HA state machine: %s = %s",
+        entity_id,
+        state.state,
+    )
+    return WashingMachineStatistics(total_cycles=int(state.state))
+
+
 def _offline_washing_machine() -> WashingMachineStatus:
     """Minimal WashingMachineStatus for an offline device (shows Off in sensors)."""
     return WashingMachineStatus(
@@ -141,6 +170,7 @@ def _offline_washing_machine() -> WashingMachineStatus:
         unbalance_fault=None,
         unbalance_count=None,
         fault_count=None,
+        check_up_state=None,
     )
 
 
@@ -214,17 +244,27 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 
     async def update_status():
         nonlocal last_known_status
+        prev_state = getattr(last_known_status, "machine_state", None)
+        can_infer_off = (
+            prev_state in _OFF_INFERRED_STATES or prev_state == MachineState.OFF
+        )
+        # Use a single attempt (no backoff) when we can fall back to a cached Off status —
+        # retrying a connection error against an offline device just wastes time at startup.
+        fetch = client.status() if can_infer_off else client.status_with_retry()
+        # When we can fall back to Off, use a short timeout — this cuts the stall caused by
+        # the OS TCP retransmit cycle (~13s) for offline devices. 7s is chosen to guarantee
+        # the rate limiter (max_rate=1, time_period=3s) clears before the HTTP request starts,
+        # plus margin for WiFi jitter and slow firmware. Live devices respond in <100ms.
+        poll_timeout = 7 if can_infer_off else 40
         try:
-            async with async_timeout.timeout(40):
-                status = await client.status_with_retry()
+            async with async_timeout.timeout(poll_timeout):
+                status = await fetch
                 _LOGGER.debug("Fetched status: %s", status)
                 last_known_status = status
                 return status
         except (TimeoutError, aiohttp.ClientError) as err:
-            # Network / timeout error: check if we can infer "Off" from last known state
-            prev_state = getattr(last_known_status, "machine_state", None)
-            if prev_state in _OFF_INFERRED_STATES or prev_state == MachineState.OFF:
-                _LOGGER.warning(
+            if can_infer_off:
+                _LOGGER.debug(
                     "Device at %s is unreachable (last state: %s). "
                     "Assuming it was powered off.",
                     ip_address,
@@ -248,6 +288,60 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     hass.data.setdefault(DOMAIN, {})[config_entry.entry_id] = {
         DATA_KEY_COORDINATOR: coordinator
     }
+
+    if isinstance(coordinator.data, WashingMachineStatus):
+        last_known_statistics = _restore_last_known_statistics(
+            hass, config_entry.entry_id
+        )
+
+        async def update_statistics() -> WashingMachineStatistics:
+            nonlocal last_known_statistics
+            if (
+                getattr(coordinator.data, "machine_state", None) == MachineState.OFF
+                and last_known_statistics is not None
+            ):
+                return last_known_statistics
+            try:
+                async with async_timeout.timeout(40):
+                    stats = await client.statistics_with_retry()
+                    last_known_statistics = stats
+                    return stats
+            except (aiohttp.ClientError, TimeoutError, json.JSONDecodeError) as err:
+                if last_known_statistics is not None:
+                    _LOGGER.warning(
+                        "Failed to fetch statistics (%s); returning last known value.",
+                        repr(err),
+                    )
+                    return last_known_statistics
+                raise UpdateFailed(f"Error fetching statistics: {repr(err)}") from err
+
+        stats_coordinator = DataUpdateCoordinator(
+            hass,
+            _LOGGER,
+            name=f"{DOMAIN}_statistics",
+            update_interval=timedelta(hours=1),
+            update_method=update_statistics,
+        )
+        machine_is_off = (
+            getattr(coordinator.data, "machine_state", None) == MachineState.OFF
+        )
+        if last_known_statistics is not None:
+            # Seed the coordinator with the restored value so we skip the initial
+            # network fetch (which would retry 3× against an offline machine).
+            stats_coordinator.async_set_updated_data(last_known_statistics)
+        elif machine_is_off:
+            # Device is off — total_cycles cannot have changed, skip the fetch.
+            # The hourly poll will retrieve it once the device is reachable.
+            pass
+        else:
+            await stats_coordinator.async_refresh()
+        stats_entity_id = er.async_get(hass).async_get_entity_id(
+            "sensor", DOMAIN, UNIQUE_ID_WASH_TOTAL_CYCLES.format(config_entry.entry_id)
+        )
+        if stats_coordinator.last_update_success or stats_entity_id is not None:
+            hass.data[DOMAIN][config_entry.entry_id][DATA_KEY_STATS_COORDINATOR] = (
+                stats_coordinator
+            )
 
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 

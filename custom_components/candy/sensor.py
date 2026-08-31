@@ -1,11 +1,17 @@
 from abc import abstractmethod
 from collections.abc import Mapping
+import contextlib
 from typing import Any, cast
 
-from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
+from homeassistant.components.sensor import (
+    RestoreSensor,
+    SensorDeviceClass,
+    SensorEntity,
+)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfTemperature, UnitOfTime
+from homeassistant.const import EntityCategory, UnitOfTemperature, UnitOfTime
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import (
@@ -21,9 +27,11 @@ from .client.model import (
     MachineState,
     OvenStatus,
     TumbleDryerStatus,
+    WashingMachineStatistics,
 )
 from .const import (
     DATA_KEY_COORDINATOR,
+    DATA_KEY_STATS_COORDINATOR,
     DEVICE_NAME_DISHWASHER,
     DEVICE_NAME_OVEN,
     DEVICE_NAME_TUMBLE_DRYER,
@@ -41,6 +49,7 @@ from .const import (
     UNIQUE_ID_TUMBLE_DRYER,
     UNIQUE_ID_TUMBLE_PROGRAM,
     UNIQUE_ID_TUMBLE_REMAINING_TIME,
+    UNIQUE_ID_WASH_CHECK_UP,
     UNIQUE_ID_WASH_CYCLE_STATUS,
     UNIQUE_ID_WASH_DELAY,
     UNIQUE_ID_WASH_ERROR,
@@ -52,6 +61,7 @@ from .const import (
     UNIQUE_ID_WASH_REMAINING_TIME,
     UNIQUE_ID_WASH_SPIN_SPEED,
     UNIQUE_ID_WASH_TEMPERATURE,
+    UNIQUE_ID_WASH_TOTAL_CYCLES,
     UNIQUE_ID_WASHING_MACHINE,
 )
 
@@ -75,16 +85,37 @@ async def async_setup_entry(
             CandyWashSpinSpeedSensor(coordinator, config_id),
             CandyWashErrorSensor(coordinator, config_id),
         ]
-        if status.fill_percent is not None:
+        registry = er.async_get(hass)
+
+        def _was_registered(unique_id_template: str) -> bool:
+            return (
+                registry.async_get_entity_id(
+                    "sensor", DOMAIN, unique_id_template.format(config_id)
+                )
+                is not None
+            )
+
+        if status.fill_percent is not None or _was_registered(
+            UNIQUE_ID_WASH_FILL_PERCENT
+        ):
             entities.append(CandyWashFillPercentSensor(coordinator, config_id))
-        if status.delay_value is not None:
+        if status.delay_value is not None or _was_registered(UNIQUE_ID_WASH_DELAY):
             entities.append(CandyWashDelaySensor(coordinator, config_id))
-        if status.ntc_water is not None:
+        if status.ntc_water is not None or _was_registered(UNIQUE_ID_WASH_NTC_WATER):
             entities.append(CandyWashNtcWaterSensor(coordinator, config_id))
-        if status.ntc_drum is not None:
+        if status.ntc_drum is not None or _was_registered(UNIQUE_ID_WASH_NTC_DRUM):
             entities.append(CandyWashNtcDrumSensor(coordinator, config_id))
-        if status.motor_speed_freq is not None:
+        if status.motor_speed_freq is not None or _was_registered(
+            UNIQUE_ID_WASH_MOTOR_FREQ
+        ):
             entities.append(CandyWashMotorFreqSensor(coordinator, config_id))
+        if status.check_up_state is not None or _was_registered(
+            UNIQUE_ID_WASH_CHECK_UP
+        ):
+            entities.append(CandyWashCheckUpSensor(coordinator, config_id))
+        stats_coordinator = hass.data[DOMAIN][config_id].get(DATA_KEY_STATS_COORDINATOR)
+        if stats_coordinator is not None:
+            entities.append(CandyWashTotalCyclesSensor(stats_coordinator, config_id))
         async_add_entities(entities)
     elif isinstance(coordinator.data, TumbleDryerStatus):
         async_add_entities(
@@ -377,6 +408,10 @@ class CandyWashErrorSensor(CandyBaseSensor):
         return SUGGESTED_AREA_BATHROOM
 
     @property
+    def entity_category(self) -> EntityCategory:
+        return EntityCategory.DIAGNOSTIC
+
+    @property
     def name(self) -> str:
         return "Wash error code"
 
@@ -416,7 +451,11 @@ class CandyWashDelaySensor(CandyBaseSensor):
 
     @property
     def native_unit_of_measurement(self) -> str:
-        return UnitOfTime.HOURS
+        return UnitOfTime.MINUTES
+
+    @property
+    def device_class(self) -> SensorDeviceClass:
+        return SensorDeviceClass.DURATION
 
     @property
     def icon(self) -> str:
@@ -431,6 +470,10 @@ class CandyWashNtcWaterSensor(CandyBaseSensor):
 
     def suggested_area(self) -> str:
         return SUGGESTED_AREA_BATHROOM
+
+    @property
+    def entity_category(self) -> EntityCategory:
+        return EntityCategory.DIAGNOSTIC
 
     @property
     def name(self) -> str:
@@ -459,6 +502,10 @@ class CandyWashNtcDrumSensor(CandyBaseSensor):
         return SUGGESTED_AREA_BATHROOM
 
     @property
+    def entity_category(self) -> EntityCategory:
+        return EntityCategory.DIAGNOSTIC
+
+    @property
     def name(self) -> str:
         return "Wash NTC drum"
 
@@ -485,6 +532,10 @@ class CandyWashMotorFreqSensor(CandyBaseSensor):
         return SUGGESTED_AREA_BATHROOM
 
     @property
+    def entity_category(self) -> EntityCategory:
+        return EntityCategory.DIAGNOSTIC
+
+    @property
     def name(self) -> str:
         return "Wash motor frequency"
 
@@ -503,6 +554,91 @@ class CandyWashMotorFreqSensor(CandyBaseSensor):
     @property
     def icon(self) -> str:
         return "mdi:sine-wave"
+
+
+class CandyWashCheckUpSensor(CandyBaseSensor, RestoreSensor):
+    """Check-up state reported by the washing machine (0 = ok, non-zero = service due)."""
+
+    _restored_state: str | None = None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_sensor_data()) is not None:
+            if last.native_value in ("Ok", "Service due"):
+                self._restored_state = str(last.native_value)
+
+    def device_name(self) -> str:
+        return DEVICE_NAME_WASHING_MACHINE
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_BATHROOM
+
+    @property
+    def entity_category(self) -> EntityCategory:
+        return EntityCategory.DIAGNOSTIC
+
+    @property
+    def name(self) -> str:
+        return "Wash maintenance"
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_CHECK_UP.format(self.config_id)
+
+    @property
+    def native_value(self) -> StateType:
+        state = cast(WashingMachineStatus, self.coordinator.data).check_up_state
+        if state is not None:
+            return "Ok" if state == 0 else "Service due"
+        return self._restored_state
+
+    @property
+    def icon(self) -> str:
+        return "mdi:wrench-check"
+
+
+class CandyWashTotalCyclesSensor(CandyBaseSensor, RestoreSensor):
+    """Total number of wash cycles completed by the washing machine."""
+
+    _restored_cycles: int | None = None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_sensor_data()) is not None:
+            with contextlib.suppress(TypeError, ValueError):
+                self._restored_cycles = int(str(last.native_value))
+
+    @property
+    def available(self) -> bool:
+        return super().available or self._restored_cycles is not None
+
+    def device_name(self) -> str:
+        return DEVICE_NAME_WASHING_MACHINE
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_BATHROOM
+
+    @property
+    def entity_category(self) -> EntityCategory:
+        return EntityCategory.DIAGNOSTIC
+
+    @property
+    def name(self) -> str:
+        return "Wash total cycles"
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_TOTAL_CYCLES.format(self.config_id)
+
+    @property
+    def native_value(self) -> StateType:
+        if self.coordinator.data is not None:
+            return cast(WashingMachineStatistics, self.coordinator.data).total_cycles
+        return self._restored_cycles
+
+    @property
+    def icon(self) -> str:
+        return "mdi:counter"
 
 
 class CandyTumbleDryerSensor(CandyBaseSensor):

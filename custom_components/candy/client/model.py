@@ -60,7 +60,7 @@ class WashingMachineStatus:
     fill_percent: int | None  # 0...100
     # Extended fields
     error: int | None  # Err — 0 means no error
-    delay_value: int | None  # DelVal — delay start value in hours
+    delay_value: int | None  # DelVal — delay start value in minutes
     ntc_water: int | None  # NtcW — water NTC sensor (raw ADC)
     ntc_drum: int | None  # NtcD — drum NTC sensor (raw ADC)
     motor_speed_freq: int | None  # APSfreq — motor frequency
@@ -68,6 +68,7 @@ class WashingMachineStatus:
     unbalance_fault: int | None  # unbF — unbalance fault count
     unbalance_count: int | None  # unbC — unbalance count
     fault_count: int | None  # numF — total fault count
+    check_up_state: int | None  # CheckUpState — 0 = ok, non-zero = service due
 
     @classmethod
     def from_json(cls, json):
@@ -90,6 +91,9 @@ class WashingMachineStatus:
             unbalance_fault=int(json["unbF"]) if "unbF" in json else None,
             unbalance_count=int(json["unbC"]) if "unbC" in json else None,
             fault_count=int(json["numF"]) if "numF" in json else None,
+            check_up_state=int(json["CheckUpState"])
+            if "CheckUpState" in json
+            else None,
         )
 
 
@@ -225,6 +229,18 @@ class OvenStatus:
             else None,
             remote_control=json["StatoWiFi"] == "1",
         )
+
+
+@dataclass
+class WashingMachineStatistics:
+    total_cycles: int
+
+    @classmethod
+    def from_json(cls, json):
+        total = sum(
+            int(v) for k, v in json.items() if k.startswith("Program") and v.isdigit()
+        )
+        return cls(total_cycles=total)
 
 
 def fahrenheit_to_celsius(fahrenheit: float) -> float:
