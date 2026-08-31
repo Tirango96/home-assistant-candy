@@ -91,10 +91,11 @@ def show_header(error: bool = False):
     print("## Candy Simply-Fi tool by Melvin Groenendaal ## (Python Port)", file=out)
 
 def main():
-    if (len(sys.argv) == 3 and sys.argv[2] != "getkey") or len(sys.argv) < 3 or len(sys.argv) > 4:
+    if len(sys.argv) < 3 or len(sys.argv) > 4:
         show_header(True)
-        print(f"Usage to retreive key: {sys.argv[0]} <ip> getkey", file=sys.stderr)
-        print(f"Usage to get data    : {sys.argv[0]} <ip> <key> <method: config, getStatistics, read>", file=sys.stderr)
+        print(f"Usage to retrieve key: {sys.argv[0]} <ip> getkey", file=sys.stderr)
+        print(f"Usage to read status : {sys.argv[0]} <ip> <method: read, config, getStatistics>", file=sys.stderr)
+        print(f"Usage with key       : {sys.argv[0]} <ip> <key> <method: read, config, getStatistics>", file=sys.stderr)
         sys.exit(-1)
 
     if sys.argv[2] == "getkey":
@@ -123,6 +124,14 @@ def main():
             sys.exit(-3)
         else:
             print(f"Found key: {key}")
+    elif len(sys.argv) == 3:
+        ip = sys.argv[1]
+        method = sys.argv[2]
+        data = get_candy_simplyfi_data(ip, method)
+        if not data:
+            print("error: get_candySimplify_data, could not get data from server", file=sys.stderr)
+            sys.exit(-4)
+        print(xor_string(data, ""))
     else:
         ip = sys.argv[1]
         key = sys.argv[2]
@@ -134,6 +143,7 @@ def main():
             sys.exit(-4)
 
         print(xor_string(data, key))
+
 
 if __name__ == "__main__":
     main()
