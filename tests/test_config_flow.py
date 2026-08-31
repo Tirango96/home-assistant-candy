@@ -1,9 +1,9 @@
 import asyncio
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from homeassistant import config_entries, data_entry_flow
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
-import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.candy import CONF_KEY_USE_ENCRYPTION, DOMAIN
@@ -71,7 +71,7 @@ _IDLE_WASHING_MACHINE = WashingMachineStatus(
 
 
 @pytest.fixture(autouse=True)
-def _bypass_setup_fixture():  # noqa: PT004
+def _bypass_setup_fixture():
     """Prevent setup."""
     with patch(
         "custom_components.candy.async_setup_entry",
@@ -81,7 +81,7 @@ def _bypass_setup_fixture():  # noqa: PT004
 
 
 @pytest.fixture(autouse=True)
-def _device_probe_washing_machine():  # noqa: PT004
+def _device_probe_washing_machine():
     """Make the device-type probe return a washing machine for all tests."""
     with patch(
         "custom_components.candy.config_flow.CandyClient.status",
@@ -92,7 +92,7 @@ def _device_probe_washing_machine():  # noqa: PT004
 
 
 @pytest.fixture(autouse=True)
-def _statistics_probe():  # noqa: PT004
+def _statistics_probe():
     """Return total_cycles=40 during config flow setup for all tests."""
     with patch(
         "custom_components.candy.config_flow.CandyClient.statistics_with_retry",
@@ -103,7 +103,7 @@ def _statistics_probe():  # noqa: PT004
 
 
 @pytest.fixture(name="no_discovery")
-def _no_discovery_fixture():  # noqa: PT004
+def _no_discovery_fixture():
     """Suppress LAN discovery so tests run fast."""
     with (
         patch(
@@ -121,7 +121,7 @@ def _no_discovery_fixture():  # noqa: PT004
 
 
 @pytest.fixture(name="detect_no_encryption", autouse=False)
-def _detect_no_encryption_fixture():  # noqa: PT004
+def _detect_no_encryption_fixture():
     with patch(
         "custom_components.candy.config_flow.detect_encryption",
         return_value=(Encryption.NO_ENCRYPTION, None),
@@ -130,7 +130,7 @@ def _detect_no_encryption_fixture():  # noqa: PT004
 
 
 @pytest.fixture(name="detect_encryption_find_key", autouse=False)
-def _detect_encryption_find_key_fixture():  # noqa: PT004
+def _detect_encryption_find_key_fixture():
     with patch(
         "custom_components.candy.config_flow.detect_encryption",
         return_value=(Encryption.ENCRYPTION, "testkey"),
@@ -139,7 +139,7 @@ def _detect_encryption_find_key_fixture():  # noqa: PT004
 
 
 @pytest.fixture(name="detect_encryption_key_not_found", autouse=False)
-def _detect_encryption_key_not_found_fixture():  # noqa: PT004
+def _detect_encryption_key_not_found_fixture():
     with patch(
         "custom_components.candy.config_flow.detect_encryption", side_effect=ValueError
     ):
@@ -147,7 +147,7 @@ def _detect_encryption_key_not_found_fixture():  # noqa: PT004
 
 
 @pytest.fixture(name="detect_encryption_without_key", autouse=False)
-def _detect_encryption_without_key_fixture():  # noqa: PT004
+def _detect_encryption_without_key_fixture():
     with patch(
         "custom_components.candy.config_flow.detect_encryption",
         return_value=(Encryption.ENCRYPTION_WITHOUT_KEY, None),

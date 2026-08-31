@@ -1,25 +1,31 @@
 import asyncio
 import json
-from json import JSONDecodeError
 import logging
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Union
 
 import aiohttp
-from aiohttp import ClientSession
-from aiolimiter import AsyncLimiter
 import async_timeout
 import backoff
+from aiohttp import ClientSession
+from aiolimiter import AsyncLimiter
 
 from .decryption import Encryption, decrypt, find_key
 from .model import (
     DishwasherStatus,
-    DownloadableProgram as DownloadableProgram,
     OvenStatus,
     TumbleDryerStatus,
     WashingMachineStatistics,
     WashingMachineStatus,
+)
+from .model import (
+    DownloadableProgram as DownloadableProgram,
+)
+from .model import (
     WashingMachineWashProgram as WashingMachineWashProgram,
+)
+from .model import (
     load_downloadable_programs as load_downloadable_programs,
 )
 
@@ -101,12 +107,12 @@ class CandyClient:
     @backoff.on_exception(backoff.expo, TimeoutError, max_tries=3, logger=__name__)
     async def status_with_retry(
         self,
-    ) -> Union[WashingMachineStatus, TumbleDryerStatus, DishwasherStatus, OvenStatus]:
+    ) -> WashingMachineStatus | TumbleDryerStatus | DishwasherStatus | OvenStatus:
         return await self.status()
 
     async def status(
         self,
-    ) -> Union[WashingMachineStatus, TumbleDryerStatus, DishwasherStatus, OvenStatus]:
+    ) -> WashingMachineStatus | TumbleDryerStatus | DishwasherStatus | OvenStatus:
         url = _status_url(self.device_ip, self.use_encryption)
         async with _LIMITER, self.session.get(url) as resp:
             if self.use_encryption:

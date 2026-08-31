@@ -1,7 +1,7 @@
-from abc import abstractmethod
-from collections.abc import Mapping
 import contextlib
 import datetime
+from abc import abstractmethod
+from collections.abc import Mapping
 from typing import Any, cast
 
 from homeassistant.components.sensor import (
@@ -19,7 +19,8 @@ from homeassistant.const import (
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.typing import StateType

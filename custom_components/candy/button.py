@@ -411,7 +411,7 @@ class WashMaintResetButton(CoordinatorEntity, ButtonEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_has_entity_name = True
 
-    def __init__(  # noqa: PLR0917
+    def __init__(
         self,
         coordinator: DataUpdateCoordinator,
         config_entry: ConfigEntry,

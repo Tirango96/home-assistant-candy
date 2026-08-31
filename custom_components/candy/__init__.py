@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 import copy
-from datetime import timedelta
 import json
 import logging
+from collections.abc import Callable
+from datetime import timedelta
 from typing import Any, Union, cast
 
 import aiohttp
@@ -87,18 +87,17 @@ SCAN_INTERVAL_RESTING = timedelta(seconds=20)
 
 
 def _make_off_status(
-    last_status: Union[
-        WashingMachineStatus, TumbleDryerStatus, DishwasherStatus, OvenStatus
-    ],
-) -> Union[WashingMachineStatus, TumbleDryerStatus, DishwasherStatus, OvenStatus]:
+    last_status: WashingMachineStatus
+    | TumbleDryerStatus
+    | DishwasherStatus
+    | OvenStatus,
+) -> WashingMachineStatus | TumbleDryerStatus | DishwasherStatus | OvenStatus:
     """Return a copy of last_status with machine_state set to OFF (or equivalent).
 
     This synthetic status allows sensors to display "Off" when the device is
     unreachable but was last seen in a Finished or Idle state.
     """
-    off_status: Union[
-        WashingMachineStatus, TumbleDryerStatus, DishwasherStatus, OvenStatus
-    ]
+    off_status: WashingMachineStatus | TumbleDryerStatus | DishwasherStatus | OvenStatus
     if isinstance(last_status, DishwasherStatus):
         # Dishwasher uses its own DishwasherState enum — use IDLE as the "Off" equivalent
         off_status = copy.copy(last_status)
@@ -117,7 +116,7 @@ def _make_off_status(
 def _restore_last_known_status(
     hass: HomeAssistant,
     config_entry_id: str,
-) -> Union[WashingMachineStatus, TumbleDryerStatus, DishwasherStatus, OvenStatus, None]:
+) -> WashingMachineStatus | TumbleDryerStatus | DishwasherStatus | OvenStatus | None:
     """Try to reconstruct the last known device status from HA's entity registry and state machine.
 
     HA restores entity states from the recorder database on startup, so even before
@@ -131,7 +130,7 @@ def _restore_last_known_status(
     # Map each "main" unique_id to a factory for a synthetic offline status
     StatusFactory = Callable[
         [],
-        Union[WashingMachineStatus, TumbleDryerStatus, DishwasherStatus, OvenStatus],
+        WashingMachineStatus | TumbleDryerStatus | DishwasherStatus | OvenStatus,
     ]
     candidates: list[tuple[str, StatusFactory]] = [
         (UNIQUE_ID_WASHING_MACHINE.format(config_entry_id), _offline_washing_machine),
@@ -304,9 +303,9 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
                 )
                 coordinator.update_interval = SCAN_INTERVAL_RESTING
                 return _make_off_status(last_known_status)
-            raise UpdateFailed(f"Error communicating with API: {repr(err)}") from err
+            raise UpdateFailed(f"Error communicating with API: {err!r}") from err
         except Exception as err:
-            raise UpdateFailed(f"Error communicating with API: {repr(err)}") from err
+            raise UpdateFailed(f"Error communicating with API: {err!r}") from err
 
     coordinator = DataUpdateCoordinator(
         hass,
@@ -346,7 +345,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
                         repr(err),
                     )
                     return last_known_statistics
-                raise UpdateFailed(f"Error fetching statistics: {repr(err)}") from err
+                raise UpdateFailed(f"Error fetching statistics: {err!r}") from err
 
         stats_coordinator = DataUpdateCoordinator(
             hass,

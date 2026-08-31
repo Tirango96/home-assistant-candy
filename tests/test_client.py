@@ -1,5 +1,5 @@
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import pytest
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from pytest_homeassistant_custom_component.common import load_fixture
 
 from custom_components.candy.client import CandyClient, Encryption, detect_encryption

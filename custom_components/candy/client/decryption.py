@@ -4,9 +4,9 @@ Algorithm ported from simplyfi.py (tools/simplyfi.py) — known-plaintext
 sliding window attack to recover the XOR key from the encrypted response.
 """
 
-from enum import Enum
 import json
 import logging
+from enum import Enum
 
 _LOGGER = logging.getLogger(__name__)
 

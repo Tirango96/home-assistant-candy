@@ -6,6 +6,7 @@ import logging
 from typing import Any
 
 import async_timeout
+import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.components.network import async_get_source_ip
 from homeassistant.config_entries import ConfigFlowResult
@@ -17,7 +18,6 @@ from homeassistant.helpers.selector import (
     SelectSelectorConfig,
     SelectSelectorMode,
 )
-import voluptuous as vol
 
 from .client import CandyClient, detect_encryption, discover_devices
 from .client.cloud import SimplyFiCloudError, fetch_appliance_data
