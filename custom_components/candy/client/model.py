@@ -244,5 +244,54 @@ class WashingMachineStatistics:
         return cls(total_cycles=total)
 
 
+class WineCoolerState(StatusCode):
+    OFF = (0, "Off")
+    ON = (2, "On")
+    ERROR = (3, "Error")
+
+
+class WineCoolerProgram(StatusCode):
+    RED_WINE = (1, "Red wine")
+    WHITE_WINE = (2, "White wine")
+    SPARKLING = (3, "Sparkling")
+
+
+@dataclass
+class WineCoolerStatus:
+    machine_state: WineCoolerState
+    program: WineCoolerProgram
+    temp: int
+    light: bool
+    error: str | None
+    remote_control: bool
+    program_down: WineCoolerProgram | None = None
+    temp_down: int | None = None
+
+    @classmethod
+    def from_json(cls, json):
+        wc_state_code = int(json["r5"]) if "r5" in json else 2
+        error_val = json.get("r2")
+        program_down = None
+        if "r7" in json and json["r7"] not in ("0", ""):
+            try:
+                program_down = WineCoolerProgram.from_code(int(json["r7"]))
+            except ValueError:
+                program_down = None
+        temp_down = (
+            int(json["r8"]) if "r8" in json and json["r8"] not in ("0", "") else None
+        )
+
+        return cls(
+            machine_state=WineCoolerState.from_code(wc_state_code),
+            program=WineCoolerProgram.from_code(int(json["r3"])),
+            temp=int(json["r4"]),
+            light=json.get("r10") == "1",
+            error=error_val if error_val and error_val != "E0" else None,
+            remote_control=json.get("r1") == "1",
+            program_down=program_down,
+            temp_down=temp_down,
+        )
+
+
 def fahrenheit_to_celsius(fahrenheit: float) -> float:
     return (fahrenheit - 32) * 5.0 / 9.0

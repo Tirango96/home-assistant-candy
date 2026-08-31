@@ -16,6 +16,7 @@ from .model import (
     TumbleDryerStatus,
     WashingMachineStatistics,
     WashingMachineStatus,
+    WineCoolerStatus,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -47,12 +48,24 @@ class CandyClient:
     @backoff.on_exception(backoff.expo, TimeoutError, max_tries=3, logger=__name__)
     async def status_with_retry(
         self,
-    ) -> Union[WashingMachineStatus, TumbleDryerStatus, DishwasherStatus, OvenStatus]:
+    ) -> Union[
+        WashingMachineStatus,
+        TumbleDryerStatus,
+        DishwasherStatus,
+        OvenStatus,
+        WineCoolerStatus,
+    ]:
         return await self.status()
 
     async def status(
         self,
-    ) -> Union[WashingMachineStatus, TumbleDryerStatus, DishwasherStatus, OvenStatus]:
+    ) -> Union[
+        WashingMachineStatus,
+        TumbleDryerStatus,
+        DishwasherStatus,
+        OvenStatus,
+        WineCoolerStatus,
+    ]:
         url = _status_url(self.device_ip, self.use_encryption)
         async with _LIMITER, self.session.get(url) as resp:
             if self.use_encryption:
@@ -80,6 +93,8 @@ class CandyClient:
                 status = OvenStatus.from_json(resp_json["statusForno"])
             elif "statusDWash" in resp_json:
                 status = DishwasherStatus.from_json(resp_json["statusDWash"])
+            elif "statusWCool" in resp_json:
+                status = WineCoolerStatus.from_json(resp_json["statusWCool"])
             else:
                 raise Exception(
                     "Unable to detect machine type from API response", resp_json
@@ -178,6 +193,7 @@ _DEVICE_TYPE_LABELS: dict[str, str] = {
     "statusTD": "Tumble Dryer",
     "statusDWash": "Dishwasher",
     "statusForno": "Oven",
+    "statusWCool": "Wine Cooler",
 }
 
 

@@ -8,6 +8,9 @@ from custom_components.candy.client.model import (
     MachineState,
     WashingMachineStatus,
     WashProgramState,
+    WineCoolerProgram,
+    WineCoolerState,
+    WineCoolerStatus,
 )
 
 from .common import (
@@ -165,3 +168,26 @@ async def test_status_encryption_without_key(hass, aioclient_mock):
     status = await client.status()
 
     assert isinstance(status, WashingMachineStatus)
+
+
+async def test_status_wine_cooler(hass, aioclient_mock):
+    aioclient_mock.get(
+        f"http://{TEST_IP}/http-read.json",
+        text='{"statusWCool":{"r1":"1","r2":"E0","r3":"1","r4":"16","r5":"2","r6":"0","r7":"0","r8":"0","r9":"0","r10":"1"}}',
+    )
+
+    client = CandyClient(
+        async_get_clientsession(hass),
+        device_ip=TEST_IP,
+        encryption_key="",
+        use_encryption=False,
+    )
+    status = await client.status()
+
+    assert isinstance(status, WineCoolerStatus)
+    assert status.machine_state == WineCoolerState.ON
+    assert status.program == WineCoolerProgram.RED_WINE
+    assert status.temp == 16
+    assert status.light is True
+    assert status.remote_control is True
+    assert status.error is None

@@ -77,6 +77,21 @@
       },
       "dishwasher_remaining_time": {
         "name": "Dishwasher remaining time"
+      },
+      "wine_cooler": {
+        "name": "Wine cooler"
+      },
+      "wine_cooler_program": {
+        "name": "Wine cooler program"
+      },
+      "wine_cooler_temperature": {
+        "name": "Wine cooler temperature"
+      },
+      "wine_cooler_light": {
+        "name": "Wine cooler light"
+      },
+      "wine_cooler_error_code": {
+        "name": "Wine cooler error code"
       }
     }
   }

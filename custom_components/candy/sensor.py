@@ -7,6 +7,7 @@ from homeassistant.components.sensor import (
     RestoreSensor,
     SensorDeviceClass,
     SensorEntity,
+    SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory, UnitOfTemperature, UnitOfTime
@@ -28,6 +29,7 @@ from .client.model import (
     OvenStatus,
     TumbleDryerStatus,
     WashingMachineStatistics,
+    WineCoolerStatus,
 )
 from .const import (
     DATA_KEY_COORDINATOR,
@@ -36,6 +38,7 @@ from .const import (
     DEVICE_NAME_OVEN,
     DEVICE_NAME_TUMBLE_DRYER,
     DEVICE_NAME_WASHING_MACHINE,
+    DEVICE_NAME_WINE_COOLER,
     DOMAIN,
     SUGGESTED_AREA_BATHROOM,
     SUGGESTED_AREA_KITCHEN,
@@ -63,6 +66,13 @@ from .const import (
     UNIQUE_ID_WASH_TEMPERATURE,
     UNIQUE_ID_WASH_TOTAL_CYCLES,
     UNIQUE_ID_WASHING_MACHINE,
+    UNIQUE_ID_WINE_COOLER,
+    UNIQUE_ID_WINE_COOLER_ERROR,
+    UNIQUE_ID_WINE_COOLER_LIGHT,
+    UNIQUE_ID_WINE_COOLER_PROGRAM,
+    UNIQUE_ID_WINE_COOLER_PROGRAM_DOWN,
+    UNIQUE_ID_WINE_COOLER_TEMP,
+    UNIQUE_ID_WINE_COOLER_TEMP_DOWN,
 )
 
 
@@ -142,6 +152,34 @@ async def async_setup_entry(
                 CandyDishwasherRemainingTimeSensor(coordinator, config_id),
             ]
         )
+    elif isinstance(coordinator.data, WineCoolerStatus):
+        wc_status = coordinator.data
+        entities = [
+            CandyWineCoolerSensor(coordinator, config_id),
+            CandyWineCoolerProgramSensor(coordinator, config_id),
+            CandyWineCoolerTempSensor(coordinator, config_id),
+            CandyWineCoolerLightSensor(coordinator, config_id),
+            CandyWineCoolerErrorSensor(coordinator, config_id),
+        ]
+        registry = er.async_get(hass)
+
+        def _was_wc_registered(unique_id_template: str) -> bool:
+            return (
+                registry.async_get_entity_id(
+                    "sensor", DOMAIN, unique_id_template.format(config_id)
+                )
+                is not None
+            )
+
+        if wc_status.temp_down is not None or _was_wc_registered(
+            UNIQUE_ID_WINE_COOLER_TEMP_DOWN
+        ):
+            entities.append(CandyWineCoolerTempDownSensor(coordinator, config_id))
+        if wc_status.program_down is not None or _was_wc_registered(
+            UNIQUE_ID_WINE_COOLER_PROGRAM_DOWN
+        ):
+            entities.append(CandyWineCoolerProgramDownSensor(coordinator, config_id))
+        async_add_entities(entities)
     else:
         raise TypeError(f"Unable to determine machine type: {coordinator.data}")
 
@@ -971,3 +1009,223 @@ class CandyDishwasherRemainingTimeSensor(CandyBaseSensor):
     @property
     def icon(self) -> str:
         return "mdi:progress-clock"
+
+
+class CandyWineCoolerSensor(CandyBaseSensor):
+    def device_name(self) -> str:
+        return DEVICE_NAME_WINE_COOLER
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_KITCHEN
+
+    @property
+    def name(self) -> str:
+        return self.device_name()
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WINE_COOLER.format(self.config_id)
+
+    @property
+    def native_value(self) -> StateType:
+        status = cast(WineCoolerStatus, self.coordinator.data)
+        return str(status.machine_state)
+
+    @property
+    def icon(self) -> str:
+        return "mdi:glass-wine"
+
+    @property
+    def extra_state_attributes(self) -> Mapping[str, Any]:
+        status = cast(WineCoolerStatus, self.coordinator.data)
+        attributes: dict[str, Any] = {
+            "program": str(status.program),
+            "temperature": status.temp,
+            "light": status.light,
+            "remote_control": status.remote_control,
+            "error": status.error,
+        }
+        if status.temp_down is not None:
+            attributes["temperature_zone_down"] = status.temp_down
+        if status.program_down is not None:
+            attributes["program_zone_down"] = str(status.program_down)
+        return attributes
+
+
+class CandyWineCoolerProgramSensor(CandyBaseSensor):
+    def device_name(self) -> str:
+        return DEVICE_NAME_WINE_COOLER
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_KITCHEN
+
+    @property
+    def name(self) -> str:
+        return "Wine cooler program"
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WINE_COOLER_PROGRAM.format(self.config_id)
+
+    @property
+    def native_value(self) -> StateType:
+        status = cast(WineCoolerStatus, self.coordinator.data)
+        return str(status.program)
+
+    @property
+    def icon(self) -> str:
+        return "mdi:bottle-wine"
+
+
+class CandyWineCoolerTempSensor(CandyBaseSensor):
+    def device_name(self) -> str:
+        return DEVICE_NAME_WINE_COOLER
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_KITCHEN
+
+    @property
+    def name(self) -> str:
+        return "Wine cooler temperature"
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WINE_COOLER_TEMP.format(self.config_id)
+
+    @property
+    def native_value(self) -> StateType:
+        status = cast(WineCoolerStatus, self.coordinator.data)
+        return status.temp
+
+    @property
+    def device_class(self) -> SensorDeviceClass:
+        return SensorDeviceClass.TEMPERATURE
+
+    @property
+    def state_class(self) -> SensorStateClass:
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def native_unit_of_measurement(self) -> str:
+        return UnitOfTemperature.CELSIUS
+
+    @property
+    def icon(self) -> str:
+        return "mdi:thermometer"
+
+
+class CandyWineCoolerLightSensor(CandyBaseSensor):
+    def device_name(self) -> str:
+        return DEVICE_NAME_WINE_COOLER
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_KITCHEN
+
+    @property
+    def name(self) -> str:
+        return "Wine cooler light"
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WINE_COOLER_LIGHT.format(self.config_id)
+
+    @property
+    def native_value(self) -> StateType:
+        status = cast(WineCoolerStatus, self.coordinator.data)
+        return "On" if status.light else "Off"
+
+    @property
+    def icon(self) -> str:
+        status = cast(WineCoolerStatus, self.coordinator.data)
+        return "mdi:lightbulb" if status.light else "mdi:lightbulb-off"
+
+
+class CandyWineCoolerErrorSensor(CandyBaseSensor):
+    def device_name(self) -> str:
+        return DEVICE_NAME_WINE_COOLER
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_KITCHEN
+
+    @property
+    def entity_category(self) -> EntityCategory:
+        return EntityCategory.DIAGNOSTIC
+
+    @property
+    def name(self) -> str:
+        return "Wine cooler error code"
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WINE_COOLER_ERROR.format(self.config_id)
+
+    @property
+    def native_value(self) -> StateType:
+        status = cast(WineCoolerStatus, self.coordinator.data)
+        return status.error if status.error is not None else "None"
+
+    @property
+    def icon(self) -> str:
+        return "mdi:alert-circle"
+
+
+class CandyWineCoolerTempDownSensor(CandyBaseSensor):
+    def device_name(self) -> str:
+        return DEVICE_NAME_WINE_COOLER
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_KITCHEN
+
+    @property
+    def name(self) -> str:
+        return "Wine cooler lower zone temperature"
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WINE_COOLER_TEMP_DOWN.format(self.config_id)
+
+    @property
+    def native_value(self) -> StateType:
+        status = cast(WineCoolerStatus, self.coordinator.data)
+        return status.temp_down
+
+    @property
+    def device_class(self) -> SensorDeviceClass:
+        return SensorDeviceClass.TEMPERATURE
+
+    @property
+    def state_class(self) -> SensorStateClass:
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def native_unit_of_measurement(self) -> str:
+        return UnitOfTemperature.CELSIUS
+
+    @property
+    def icon(self) -> str:
+        return "mdi:thermometer"
+
+
+class CandyWineCoolerProgramDownSensor(CandyBaseSensor):
+    def device_name(self) -> str:
+        return DEVICE_NAME_WINE_COOLER
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_KITCHEN
+
+    @property
+    def name(self) -> str:
+        return "Wine cooler lower zone program"
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WINE_COOLER_PROGRAM_DOWN.format(self.config_id)
+
+    @property
+    def native_value(self) -> StateType:
+        status = cast(WineCoolerStatus, self.coordinator.data)
+        return str(status.program_down) if status.program_down is not None else None
+
+    @property
+    def icon(self) -> str:
+        return "mdi:bottle-wine"

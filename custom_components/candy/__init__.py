@@ -31,6 +31,9 @@ from .client.model import (
     WashingMachineStatistics,
     WashingMachineStatus,
     WashProgramState,
+    WineCoolerProgram,
+    WineCoolerState,
+    WineCoolerStatus,
 )
 from .const import (
     CONF_KEY_USE_ENCRYPTION,
@@ -43,6 +46,7 @@ from .const import (
     UNIQUE_ID_TUMBLE_DRYER,
     UNIQUE_ID_WASH_TOTAL_CYCLES,
     UNIQUE_ID_WASHING_MACHINE,
+    UNIQUE_ID_WINE_COOLER,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -53,21 +57,36 @@ _OFF_INFERRED_STATES = {
     MachineState.FINISHED1,
     MachineState.FINISHED2,
     MachineState.IDLE,
+    WineCoolerState.OFF,
 }
 
 
 def _make_off_status(
     last_status: Union[
-        WashingMachineStatus, TumbleDryerStatus, DishwasherStatus, OvenStatus
+        WashingMachineStatus,
+        TumbleDryerStatus,
+        DishwasherStatus,
+        OvenStatus,
+        WineCoolerStatus,
     ],
-) -> Union[WashingMachineStatus, TumbleDryerStatus, DishwasherStatus, OvenStatus]:
+) -> Union[
+    WashingMachineStatus,
+    TumbleDryerStatus,
+    DishwasherStatus,
+    OvenStatus,
+    WineCoolerStatus,
+]:
     """Return a copy of last_status with machine_state set to OFF (or equivalent).
 
     This synthetic status allows sensors to display "Off" when the device is
     unreachable but was last seen in a Finished or Idle state.
     """
     off_status: Union[
-        WashingMachineStatus, TumbleDryerStatus, DishwasherStatus, OvenStatus
+        WashingMachineStatus,
+        TumbleDryerStatus,
+        DishwasherStatus,
+        OvenStatus,
+        WineCoolerStatus,
     ]
     if isinstance(last_status, DishwasherStatus):
         # Dishwasher uses its own DishwasherState enum — use IDLE as the "Off" equivalent
@@ -77,6 +96,9 @@ def _make_off_status(
     elif isinstance(last_status, OvenStatus):
         off_status = copy.copy(last_status)
         off_status.machine_state = OvenState.IDLE
+    elif isinstance(last_status, WineCoolerStatus):
+        off_status = copy.copy(last_status)
+        off_status.machine_state = WineCoolerState.OFF
     else:
         # WashingMachineStatus and TumbleDryerStatus both use MachineState
         off_status = copy.copy(last_status)
@@ -87,7 +109,14 @@ def _make_off_status(
 def _restore_last_known_status(
     hass: HomeAssistant,
     config_entry_id: str,
-) -> Union[WashingMachineStatus, TumbleDryerStatus, DishwasherStatus, OvenStatus, None]:
+) -> Union[
+    WashingMachineStatus,
+    TumbleDryerStatus,
+    DishwasherStatus,
+    OvenStatus,
+    WineCoolerStatus,
+    None,
+]:
     """Try to reconstruct the last known device status from HA's entity registry and state machine.
 
     HA restores entity states from the recorder database on startup, so even before
@@ -101,13 +130,20 @@ def _restore_last_known_status(
     # Map each "main" unique_id to a factory for a synthetic offline status
     StatusFactory = Callable[
         [],
-        Union[WashingMachineStatus, TumbleDryerStatus, DishwasherStatus, OvenStatus],
+        Union[
+            WashingMachineStatus,
+            TumbleDryerStatus,
+            DishwasherStatus,
+            OvenStatus,
+            WineCoolerStatus,
+        ],
     ]
     candidates: list[tuple[str, StatusFactory]] = [
         (UNIQUE_ID_WASHING_MACHINE.format(config_entry_id), _offline_washing_machine),
         (UNIQUE_ID_TUMBLE_DRYER.format(config_entry_id), _offline_tumble_dryer),
         (UNIQUE_ID_DISHWASHER.format(config_entry_id), _offline_dishwasher),
         (UNIQUE_ID_OVEN.format(config_entry_id), _offline_oven),
+        (UNIQUE_ID_WINE_COOLER.format(config_entry_id), _offline_wine_cooler),
     ]
 
     for unique_id, factory in candidates:
@@ -218,6 +254,20 @@ def _offline_oven() -> OvenStatus:
         temp_reached=False,
         program_length_minutes=None,
         remote_control=False,
+    )
+
+
+def _offline_wine_cooler() -> WineCoolerStatus:
+    """Minimal WineCoolerStatus for an offline device (shows Off in sensors)."""
+    return WineCoolerStatus(
+        machine_state=WineCoolerState.OFF,
+        program=WineCoolerProgram.RED_WINE,
+        temp=16,
+        light=False,
+        error=None,
+        remote_control=False,
+        program_down=None,
+        temp_down=None,
     )
 
 
