@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any, cast
 
-import voluptuous as vol
 from homeassistant.components.device_automation import DEVICE_TRIGGER_BASE_SCHEMA
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_DEVICE_ID, CONF_DOMAIN, CONF_PLATFORM, CONF_TYPE
@@ -13,22 +12,23 @@ from homeassistant.core import CALLBACK_TYPE, HassJob, HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+import voluptuous as vol
 
 from .client.model import MachineState, WashingMachineStatistics, WashingMachineStatus
 from .const import (
     CONF_KEY_MAINTENANCE_ENABLED,
     CONF_KEY_MAINTENANCE_FILTER_ENABLED,
     CONF_KEY_MAINTENANCE_LAST_FILTER,
+    CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP,
     CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
-    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
     CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED,
     CONF_KEY_WATER_HARDNESS,
     DATA_KEY_COORDINATOR,
     DATA_KEY_STATS_COORDINATOR,
     DOMAIN,
     MAINTENANCE_FILTER_THRESHOLD,
+    MAINTENANCE_FULL_CHECKUP_THRESHOLD,
     MAINTENANCE_HARDNESS_THRESHOLDS,
-    MAINTENANCE_SELFCLEAN_THRESHOLD,
 )
 from .helpers import cycles_remaining
 
@@ -37,7 +37,7 @@ TRIGGER_TYPES = frozenset(
         "washing_started",
         "washing_completed",
         "error_reported",
-        "maintenance_selfclean_due",
+        "maintenance_full_checkup_due",
         "maintenance_limescale_due",
         "maintenance_filter_due",
     }
@@ -98,7 +98,7 @@ async def async_get_triggers(
     ]
 
     if entry.data.get(CONF_KEY_MAINTENANCE_ENABLED):
-        triggers.append({**base, CONF_TYPE: "maintenance_selfclean_due"})
+        triggers.append({**base, CONF_TYPE: "maintenance_full_checkup_due"})
         if entry.data.get(CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED, True):
             triggers.append({**base, CONF_TYPE: "maintenance_limescale_due"})
         if entry.data.get(CONF_KEY_MAINTENANCE_FILTER_ENABLED, True):
@@ -203,12 +203,12 @@ def _attach_maintenance_trigger(
 ) -> CALLBACK_TYPE:
     hardness = config_entry.data.get(CONF_KEY_WATER_HARDNESS, 2)
     threshold_by_type = {
-        "maintenance_selfclean_due": MAINTENANCE_SELFCLEAN_THRESHOLD,
+        "maintenance_full_checkup_due": MAINTENANCE_FULL_CHECKUP_THRESHOLD,
         "maintenance_limescale_due": MAINTENANCE_HARDNESS_THRESHOLDS[hardness],
         "maintenance_filter_due": MAINTENANCE_FILTER_THRESHOLD,
     }
     last_key_by_type = {
-        "maintenance_selfclean_due": CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
+        "maintenance_full_checkup_due": CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP,
         "maintenance_limescale_due": CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
         "maintenance_filter_due": CONF_KEY_MAINTENANCE_LAST_FILTER,
     }

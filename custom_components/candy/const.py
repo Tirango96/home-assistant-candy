@@ -87,7 +87,7 @@ CONF_KEY_MAINTENANCE_ENABLED = "maintenance_enabled"
 CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED = "maintenance_limescale_enabled"
 CONF_KEY_MAINTENANCE_FILTER_ENABLED = "maintenance_filter_enabled"
 CONF_KEY_WATER_HARDNESS = "water_hardness"
-CONF_KEY_MAINTENANCE_LAST_SELFCLEAN = "maintenance_last_selfclean"
+CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP = "maintenance_last_full_checkup"
 CONF_KEY_MAINTENANCE_LAST_LIMESCALE = "maintenance_last_limescale"
 CONF_KEY_MAINTENANCE_LAST_FILTER = "maintenance_last_filter"
 
@@ -100,7 +100,7 @@ CHECKUP_SCHEDULE_EVERY_CYCLE = 0
 CHECKUP_SCHEDULE_WEEKLY = 1
 CHECKUP_SCHEDULE_MONTHLY = 2
 
-MAINTENANCE_SELFCLEAN_THRESHOLD = 100
+MAINTENANCE_FULL_CHECKUP_THRESHOLD = 100
 MAINTENANCE_FILTER_THRESHOLD = 100
 MAINTENANCE_HARDNESS_THRESHOLDS: list[int] = [110, 105, 100, 95, 90, 85]
 MAINTENANCE_HARDNESS_LABELS: list[str] = [
@@ -112,16 +112,19 @@ MAINTENANCE_HARDNESS_LABELS: list[str] = [
     "very_hard",
 ]
 
-UNIQUE_ID_WASH_MAINT_SELFCLEAN = "{0}-wash_maint_selfclean"
+UNIQUE_ID_WASH_MAINT_FULL_CHECKUP = "{0}-wash_maint_full_checkup"
 UNIQUE_ID_WASH_MAINT_LIMESCALE = "{0}-wash_maint_limescale"
 UNIQUE_ID_WASH_MAINT_FILTER = "{0}-wash_maint_filter"
-UNIQUE_ID_WASH_MAINT_SELFCLEAN_BUTTON = "{0}-wash_maint_selfclean_reset"
+UNIQUE_ID_WASH_MAINT_FULL_CHECKUP_BUTTON = "{0}-wash_maint_full_checkup_reset"
 UNIQUE_ID_WASH_MAINT_LIMESCALE_BUTTON = "{0}-wash_maint_limescale_reset"
 UNIQUE_ID_WASH_MAINT_FILTER_BUTTON = "{0}-wash_maint_filter_reset"
 
-NOTIF_ID_MAINT_SELFCLEAN = "candy_{0}_maint_selfclean"
+NOTIF_ID_MAINT_FULL_CHECKUP = "candy_{0}_maint_full_checkup"
 NOTIF_ID_MAINT_LIMESCALE = "candy_{0}_maint_limescale"
 NOTIF_ID_MAINT_FILTER = "candy_{0}_maint_filter"
+
+UNIQUE_ID_WASH_FULL_CHECKUP_BUTTON = "{0}-wash_full_checkup_button"
+NOTIF_ID_FULL_CHECKUP = "candy_{0}_full_checkup"
 
 UNIQUE_ID_WASH_PROGRAM_SELECT = "{0}-wash_program_select"
 UNIQUE_ID_WASH_PROGRAM_DESCRIPTION = "{0}-wash_program_description"

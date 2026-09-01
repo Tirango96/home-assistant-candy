@@ -69,7 +69,7 @@
         "title": "Current counter values",
         "description": "Enter the remaining cycles shown in the Simply-Fi app for each maintenance item. Leave at the default to start a fresh full cycle from now.",
         "data": {
-          "maintenance_last_selfclean": "Auto-Clean: remaining cycles",
+          "maintenance_last_full_checkup": "Full Check-up: remaining cycles",
           "maintenance_last_limescale": "Limescale Cleaning: remaining cycles",
           "maintenance_last_filter": "Filter-Clean: remaining cycles"
         }
@@ -144,7 +144,7 @@
         "title": "Current counter values",
         "description": "Enter the remaining cycles shown in the Simply-Fi app for each maintenance item. Leave at the default to start a fresh full cycle from now.",
         "data": {
-          "maintenance_last_selfclean": "Auto-Clean: remaining cycles",
+          "maintenance_last_full_checkup": "Full Check-up: remaining cycles",
           "maintenance_last_limescale": "Limescale Cleaning: remaining cycles",
           "maintenance_last_filter": "Filter-Clean: remaining cycles"
         }
@@ -225,8 +225,8 @@
       "wash_total_cycles": {
         "name": "Total cycles"
       },
-      "wash_maint_selfclean": {
-        "name": "Auto-Clean Reminder"
+      "wash_maint_full_checkup": {
+        "name": "Full Check-up Reminder"
       },
       "wash_maint_limescale": {
         "name": "Limescale Cleaning"
@@ -363,8 +363,11 @@
       "wash_stop_button": {
         "name": "Stop wash"
       },
-      "wash_maint_selfclean_reset": {
-        "name": "Reset Auto-Clean Counter"
+      "wash_full_checkup": {
+        "name": "Full check-up"
+      },
+      "wash_maint_full_checkup_reset": {
+        "name": "Reset Full Check-up Counter"
       },
       "wash_maint_limescale_reset": {
         "name": "Reset Limescale Counter"
@@ -406,7 +409,7 @@
       "washing_started": "Washing started",
       "washing_completed": "Washing completed",
       "error_reported": "Error reported",
-      "maintenance_selfclean_due": "Self-clean reminder",
+      "maintenance_full_checkup_due": "Full check-up reminder",
       "maintenance_limescale_due": "Limescale cleaning reminder",
       "maintenance_filter_due": "Filter cleaning reminder"
     }

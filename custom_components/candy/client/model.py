@@ -1,6 +1,6 @@
-import json
 from dataclasses import dataclass
 from enum import Enum
+import json
 from pathlib import Path
 
 _PROGRAM_NAMES: dict[str, dict[str, str]] = json.loads(

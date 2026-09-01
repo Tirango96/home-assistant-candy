@@ -31,7 +31,7 @@ from custom_components.candy.const import (
     CONF_KEY_MAINTENANCE_FILTER_ENABLED,
     CONF_KEY_MAINTENANCE_LAST_FILTER,
     CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
-    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
+    CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP,
     CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED,
     CONF_KEY_MODE,
     CONF_KEY_PROGRAM_LANGUAGE,
@@ -672,7 +672,7 @@ async def test_read_only_with_maintenance_enabled(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
-            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 17,
+            CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP: 17,
             CONF_KEY_MAINTENANCE_LAST_LIMESCALE: 57,
             CONF_KEY_MAINTENANCE_LAST_FILTER: 17,
         },
@@ -683,10 +683,10 @@ async def test_read_only_with_maintenance_enabled(
     assert data[CONF_KEY_MAINTENANCE_ENABLED] is True
     assert data[CONF_KEY_WATER_HARDNESS] == 2
     # last_reset = total - (threshold - remaining)
-    # selfclean:  40 - (100 - 17) = 40 - 83 = -43
+    # full_checkup:  40 - (100 - 17) = 40 - 83 = -43
     # limescale:  40 - (100 - 57) = 40 - 43 = -3   (hardness=2 → threshold=100)
     # filter:     40 - (100 - 17) = 40 - 83 = -43
-    assert data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] == -43
+    assert data[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] == -43
     assert data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] == -3
     assert data[CONF_KEY_MAINTENANCE_LAST_FILTER] == -43
     assert data[CONF_KEY_IS_WASHING_MACHINE] is True
@@ -707,7 +707,7 @@ async def test_options_flow_maintenance_settings(
             CONF_KEY_IS_WASHING_MACHINE: True,
             CONF_KEY_MAINTENANCE_ENABLED: True,
             CONF_KEY_WATER_HARDNESS: 2,
-            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 0,
+            CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP: 0,
             CONF_KEY_MAINTENANCE_LAST_LIMESCALE: 0,
             CONF_KEY_MAINTENANCE_LAST_FILTER: 0,
         },
@@ -745,7 +745,7 @@ async def test_options_flow_maintenance_settings(
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
         user_input={
-            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 50,
+            CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP: 50,
             CONF_KEY_MAINTENANCE_LAST_LIMESCALE: 40,
             CONF_KEY_MAINTENANCE_LAST_FILTER: 60,
         },
@@ -754,7 +754,7 @@ async def test_options_flow_maintenance_settings(
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     updated = hass.config_entries.async_get_entry(entry.entry_id)
     assert updated.data[CONF_KEY_WATER_HARDNESS] == 5
-    assert updated.data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] == 0
+    assert updated.data[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] == 0
     assert updated.data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] == 0
     assert updated.data[CONF_KEY_MAINTENANCE_LAST_FILTER] == 0
 
@@ -774,7 +774,7 @@ async def test_options_flow_maintenance_settings_disable(
             CONF_KEY_IS_WASHING_MACHINE: True,
             CONF_KEY_MAINTENANCE_ENABLED: True,
             CONF_KEY_WATER_HARDNESS: 2,
-            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 0,
+            CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP: 0,
             CONF_KEY_MAINTENANCE_LAST_LIMESCALE: 0,
             CONF_KEY_MAINTENANCE_LAST_FILTER: 0,
         },
@@ -791,8 +791,8 @@ async def test_options_flow_maintenance_settings_disable(
     assert updated.data[CONF_KEY_MAINTENANCE_ENABLED] is False
 
 
-async def test_maintenance_only_selfclean(hass, no_discovery, detect_no_encryption):  # pylint: disable=unused-argument
-    """When both optional counters are disabled, hardness step is skipped and baselines only shows selfclean."""
+async def test_maintenance_only_full_checkup(hass, no_discovery, detect_no_encryption):  # pylint: disable=unused-argument
+    """When both optional counters are disabled, hardness step is skipped and baselines only shows full_checkup."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
@@ -821,7 +821,7 @@ async def test_maintenance_only_selfclean(hass, no_discovery, detect_no_encrypti
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        user_input={CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 50},
+        user_input={CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP: 50},
     )
 
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
@@ -832,8 +832,8 @@ async def test_maintenance_only_selfclean(hass, no_discovery, detect_no_encrypti
     assert CONF_KEY_WATER_HARDNESS not in data
     assert CONF_KEY_MAINTENANCE_LAST_LIMESCALE not in data
     assert CONF_KEY_MAINTENANCE_LAST_FILTER not in data
-    # total_cycles=40 from mock; selfclean remaining=50 → last_reset = 40 - (100 - 50) = -10
-    assert data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] == -10
+    # total_cycles=40 from mock; full_checkup remaining=50 → last_reset = 40 - (100 - 50) = -10
+    assert data[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] == -10
 
 
 async def test_maintenance_limescale_only(hass, no_discovery, detect_no_encryption):  # pylint: disable=unused-argument
@@ -873,7 +873,7 @@ async def test_maintenance_limescale_only(hass, no_discovery, detect_no_encrypti
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
-            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 17,
+            CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP: 17,
             CONF_KEY_MAINTENANCE_LAST_LIMESCALE: 57,
         },
     )
@@ -885,7 +885,7 @@ async def test_maintenance_limescale_only(hass, no_discovery, detect_no_encrypti
     assert CONF_KEY_MAINTENANCE_LAST_FILTER not in data
     # selfclean:  40 - (100 - 17) = -43
     # limescale:  40 - (100 - 57) = -3   (hardness=2 → threshold=100)
-    assert data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] == -43
+    assert data[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] == -43
     assert data[CONF_KEY_MAINTENANCE_LAST_LIMESCALE] == -3
 
 
@@ -1069,7 +1069,7 @@ async def test_options_flow_maintenance_limescale_disabled(hass):
             CONF_KEY_IS_WASHING_MACHINE: True,
             CONF_KEY_MAINTENANCE_ENABLED: True,
             CONF_KEY_WATER_HARDNESS: 2,
-            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 0,
+            CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP: 0,
             CONF_KEY_MAINTENANCE_LAST_FILTER: 0,
         },
     )

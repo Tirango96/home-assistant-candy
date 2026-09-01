@@ -13,17 +13,17 @@ from custom_components.candy.const import (
     CONF_KEY_MAINTENANCE_ENABLED,
     CONF_KEY_MAINTENANCE_LAST_FILTER,
     CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
-    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
+    CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP,
     CONF_KEY_MODE,
     CONF_KEY_WATER_HARDNESS,
     DATA_KEY_STATS_COORDINATOR,
-    MAINTENANCE_SELFCLEAN_THRESHOLD,
+    MAINTENANCE_FULL_CHECKUP_THRESHOLD,
     MODE_FULL_CONTROL,
 )
 
 from .common import TEST_IP
 
-_SELFCLEAN_BTN = "button.washing_machine_reset_auto_clean_counter"
+_FULL_CHECKUP_BTN = "button.washing_machine_reset_full_check_up_counter"
 _LIMESCALE_BTN = "button.washing_machine_reset_limescale_counter"
 _FILTER_BTN = "button.washing_machine_reset_filter_counter"
 
@@ -35,7 +35,7 @@ _MAINTENANCE_CONFIG = {
     CONF_KEY_IS_WASHING_MACHINE: True,
     CONF_KEY_MAINTENANCE_ENABLED: True,
     CONF_KEY_WATER_HARDNESS: 2,
-    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 0,
+    CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP: 0,
     CONF_KEY_MAINTENANCE_LAST_LIMESCALE: 0,
     CONF_KEY_MAINTENANCE_LAST_FILTER: 0,
     CONF_KEY_MODE: MODE_FULL_CONTROL,
@@ -85,7 +85,7 @@ async def test_reset_buttons_present_when_maintenance_enabled(
 ):
     await _init(hass, aioclient_mock, _MAINTENANCE_CONFIG)
 
-    assert hass.states.get(_SELFCLEAN_BTN) is not None
+    assert hass.states.get(_FULL_CHECKUP_BTN) is not None
     assert hass.states.get(_LIMESCALE_BTN) is not None
     assert hass.states.get(_FILTER_BTN) is not None
 
@@ -98,7 +98,7 @@ async def test_reset_buttons_absent_when_maintenance_disabled(
 
     await _init(hass, aioclient_mock, config)
 
-    assert hass.states.get(_SELFCLEAN_BTN) is None
+    assert hass.states.get(_FULL_CHECKUP_BTN) is None
     assert hass.states.get(_LIMESCALE_BTN) is None
     assert hass.states.get(_FILTER_BTN) is None
 
@@ -108,7 +108,7 @@ async def test_reset_buttons_absent_without_statistics(
 ):
     await _init(hass, aioclient_mock, _MAINTENANCE_CONFIG, with_statistics=False)
 
-    assert hass.states.get(_SELFCLEAN_BTN) is None
+    assert hass.states.get(_FULL_CHECKUP_BTN) is None
     assert hass.states.get(_LIMESCALE_BTN) is None
     assert hass.states.get(_FILTER_BTN) is None
 
@@ -118,7 +118,7 @@ async def test_reset_buttons_absent_without_statistics(
 # ---------------------------------------------------------------------------
 
 
-async def test_reset_selfclean_stores_total_cycles(
+async def test_reset_full_checkup_stores_total_cycles(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
     """Pressing resets last_reset to total_cycles (40)."""
@@ -127,11 +127,11 @@ async def test_reset_selfclean_stores_total_cycles(
     await hass.services.async_call(
         "button",
         "press",
-        {"entity_id": _SELFCLEAN_BTN},
+        {"entity_id": _FULL_CHECKUP_BTN},
         blocking=True,
     )
 
-    assert entry.data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] == 40
+    assert entry.data[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] == 40
 
 
 async def test_reset_limescale_stores_total_cycles(
@@ -164,25 +164,25 @@ async def test_reset_filter_stores_total_cycles(
     assert entry.data[CONF_KEY_MAINTENANCE_LAST_FILTER] == 40
 
 
-async def test_reset_selfclean_sensor_shows_full_threshold_after_reset(
+async def test_reset_full_checkup_sensor_shows_full_threshold_after_reset(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
     """After reset, sensor immediately reflects full threshold without waiting for poll."""
     await _init(hass, aioclient_mock, _MAINTENANCE_CONFIG)
 
     # Before: total=40, last=0 → 60 remaining
-    assert hass.states.get("sensor.auto_clean_reminder").state == "60"
+    assert hass.states.get("sensor.full_check_up_reminder").state == "60"
 
     await hass.services.async_call(
         "button",
         "press",
-        {"entity_id": _SELFCLEAN_BTN},
+        {"entity_id": _FULL_CHECKUP_BTN},
         blocking=True,
     )
     await hass.async_block_till_done()
 
-    assert hass.states.get("sensor.auto_clean_reminder").state == str(
-        MAINTENANCE_SELFCLEAN_THRESHOLD
+    assert hass.states.get("sensor.full_check_up_reminder").state == str(
+        MAINTENANCE_FULL_CHECKUP_THRESHOLD
     )
 
 
@@ -192,22 +192,22 @@ async def test_reset_counter_that_is_overdue(
     """Counter at 0 (overdue) returns to full threshold after reset."""
     # total=40, last=-60 → elapsed=100 → due (sensor=0)
     config = dict(_MAINTENANCE_CONFIG)
-    config[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] = -60
+    config[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] = -60
 
     await _init(hass, aioclient_mock, config)
 
-    assert hass.states.get("sensor.auto_clean_reminder").state == "0"
+    assert hass.states.get("sensor.full_check_up_reminder").state == "0"
 
     await hass.services.async_call(
         "button",
         "press",
-        {"entity_id": _SELFCLEAN_BTN},
+        {"entity_id": _FULL_CHECKUP_BTN},
         blocking=True,
     )
     await hass.async_block_till_done()
 
-    assert hass.states.get("sensor.auto_clean_reminder").state == str(
-        MAINTENANCE_SELFCLEAN_THRESHOLD
+    assert hass.states.get("sensor.full_check_up_reminder").state == str(
+        MAINTENANCE_FULL_CHECKUP_THRESHOLD
     )
 
 
@@ -217,25 +217,25 @@ async def test_reset_idempotent_when_already_at_max(
     """Pressing again when counter is already at max is a no-op."""
     # total=40, last=40 → sensor already shows full threshold
     config = dict(_MAINTENANCE_CONFIG)
-    config[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] = 40
+    config[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] = 40
 
     entry = await _init(hass, aioclient_mock, config)
 
-    assert hass.states.get("sensor.auto_clean_reminder").state == str(
-        MAINTENANCE_SELFCLEAN_THRESHOLD
+    assert hass.states.get("sensor.full_check_up_reminder").state == str(
+        MAINTENANCE_FULL_CHECKUP_THRESHOLD
     )
 
     await hass.services.async_call(
         "button",
         "press",
-        {"entity_id": _SELFCLEAN_BTN},
+        {"entity_id": _FULL_CHECKUP_BTN},
         blocking=True,
     )
     await hass.async_block_till_done()
 
-    assert entry.data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] == 40
-    assert hass.states.get("sensor.auto_clean_reminder").state == str(
-        MAINTENANCE_SELFCLEAN_THRESHOLD
+    assert entry.data[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] == 40
+    assert hass.states.get("sensor.full_check_up_reminder").state == str(
+        MAINTENANCE_FULL_CHECKUP_THRESHOLD
     )
 
 
@@ -252,12 +252,12 @@ async def test_reset_when_stats_coordinator_data_unavailable(
     await hass.services.async_call(
         "button",
         "press",
-        {"entity_id": _SELFCLEAN_BTN},
+        {"entity_id": _FULL_CHECKUP_BTN},
         blocking=True,
     )
     await hass.async_block_till_done()
 
     # last_reset stored as 0 (total unknown)
-    assert entry.data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] == 0
+    assert entry.data[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] == 0
     # sensor returns unknown because coordinator.data is None and no restored value
-    assert hass.states.get("sensor.auto_clean_reminder").state == "unknown"
+    assert hass.states.get("sensor.full_check_up_reminder").state == "unknown"

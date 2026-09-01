@@ -14,7 +14,7 @@ from custom_components.candy.client.model import (
 from custom_components.candy.const import (
     CONF_KEY_MAINTENANCE_ENABLED,
     CONF_KEY_MAINTENANCE_FILTER_ENABLED,
-    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
+    CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP,
     CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED,
     CONF_KEY_WATER_HARDNESS,
     DATA_KEY_COORDINATOR,
@@ -188,7 +188,7 @@ async def test_attach_trigger_maintenance_no_stats_coordinator(hass):
     entry = MockConfigEntry(
         domain=DOMAIN,
         unique_id="at-no-stats",
-        data={CONF_KEY_WATER_HARDNESS: 2, CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 0},
+        data={CONF_KEY_WATER_HARDNESS: 2, CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP: 0},
     )
     entry.add_to_hass(hass)
     coordinator = MagicMock()
@@ -312,11 +312,11 @@ async def test_state_trigger_error_reported(hass):
 
 
 async def _attach_maintenance_cb(hass, initial_total_cycles):
-    """Set up a selfclean maintenance trigger and return (stats_coordinator, callback)."""
+    """Set up a full_checkup maintenance trigger and return (stats_coordinator, callback)."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         unique_id="maint-cb",
-        data={CONF_KEY_WATER_HARDNESS: 2, CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 0},
+        data={CONF_KEY_WATER_HARDNESS: 2, CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP: 0},
     )
     entry.add_to_hass(hass)
 
@@ -347,7 +347,7 @@ async def _attach_maintenance_cb(hass, initial_total_cycles):
         mock_reg.return_value.async_get.return_value = _mock_device(entry.entry_id)
         await async_attach_trigger(
             hass,
-            _trigger_config("maintenance_selfclean_due"),
+            _trigger_config("maintenance_full_checkup_due"),
             MagicMock(),
             {"trigger_data": {}},
         )

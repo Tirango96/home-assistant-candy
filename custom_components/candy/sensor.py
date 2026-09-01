@@ -1,7 +1,7 @@
-import contextlib
-import datetime
 from abc import abstractmethod
 from collections.abc import Mapping
+import contextlib
+import datetime
 from typing import Any, cast
 
 from homeassistant.components.sensor import (
@@ -19,8 +19,7 @@ from homeassistant.const import (
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.typing import StateType
@@ -55,8 +54,8 @@ from .const import (
     CONF_KEY_MAINTENANCE_ENABLED,
     CONF_KEY_MAINTENANCE_FILTER_ENABLED,
     CONF_KEY_MAINTENANCE_LAST_FILTER,
+    CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP,
     CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
-    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
     CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED,
     CONF_KEY_MODE,
     CONF_KEY_PROGRAM_LANGUAGE,
@@ -73,8 +72,8 @@ from .const import (
     DEVICE_NAME_WASHING_MACHINE,
     DOMAIN,
     MAINTENANCE_FILTER_THRESHOLD,
+    MAINTENANCE_FULL_CHECKUP_THRESHOLD,
     MAINTENANCE_HARDNESS_THRESHOLDS,
-    MAINTENANCE_SELFCLEAN_THRESHOLD,
     MODE_FULL_CONTROL,
     SOIL_LABELS,
     SOIL_LABELS_REVERSE,
@@ -102,8 +101,8 @@ from .const import (
     UNIQUE_ID_WASH_LAST_CHECKUP,
     UNIQUE_ID_WASH_LIQUID_DETERGENT,
     UNIQUE_ID_WASH_MAINT_FILTER,
+    UNIQUE_ID_WASH_MAINT_FULL_CHECKUP,
     UNIQUE_ID_WASH_MAINT_LIMESCALE,
-    UNIQUE_ID_WASH_MAINT_SELFCLEAN,
     UNIQUE_ID_WASH_MOTOR_FREQ,
     UNIQUE_ID_WASH_NTC_DRUM,
     UNIQUE_ID_WASH_NTC_WATER,
@@ -197,7 +196,7 @@ async def async_setup_entry(
             entities.append(CandyWashTotalCyclesSensor(stats_coordinator, config_entry))
             if config_entry.data.get(CONF_KEY_MAINTENANCE_ENABLED):
                 entities.append(
-                    CandyWashMaintSelfcleanSensor(stats_coordinator, config_entry)
+                    CandyWashMaintFullCheckupSensor(stats_coordinator, config_entry)
                 )
                 if config_entry.data.get(CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED, True):
                     entities.append(
@@ -849,11 +848,11 @@ class CandyWashTotalCyclesSensor(CandyBaseSensor, RestoreSensor):
         return "mdi:counter"
 
 
-class CandyWashMaintSelfcleanSensor(CandyBaseSensor, RestoreSensor):
-    """Cycles remaining until the next drum self-clean is due."""
+class CandyWashMaintFullCheckupSensor(CandyBaseSensor, RestoreSensor):
+    """Cycles remaining until the next Full Check-up is due."""
 
-    _attr_translation_key = "wash_maint_selfclean"
-    _attr_name = "Auto-Clean Reminder"
+    _attr_translation_key = "wash_maint_full_checkup"
+    _attr_name = "Full Check-up Reminder"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _restored_value: int | None = None
 
@@ -879,14 +878,14 @@ class CandyWashMaintSelfcleanSensor(CandyBaseSensor, RestoreSensor):
 
     @property
     def unique_id(self) -> str:
-        return UNIQUE_ID_WASH_MAINT_SELFCLEAN.format(self.config_id)
+        return UNIQUE_ID_WASH_MAINT_FULL_CHECKUP.format(self.config_id)
 
     @property
     def native_value(self) -> StateType:
         if self.coordinator.data is not None:
             total = cast(WashingMachineStatistics, self.coordinator.data).total_cycles
-            last = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_SELFCLEAN, 0)
-            return cycles_remaining(total, last, MAINTENANCE_SELFCLEAN_THRESHOLD)
+            last = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP, 0)
+            return cycles_remaining(total, last, MAINTENANCE_FULL_CHECKUP_THRESHOLD)
         return self._restored_value
 
     @property

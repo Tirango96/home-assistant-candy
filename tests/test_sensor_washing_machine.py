@@ -23,7 +23,7 @@ from custom_components.candy.const import (
     CONF_KEY_MAINTENANCE_ENABLED,
     CONF_KEY_MAINTENANCE_LAST_FILTER,
     CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
-    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
+    CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP,
     CONF_KEY_PROGRAMS,
     CONF_KEY_WATER_HARDNESS,
     DATA_KEY_COORDINATOR,
@@ -420,7 +420,7 @@ _MAINTENANCE_CONFIG = {
     CONF_KEY_IS_WASHING_MACHINE: True,
     CONF_KEY_MAINTENANCE_ENABLED: True,
     CONF_KEY_WATER_HARDNESS: 2,
-    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN: 0,
+    CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP: 0,
     CONF_KEY_MAINTENANCE_LAST_LIMESCALE: 0,
     CONF_KEY_MAINTENANCE_LAST_FILTER: 0,
 }
@@ -440,7 +440,7 @@ async def test_maintenance_sensors_absent_when_disabled(
         },
     )
 
-    assert hass.states.get("sensor.auto_clean_reminder") is None
+    assert hass.states.get("sensor.full_check_up_reminder") is None
     assert hass.states.get("sensor.limescale_cleaning") is None
     assert hass.states.get("sensor.filter_clean") is None
 
@@ -455,15 +455,15 @@ async def test_maintenance_sensors_absent_without_statistics(
         extra_config_data=_MAINTENANCE_CONFIG,
     )
 
-    assert hass.states.get("sensor.auto_clean_reminder") is None
+    assert hass.states.get("sensor.full_check_up_reminder") is None
     assert hass.states.get("sensor.limescale_cleaning") is None
     assert hass.states.get("sensor.filter_clean") is None
 
 
-async def test_selfclean_sensor(
+async def test_full_checkup_sensor(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    """total_cycles=40, last_selfclean=0, threshold=100 → 60 cycles remaining."""
+    """total_cycles=40, last_full_checkup=0, threshold=100 → 60 cycles remaining."""
     await init_integration(
         hass,
         aioclient_mock,
@@ -472,7 +472,7 @@ async def test_selfclean_sensor(
         extra_config_data=_MAINTENANCE_CONFIG,
     )
 
-    state = hass.states.get("sensor.auto_clean_reminder")
+    state = hass.states.get("sensor.full_check_up_reminder")
     assert state
     assert state.state == "60"
     assert state.attributes["icon"] == "mdi:washing-machine"
@@ -536,9 +536,9 @@ async def test_maintenance_sensor_shows_zero_when_due(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
     """When elapsed == threshold (multiple), sensor shows 0 (due now)."""
-    # total_cycles=40, threshold=100; last_selfclean=-60 → elapsed=100 → due
+    # total_cycles=40, threshold=100; last_full_checkup=-60 → elapsed=100 → due
     config = dict(_MAINTENANCE_CONFIG)
-    config[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] = -60
+    config[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] = -60
 
     await init_integration(
         hass,
@@ -548,7 +548,7 @@ async def test_maintenance_sensor_shows_zero_when_due(
         extra_config_data=config,
     )
 
-    state = hass.states.get("sensor.auto_clean_reminder")
+    state = hass.states.get("sensor.full_check_up_reminder")
     assert state
     assert state.state == "0"
 
@@ -559,7 +559,7 @@ async def test_maintenance_sensor_full_threshold_when_just_reset(
     """When last_reset == total_cycles (just reset), sensor shows the full threshold."""
     # total_cycles=40, last_selfclean=40 → elapsed=0 → full threshold=100
     config = dict(_MAINTENANCE_CONFIG)
-    config[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] = 40
+    config[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] = 40
 
     await init_integration(
         hass,
@@ -569,7 +569,7 @@ async def test_maintenance_sensor_full_threshold_when_just_reset(
         extra_config_data=config,
     )
 
-    state = hass.states.get("sensor.auto_clean_reminder")
+    state = hass.states.get("sensor.full_check_up_reminder")
     assert state
     assert state.state == "100"
 

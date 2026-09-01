@@ -1,31 +1,25 @@
 import asyncio
 import json
-import logging
 from json import JSONDecodeError
+import logging
 from pathlib import Path
 from typing import Union
 
 import aiohttp
-import async_timeout
-import backoff
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
+import async_timeout
+import backoff
 
 from .decryption import Encryption, decrypt, find_key
 from .model import (
     DishwasherStatus,
+    DownloadableProgram as DownloadableProgram,
     OvenStatus,
     TumbleDryerStatus,
     WashingMachineStatistics,
     WashingMachineStatus,
-)
-from .model import (
-    DownloadableProgram as DownloadableProgram,
-)
-from .model import (
     WashingMachineWashProgram as WashingMachineWashProgram,
-)
-from .model import (
     load_downloadable_programs as load_downloadable_programs,
 )
 

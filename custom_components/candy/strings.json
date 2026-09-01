@@ -61,7 +61,7 @@
         "title": "Current counter values",
         "description": "Enter the current counter values from the Simply-Fi app if known. Leave at the default to start a fresh full cycle from now.",
         "data": {
-          "maintenance_last_selfclean": "Auto-Clean Reminder counter",
+          "maintenance_last_full_checkup": "Full Check-up: remaining cycles",
           "maintenance_last_limescale": "Limescale Cleaning counter",
           "maintenance_last_filter": "Filter-Clean counter"
         }
@@ -144,7 +144,7 @@
         "title": "Current counter values",
         "description": "Enter the current counter values from the Simply-Fi app if known. Leave at the default to start a fresh full cycle from now.",
         "data": {
-          "maintenance_last_selfclean": "Auto-Clean Reminder counter",
+          "maintenance_last_full_checkup": "Full Check-up: remaining cycles",
           "maintenance_last_limescale": "Limescale Cleaning counter",
           "maintenance_last_filter": "Filter-Clean counter"
         }
@@ -231,8 +231,8 @@
       "wash_total_cycles": {
         "name": "Total cycles"
       },
-      "wash_maint_selfclean": {
-        "name": "Auto-Clean Reminder"
+      "wash_maint_full_checkup": {
+        "name": "Full Check-up Reminder"
       },
       "wash_maint_limescale": {
         "name": "Limescale Cleaning"
@@ -348,8 +348,11 @@
       "wash_stop_button": {
         "name": "Stop wash"
       },
-      "wash_maint_selfclean_reset": {
-        "name": "Reset Auto-Clean Counter"
+      "wash_full_checkup": {
+        "name": "Full check-up"
+      },
+      "wash_maint_full_checkup_reset": {
+        "name": "Reset Full Check-up Counter"
       },
       "wash_maint_limescale_reset": {
         "name": "Reset Limescale Counter"

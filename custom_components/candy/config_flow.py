@@ -6,7 +6,6 @@ import logging
 from typing import Any
 
 import async_timeout
-import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.components.network import async_get_source_ip
 from homeassistant.config_entries import ConfigFlowResult
@@ -18,6 +17,7 @@ from homeassistant.helpers.selector import (
     SelectSelectorConfig,
     SelectSelectorMode,
 )
+import voluptuous as vol
 
 from .client import CandyClient, detect_encryption, discover_devices
 from .client.cloud import SimplyFiCloudError, fetch_appliance_data
@@ -38,8 +38,8 @@ from .const import (
     CONF_KEY_MAINTENANCE_ENABLED,
     CONF_KEY_MAINTENANCE_FILTER_ENABLED,
     CONF_KEY_MAINTENANCE_LAST_FILTER,
+    CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP,
     CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
-    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
     CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED,
     CONF_KEY_MODE,
     CONF_KEY_PROGRAM_LANGUAGE,
@@ -51,9 +51,9 @@ from .const import (
     DATA_KEY_STATS_COORDINATOR,
     DOMAIN,
     MAINTENANCE_FILTER_THRESHOLD,
+    MAINTENANCE_FULL_CHECKUP_THRESHOLD,
     MAINTENANCE_HARDNESS_LABELS,
     MAINTENANCE_HARDNESS_THRESHOLDS,
-    MAINTENANCE_SELFCLEAN_THRESHOLD,
     MODE_FULL_CONTROL,
     MODE_READ_ONLY,
     PROGRAM_LANGUAGES,
@@ -155,8 +155,10 @@ def _baselines_schema(
     limescale_threshold = MAINTENANCE_HARDNESS_THRESHOLDS[hardness_index]
     fields: dict[vol.Required, type] = {
         vol.Required(
-            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
-            default=cycles_remaining(total_cycles, 0, MAINTENANCE_SELFCLEAN_THRESHOLD),
+            CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP,
+            default=cycles_remaining(
+                total_cycles, 0, MAINTENANCE_FULL_CHECKUP_THRESHOLD
+            ),
         ): int,
     }
     if limescale_enabled:
@@ -367,13 +369,17 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             total_cycles = stats_data.data.total_cycles
 
         if user_input is None:
-            last_sc = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_SELFCLEAN, 0)
+            last_sc = self.config_entry.data.get(
+                CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP, 0
+            )
             last_ls = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_LIMESCALE, 0)
             last_ft = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_FILTER, 0)
             sc_default = (
-                cycles_remaining(total_cycles, last_sc, MAINTENANCE_SELFCLEAN_THRESHOLD)
+                cycles_remaining(
+                    total_cycles, last_sc, MAINTENANCE_FULL_CHECKUP_THRESHOLD
+                )
                 if total_cycles
-                else MAINTENANCE_SELFCLEAN_THRESHOLD
+                else MAINTENANCE_FULL_CHECKUP_THRESHOLD
             )
             ls_default = (
                 cycles_remaining(total_cycles, last_ls, limescale_threshold)
@@ -387,7 +393,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             )
             fields: dict[vol.Required, type] = {
                 vol.Required(
-                    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN, default=sc_default
+                    CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP, default=sc_default
                 ): int,
             }
             if limescale_enabled:
@@ -404,11 +410,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 step_id="maintenance_baselines",
                 data_schema=vol.Schema(fields),
             )
-        self._pending_data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] = (
+        self._pending_data[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] = (
             _remaining_to_last_reset(
-                user_input[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN],
+                user_input[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP],
                 total_cycles,
-                MAINTENANCE_SELFCLEAN_THRESHOLD,
+                MAINTENANCE_FULL_CHECKUP_THRESHOLD,
             )
         )
         if limescale_enabled:
@@ -919,11 +925,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
                 ),
             )
         limescale_threshold = MAINTENANCE_HARDNESS_THRESHOLDS[hardness_index]
-        self._config_data[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN] = (
+        self._config_data[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] = (
             _remaining_to_last_reset(
-                user_input[CONF_KEY_MAINTENANCE_LAST_SELFCLEAN],
+                user_input[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP],
                 self._total_cycles,
-                MAINTENANCE_SELFCLEAN_THRESHOLD,
+                MAINTENANCE_FULL_CHECKUP_THRESHOLD,
             )
         )
         if limescale_enabled:

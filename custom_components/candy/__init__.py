@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import copy
+from datetime import timedelta
 import json
 import logging
-from collections.abc import Callable
-from datetime import timedelta
-from typing import Any, Union, cast
+from typing import Any, cast
 
 import aiohttp
 import async_timeout
@@ -43,8 +43,8 @@ from .const import (
     CONF_KEY_MAINTENANCE_ENABLED,
     CONF_KEY_MAINTENANCE_FILTER_ENABLED,
     CONF_KEY_MAINTENANCE_LAST_FILTER,
+    CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP,
     CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
-    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
     CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED,
     CONF_KEY_USE_ENCRYPTION,
     CONF_KEY_WATER_HARDNESS,
@@ -56,11 +56,11 @@ from .const import (
     DATA_KEY_STATS_REFRESH_UNSUB,
     DOMAIN,
     MAINTENANCE_FILTER_THRESHOLD,
+    MAINTENANCE_FULL_CHECKUP_THRESHOLD,
     MAINTENANCE_HARDNESS_THRESHOLDS,
-    MAINTENANCE_SELFCLEAN_THRESHOLD,
     NOTIF_ID_MAINT_FILTER,
+    NOTIF_ID_MAINT_FULL_CHECKUP,
     NOTIF_ID_MAINT_LIMESCALE,
-    NOTIF_ID_MAINT_SELFCLEAN,
     PLATFORMS,
     UNIQUE_ID_DISHWASHER,
     UNIQUE_ID_OVEN,
@@ -410,11 +410,11 @@ def _register_maintenance_notifications(
 
     _MAINTENANCE_ITEMS = [
         (
-            CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
-            MAINTENANCE_SELFCLEAN_THRESHOLD,
-            NOTIF_ID_MAINT_SELFCLEAN.format(entry_id),
-            "Self-cleaning",
-            'We suggest you start the Self-cleaning cycle to keep the performance of your appliance AT optimal levels.\n\nSpecial cycle designed to clean the drum and avoid bad odors. Start it without laundry, using only powder detergent (pour it into compartment "2") or a specific cleaning product (follow the instructions on its package). Recommended every 50 washing cycles.',
+            CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP,
+            MAINTENANCE_FULL_CHECKUP_THRESHOLD,
+            NOTIF_ID_MAINT_FULL_CHECKUP.format(entry_id),
+            "Full Check-up",
+            "To always guarantee the best performance, we suggest you start the FULL CHECK-UP cycle.\n\nShort diagnostic cycle (about 3-5 min), to control the correct functioning of the main components of your machine. Start it with empty drum.",
         ),
     ]
     if config_entry.data.get(CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED, True):

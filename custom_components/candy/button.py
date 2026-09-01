@@ -6,6 +6,9 @@ from typing import cast
 from urllib.parse import quote, urlencode
 
 from homeassistant.components.button import ButtonEntity
+from homeassistant.components.persistent_notification import (
+    async_create as pn_async_create,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
@@ -38,8 +41,8 @@ from .const import (
     CONF_KEY_MAINTENANCE_ENABLED,
     CONF_KEY_MAINTENANCE_FILTER_ENABLED,
     CONF_KEY_MAINTENANCE_LAST_FILTER,
+    CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP,
     CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
-    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
     CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED,
     CONF_KEY_MODE,
     CONF_KEY_PROGRAM_LANGUAGE,
@@ -50,11 +53,13 @@ from .const import (
     DATA_KEY_WRITE_PENDING,
     DOMAIN,
     MODE_FULL_CONTROL,
+    NOTIF_ID_FULL_CHECKUP,
     SOIL_LABELS_REVERSE,
     UNIQUE_ID_WASH_DELAY_NUMBER,
+    UNIQUE_ID_WASH_FULL_CHECKUP_BUTTON,
     UNIQUE_ID_WASH_MAINT_FILTER_BUTTON,
+    UNIQUE_ID_WASH_MAINT_FULL_CHECKUP_BUTTON,
     UNIQUE_ID_WASH_MAINT_LIMESCALE_BUTTON,
-    UNIQUE_ID_WASH_MAINT_SELFCLEAN_BUTTON,
     UNIQUE_ID_WASH_NFC_SWITCH,
     UNIQUE_ID_WASH_PAUSE_BUTTON,
     UNIQUE_ID_WASH_PROGRAM_SELECT,
@@ -113,6 +118,7 @@ async def async_setup_entry(
     buttons: list = [
         WashStartButton(coordinator, config_entry, client, programs, nfc_entries),
         WashStopButton(coordinator, config_entry, client),
+        WashFullCheckUpButton(coordinator, config_entry, client),
     ]
     if supports_pause:
         buttons.append(WashPauseButton(coordinator, config_entry, client))
@@ -126,10 +132,10 @@ async def async_setup_entry(
                     coordinator,
                     config_entry,
                     stats_coordinator,
-                    CONF_KEY_MAINTENANCE_LAST_SELFCLEAN,
-                    UNIQUE_ID_WASH_MAINT_SELFCLEAN_BUTTON,
-                    "Reset Auto-Clean Counter",
-                    "wash_maint_selfclean_reset",
+                    CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP,
+                    UNIQUE_ID_WASH_MAINT_FULL_CHECKUP_BUTTON,
+                    "Reset Full Check-up Counter",
+                    "wash_maint_full_checkup_reset",
                     "mdi:washing-machine-alert",
                 ),
             ]
@@ -503,3 +509,34 @@ class WashStopButton(CandyWashButtonBase):
             "DelVl": 0,
         }
         await self._send_command_and_refresh(urlencode(params, quote_via=quote))
+
+
+class WashFullCheckUpButton(CandyWashButtonBase):
+    _attr_translation_key = "wash_full_checkup"
+    _attr_icon = "mdi:stethoscope"
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_FULL_CHECKUP_BUTTON.format(self.config_id)
+
+    @property
+    def available(self) -> bool:
+        if not super().available:
+            return False
+        status = cast(WashingMachineStatus, self.coordinator.data)
+        return status.machine_state == MachineState.IDLE
+
+    async def async_press(self) -> None:
+        await self._send_command_and_refresh(
+            urlencode({"CheckUpState": 1}, quote_via=quote)
+        )
+        pn_async_create(
+            self.hass,
+            (
+                "Make sure the drum is empty before proceeding with the Full Check-up.\n\n"
+                "This cycle will take about three minutes. "
+                "A beep sound from the washing machine will warn you at the end of the process."
+            ),
+            title="Full Check-up",
+            notification_id=NOTIF_ID_FULL_CHECKUP.format(self.config_id),
+        )
