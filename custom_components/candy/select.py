@@ -183,7 +183,7 @@ class WashProgramSelect(CandyWashSelectBase):
         standard = [
             self._program_name(p)
             for p in self._programs
-            if "autoclean" not in self._program_name(p).lower()
+            if "autoclean" not in p.name.lower()
         ]
         if not self._nfc_enabled():
             return standard

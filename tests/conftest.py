@@ -21,8 +21,8 @@ from collections.abc import Generator
 from typing import Any
 from unittest.mock import patch
 
-import pytest
 from aiolimiter import AsyncLimiter
+import pytest
 
 pytest_plugins = "pytest_homeassistant_custom_component"
 

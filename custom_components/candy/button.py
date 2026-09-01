@@ -129,9 +129,8 @@ async def async_setup_entry(
         stats_coordinator = hass.data[DOMAIN][config_id].get(DATA_KEY_STATS_COORDINATOR)
         if stats_coordinator is not None:
             buttons = [WashFullCheckUpButton(coordinator, config_entry, client)]
-            lang = config_entry.data.get(CONF_KEY_PROGRAM_LANGUAGE, "en")
             autoclean = next(
-                (p for p in programs if "autoclean" in p.localized_name(lang).lower()),
+                (p for p in programs if "autoclean" in p.name.lower()),
                 None,
             )
             if autoclean is not None:

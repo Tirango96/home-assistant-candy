@@ -21,12 +21,11 @@ from custom_components.candy.client.model import DownloadableProgram, MachineSta
 from custom_components.candy.const import (
     CONF_KEY_DOWNLOADABLE_PROGRAMS,
     CONF_KEY_INTERFACE_TYPE,
-    CONF_KEY_MODE,
     CONF_KEY_MAINTENANCE_ENABLED,
+    CONF_KEY_MODE,
     CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
     DATA_KEY_COORDINATOR,
-    DATA_KEY_STATS_COORDINATOR,
     MODE_FULL_CONTROL,
     MODE_READ_ONLY,
     UNIQUE_ID_WASH_DELAY_NUMBER,
@@ -141,7 +140,7 @@ _PROGRAMS = [_COTTON, _RAPID]
 _AUTOCLEAN = {
     "program": {
         "position": 23,
-        "name": "DUAL_WM_WD_PROGRAM_NAME_AUTOCLEAN",
+        "name": "AUTOCLEAN",
         "command_parameters": [
             {"command_parameter": {"name": "selector_position", "validation": "23"}},
             {"command_parameter": {"name": "pr_code", "validation": "104"}},
@@ -1852,7 +1851,10 @@ async def test_limestone_button_absent_when_maintenance_disabled(
 ):
     """Limestone Cleaning button requires maintenance_enabled."""
     entry = await _init_full_control_with_maintenance(
-        hass, aioclient_mock, _IDLE_JSON, _PROGRAMS_WITH_AUTOCLEAN,
+        hass,
+        aioclient_mock,
+        _IDLE_JSON,
+        _PROGRAMS_WITH_AUTOCLEAN,
         maintenance_enabled=False,
     )
     state = _state(hass, entry, "button", UNIQUE_ID_WASH_LIMESTONE_BUTTON)
@@ -1875,7 +1877,10 @@ async def test_full_checkup_button_absent_when_maintenance_disabled(
 ):
     """Full Check-up button requires maintenance_enabled."""
     entry = await _init_full_control_with_maintenance(
-        hass, aioclient_mock, _IDLE_JSON, _PROGRAMS_WITH_AUTOCLEAN,
+        hass,
+        aioclient_mock,
+        _IDLE_JSON,
+        _PROGRAMS_WITH_AUTOCLEAN,
         maintenance_enabled=False,
     )
     state = _state(hass, entry, "button", UNIQUE_ID_WASH_FULL_CHECKUP_BUTTON)
