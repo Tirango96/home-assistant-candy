@@ -22,12 +22,17 @@ from custom_components.candy.const import (
     CONF_KEY_DOWNLOADABLE_PROGRAMS,
     CONF_KEY_INTERFACE_TYPE,
     CONF_KEY_MODE,
+    CONF_KEY_MAINTENANCE_ENABLED,
+    CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_PROGRAMS,
     DATA_KEY_COORDINATOR,
+    DATA_KEY_STATS_COORDINATOR,
     MODE_FULL_CONTROL,
     MODE_READ_ONLY,
     UNIQUE_ID_WASH_DELAY_NUMBER,
     UNIQUE_ID_WASH_ESTIMATED_DURATION,
+    UNIQUE_ID_WASH_FULL_CHECKUP_BUTTON,
+    UNIQUE_ID_WASH_LIMESTONE_BUTTON,
     UNIQUE_ID_WASH_NFC_SWITCH,
     UNIQUE_ID_WASH_OPTION_GOODNIGHT,
     UNIQUE_ID_WASH_OPTION_HYGIENE,
@@ -131,6 +136,46 @@ _RAPID = {
 }
 
 _PROGRAMS = [_COTTON, _RAPID]
+
+# AUTOCLEAN: selector_position=23, pr_code=104, fixed temp/spin (255)
+_AUTOCLEAN = {
+    "program": {
+        "position": 23,
+        "name": "DUAL_WM_WD_PROGRAM_NAME_AUTOCLEAN",
+        "command_parameters": [
+            {"command_parameter": {"name": "selector_position", "validation": "23"}},
+            {"command_parameter": {"name": "pr_code", "validation": "104"}},
+            {"command_parameter": {"name": "maximum_temperature", "validation": "255"}},
+            {"command_parameter": {"name": "default_temperature", "validation": "60"}},
+            {"command_parameter": {"name": "maximum_spin_speed", "validation": "255"}},
+            {"command_parameter": {"name": "default_spin_speed", "validation": "0"}},
+            {"command_parameter": {"name": "minimum_soil_level", "validation": "0"}},
+            {"command_parameter": {"name": "maximum_soil_level", "validation": "0"}},
+            {"command_parameter": {"name": "default_soil_level", "validation": "0"}},
+            {"command_parameter": {"name": "steam", "validation": "0"}},
+            {"command_parameter": {"name": "default_duration", "validation": "60"}},
+            {
+                "command_parameter": {
+                    "name": "remaining_time_soil_max",
+                    "validation": "0",
+                }
+            },
+            {
+                "command_parameter": {
+                    "name": "remaining_time_soil_medium",
+                    "validation": "0",
+                }
+            },
+            {
+                "command_parameter": {
+                    "name": "remaining_time_soil_min",
+                    "validation": "0",
+                }
+            },
+        ],
+    }
+}
+_PROGRAMS_WITH_AUTOCLEAN = [_COTTON, _RAPID, _AUTOCLEAN]
 
 _IDLE_JSON = """{
   "statusLavatrice": {
@@ -1669,3 +1714,169 @@ async def test_controls_unavailable_when_remote_control_off(
         state = _state(hass, entry, platform, uid_tpl)
         assert state is not None, f"{uid_tpl} not registered"
         assert state.state == "unavailable", f"{uid_tpl} should be unavailable"
+
+
+# ---------------------------------------------------------------------------
+# AUTOCLEAN filtering and Limestone Cleaning button
+# ---------------------------------------------------------------------------
+
+
+async def _init_full_control_with_maintenance(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    status_json: str,
+    programs: list,
+    maintenance_enabled: bool = True,
+) -> MockConfigEntry:
+    """Full Control init with maintenance counters enabled."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="test-maintenance-buttons",
+        data={
+            CONF_IP_ADDRESS: TEST_IP,
+            CONF_KEY_USE_ENCRYPTION: False,
+            CONF_PASSWORD: "",
+            CONF_KEY_MODE: MODE_FULL_CONTROL,
+            CONF_KEY_PROGRAMS: programs,
+            CONF_KEY_MAINTENANCE_ENABLED: maintenance_enabled,
+            CONF_KEY_PROGRAM_LANGUAGE: "en",
+        },
+    )
+    aioclient_mock.get(f"http://{TEST_IP}/http-read.json?encrypted=0", text=status_json)
+    aioclient_mock.get(
+        f"http://{TEST_IP}/http-prepareStatistics.json?encrypted=0",
+        text='{"response":"SUCCESS"}',
+    )
+    aioclient_mock.get(
+        f"http://{TEST_IP}/http-getStatistics.json?encrypted=0",
+        text=_STATS_OK,
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    return entry
+
+
+async def test_autoclean_not_in_program_options(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """AUTOCLEAN program must be excluded from WashProgramSelect.options."""
+    entry = await _init_full_control_with_maintenance(
+        hass, aioclient_mock, _IDLE_JSON, _PROGRAMS_WITH_AUTOCLEAN
+    )
+    state = _state(hass, entry, "select", UNIQUE_ID_WASH_PROGRAM_SELECT)
+    assert state is not None
+    options = state.attributes["options"]
+    assert not any("autoclean" in opt.lower() for opt in options)
+    assert "Whites" in options
+    assert "Rapid 30 Min." in options
+
+
+async def test_limestone_button_registered_when_autoclean_present(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Limestone Cleaning button is registered when AUTOCLEAN program exists."""
+    entry = await _init_full_control_with_maintenance(
+        hass, aioclient_mock, _IDLE_JSON, _PROGRAMS_WITH_AUTOCLEAN
+    )
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_LIMESTONE_BUTTON)
+    assert state is not None
+
+
+async def test_limestone_button_absent_when_no_autoclean(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Limestone Cleaning button is NOT registered when AUTOCLEAN program absent."""
+    entry = await _init_full_control_with_maintenance(
+        hass, aioclient_mock, _IDLE_JSON, _PROGRAMS
+    )
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_LIMESTONE_BUTTON)
+    assert state is None
+
+
+async def test_limestone_button_available_when_idle(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Limestone Cleaning button is available when machine is idle."""
+    entry = await _init_full_control_with_maintenance(
+        hass, aioclient_mock, _IDLE_JSON, _PROGRAMS_WITH_AUTOCLEAN
+    )
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_LIMESTONE_BUTTON)
+    assert state is not None
+    assert state.state != "unavailable"
+
+
+async def test_limestone_button_unavailable_when_running(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Limestone Cleaning button is unavailable when machine is running."""
+    entry = await _init_full_control_with_maintenance(
+        hass, aioclient_mock, _RUNNING_JSON, _PROGRAMS_WITH_AUTOCLEAN
+    )
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_LIMESTONE_BUTTON)
+    assert state is not None
+    assert state.state == "unavailable"
+
+
+async def test_limestone_button_sends_command(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Pressing Limestone Cleaning sends write command with AUTOCLEAN params."""
+    entry = await _init_full_control_with_maintenance(
+        hass, aioclient_mock, _IDLE_JSON, _PROGRAMS_WITH_AUTOCLEAN
+    )
+    registry = er.async_get(hass)
+    entity_id = registry.async_get_entity_id(
+        "button", DOMAIN, UNIQUE_ID_WASH_LIMESTONE_BUTTON.format(entry.entry_id)
+    )
+    assert entity_id is not None
+
+    with patch(
+        "custom_components.candy.client.CandyClient.send_command",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        await hass.services.async_call(
+            "button", "press", {"entity_id": entity_id}, blocking=True
+        )
+
+    mock_send.assert_called_once()
+    qs: str = mock_send.call_args[0][0]
+    assert "Write=1" in qs
+    assert "StSt=1" in qs
+    assert "PrNm=23" in qs
+    assert "PrCode=104" in qs
+
+
+async def test_limestone_button_absent_when_maintenance_disabled(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Limestone Cleaning button requires maintenance_enabled."""
+    entry = await _init_full_control_with_maintenance(
+        hass, aioclient_mock, _IDLE_JSON, _PROGRAMS_WITH_AUTOCLEAN,
+        maintenance_enabled=False,
+    )
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_LIMESTONE_BUTTON)
+    assert state is None
+
+
+async def test_full_checkup_button_in_diagnostics_when_maintenance_enabled(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Full Check-up button is registered under maintenance when enabled."""
+    entry = await _init_full_control_with_maintenance(
+        hass, aioclient_mock, _IDLE_JSON, _PROGRAMS_WITH_AUTOCLEAN
+    )
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_FULL_CHECKUP_BUTTON)
+    assert state is not None
+
+
+async def test_full_checkup_button_absent_when_maintenance_disabled(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Full Check-up button requires maintenance_enabled."""
+    entry = await _init_full_control_with_maintenance(
+        hass, aioclient_mock, _IDLE_JSON, _PROGRAMS_WITH_AUTOCLEAN,
+        maintenance_enabled=False,
+    )
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_FULL_CHECKUP_BUTTON)
+    assert state is None

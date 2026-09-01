@@ -366,6 +366,9 @@
       "wash_full_checkup": {
         "name": "Full check-up"
       },
+      "wash_limestone_clean": {
+        "name": "Limestone Cleaning"
+      },
       "wash_maint_full_checkup_reset": {
         "name": "Reset Full Check-up Counter"
       },

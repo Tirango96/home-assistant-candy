@@ -54,9 +54,11 @@ from .const import (
     DOMAIN,
     MODE_FULL_CONTROL,
     NOTIF_ID_FULL_CHECKUP,
+    NOTIF_ID_LIMESTONE,
     SOIL_LABELS_REVERSE,
     UNIQUE_ID_WASH_DELAY_NUMBER,
     UNIQUE_ID_WASH_FULL_CHECKUP_BUTTON,
+    UNIQUE_ID_WASH_LIMESTONE_BUTTON,
     UNIQUE_ID_WASH_MAINT_FILTER_BUTTON,
     UNIQUE_ID_WASH_MAINT_FULL_CHECKUP_BUTTON,
     UNIQUE_ID_WASH_MAINT_LIMESCALE_BUTTON,
@@ -118,7 +120,6 @@ async def async_setup_entry(
     buttons: list = [
         WashStartButton(coordinator, config_entry, client, programs, nfc_entries),
         WashStopButton(coordinator, config_entry, client),
-        WashFullCheckUpButton(coordinator, config_entry, client),
     ]
     if supports_pause:
         buttons.append(WashPauseButton(coordinator, config_entry, client))
@@ -127,7 +128,19 @@ async def async_setup_entry(
     if config_entry.data.get(CONF_KEY_MAINTENANCE_ENABLED):
         stats_coordinator = hass.data[DOMAIN][config_id].get(DATA_KEY_STATS_COORDINATOR)
         if stats_coordinator is not None:
-            buttons = [
+            buttons = [WashFullCheckUpButton(coordinator, config_entry, client)]
+            lang = config_entry.data.get(CONF_KEY_PROGRAM_LANGUAGE, "en")
+            autoclean = next(
+                (p for p in programs if "autoclean" in p.localized_name(lang).lower()),
+                None,
+            )
+            if autoclean is not None:
+                buttons.append(
+                    WashLimestoneCleanButton(
+                        coordinator, config_entry, client, autoclean
+                    )
+                )
+            buttons.append(
                 WashMaintResetButton(
                     coordinator,
                     config_entry,
@@ -138,7 +151,7 @@ async def async_setup_entry(
                     "wash_maint_full_checkup_reset",
                     "mdi:washing-machine-alert",
                 ),
-            ]
+            )
             if config_entry.data.get(CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED, True):
                 buttons.append(
                     WashMaintResetButton(
@@ -512,6 +525,9 @@ class WashStopButton(CandyWashButtonBase):
 
 
 class WashFullCheckUpButton(CandyWashButtonBase):
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_has_entity_name = True
+    _attr_name = "Full Check-up"
     _attr_translation_key = "wash_full_checkup"
     _attr_icon = "mdi:stethoscope"
 
@@ -539,4 +555,69 @@ class WashFullCheckUpButton(CandyWashButtonBase):
             ),
             title="Full Check-up",
             notification_id=NOTIF_ID_FULL_CHECKUP.format(self.config_id),
+        )
+
+
+class WashLimestoneCleanButton(CandyWashButtonBase):
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_has_entity_name = True
+    _attr_name = "Limestone Cleaning"
+    _attr_translation_key = "wash_limestone_clean"
+    _attr_icon = "mdi:water-remove"
+
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        client: CandyClient,
+        program: WashingMachineWashProgram,
+    ) -> None:
+        super().__init__(coordinator, config_entry, client)
+        self._program = program
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_LIMESTONE_BUTTON.format(self.config_id)
+
+    @property
+    def available(self) -> bool:
+        if not super().available:
+            return False
+        status = cast(WashingMachineStatus, self.coordinator.data)
+        return status.machine_state == MachineState.IDLE
+
+    async def async_press(self) -> None:
+        lang = self.config_entry.data.get(
+            CONF_KEY_PROGRAM_LANGUAGE, self.hass.config.language
+        )
+        params = {
+            "Write": 1,
+            "StSt": 1,
+            "PrNm": self._program.selector_position,
+            "PrCode": self._program.pr_code,
+            "PrStr": self._program.localized_name(lang),
+            "TmpTgt": 255,
+            "SpdTgt": 0,
+            "OptMsk1": 0,
+            "OptMsk2": 0,
+            "Lang": 0,
+            "Stm": 0,
+            "Dry": 0,
+            "ED": 0,
+            "RecipeId": 0,
+            "StartCheckUp": 0,
+            "DispTestOn": 1,
+        }
+        await self._send_command_and_refresh(urlencode(params, quote_via=quote))
+        pn_async_create(
+            self.hass,
+            (
+                "To keep your washing machine always clean and to remove any deposits, "
+                "we suggest you start the Limescale Removal cycle.\n\n"
+                "Designed to clean and sanitize the drum, using only powder detergent or "
+                "a washing machine limescale remover. Do not start the programme with "
+                "laundry in the drum."
+            ),
+            title="Limestone Cleaning",
+            notification_id=NOTIF_ID_LIMESTONE.format(self.config_id),
         )

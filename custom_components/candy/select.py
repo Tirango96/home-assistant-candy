@@ -180,7 +180,11 @@ class WashProgramSelect(CandyWashSelectBase):
         lang = self.config_entry.data.get(
             CONF_KEY_PROGRAM_LANGUAGE, self.hass.config.language
         )
-        standard = [self._program_name(p) for p in self._programs]
+        standard = [
+            self._program_name(p)
+            for p in self._programs
+            if "autoclean" not in self._program_name(p).lower()
+        ]
         if not self._nfc_enabled():
             return standard
         nfc = sorted(nfc.category_prefixed(lang) for nfc, _ in self._nfc_entries)

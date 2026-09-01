@@ -126,6 +126,9 @@ NOTIF_ID_MAINT_FILTER = "candy_{0}_maint_filter"
 UNIQUE_ID_WASH_FULL_CHECKUP_BUTTON = "{0}-wash_full_checkup_button"
 NOTIF_ID_FULL_CHECKUP = "candy_{0}_full_checkup"
 
+UNIQUE_ID_WASH_LIMESTONE_BUTTON = "{0}-wash_limestone_button"
+NOTIF_ID_LIMESTONE = "candy_{0}_limestone"
+
 UNIQUE_ID_WASH_PROGRAM_SELECT = "{0}-wash_program_select"
 UNIQUE_ID_WASH_PROGRAM_DESCRIPTION = "{0}-wash_program_description"
 UNIQUE_ID_WASH_TEMP_SELECT = "{0}-wash_temp_select"
