@@ -1,6 +1,19 @@
 import pytest
+from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
+from homeassistant.helpers import device_registry as dr
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.candy.helpers import cycles_remaining
+from custom_components.candy import CONF_KEY_USE_ENCRYPTION
+from custom_components.candy.const import (
+    CONF_KEY_DEVICE_MODEL,
+    CONF_KEY_MAC_ADDRESS,
+    CONF_KEY_MODE,
+    CONF_KEY_PURCHASE_DATE,
+    CONF_KEY_SERIAL_NUMBER,
+    DOMAIN,
+    MODE_FULL_CONTROL,
+)
+from custom_components.candy.helpers import cycles_remaining, wash_device_info
 
 
 @pytest.mark.parametrize(
@@ -32,3 +45,37 @@ from custom_components.candy.helpers import cycles_remaining
 )
 def test_cycles_remaining(total, last_reset, threshold, expected):
     assert cycles_remaining(total, last_reset, threshold) == expected
+
+
+def test_wash_device_info_with_mac_address():
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_IP_ADDRESS: "192.168.0.1",
+            CONF_KEY_USE_ENCRYPTION: False,
+            CONF_PASSWORD: "",
+            CONF_KEY_MAC_ADDRESS: "AA:BB:CC:DD:EE:FF",
+        },
+    )
+    info = wash_device_info(entry)
+    assert "connections" in info
+    assert (dr.CONNECTION_NETWORK_MAC, "AA:BB:CC:DD:EE:FF") in info["connections"]
+
+
+def test_wash_device_info_full_control():
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_IP_ADDRESS: "192.168.0.1",
+            CONF_KEY_USE_ENCRYPTION: False,
+            CONF_PASSWORD: "",
+            CONF_KEY_MODE: MODE_FULL_CONTROL,
+            CONF_KEY_DEVICE_MODEL: "RO41274DWMSE",
+            CONF_KEY_SERIAL_NUMBER: "SN123456",
+            CONF_KEY_PURCHASE_DATE: "2024-01-15",
+        },
+    )
+    info = wash_device_info(entry)
+    assert info["model"] == "RO41274DWMSE"
+    assert info["serial_number"] == "SN123456"
+    assert info["hw_version"] == "2024-01-15"

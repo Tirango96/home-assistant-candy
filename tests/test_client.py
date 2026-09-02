@@ -3,6 +3,7 @@ import pytest
 from pytest_homeassistant_custom_component.common import load_fixture
 
 from custom_components.candy.client import CandyClient, Encryption, detect_encryption
+from custom_components.candy.client.decryption import decrypt
 from custom_components.candy.client.model import (
     DishwasherStatus,
     MachineState,
@@ -165,3 +166,126 @@ async def test_status_encryption_without_key(hass, aioclient_mock):
     status = await client.status()
 
     assert isinstance(status, WashingMachineStatus)
+
+
+async def test_status_unknown_device_type(hass, aioclient_mock):
+    """status() raises when JSON has no known root key."""
+    aioclient_mock.get(
+        f"http://{TEST_IP}/http-read.json",
+        json={"unknownKey": {"WiFiStatus": "1"}},
+    )
+    client = CandyClient(
+        async_get_clientsession(hass),
+        device_ip=TEST_IP,
+        encryption_key=TEST_ENCRYPTION_KEY_EMPTY,
+        use_encryption=False,
+    )
+    with pytest.raises(Exception, match="Unable to detect machine type"):
+        await client.status()
+
+
+async def test_send_command_encrypted(hass, aioclient_mock):
+    """send_command uses the encrypted URL path when key is set."""
+    aioclient_mock.get(f"http://{TEST_IP}/http-write.json", status=200, text="")
+    client = CandyClient(
+        async_get_clientsession(hass),
+        device_ip=TEST_IP,
+        encryption_key=TEST_ENCRYPTION_KEY,
+        use_encryption=True,
+    )
+    await client.send_command("Write=1&StSt=0")
+
+
+async def test_send_command_error_response(hass, aioclient_mock):
+    """send_command raises ValueError when device returns non-200."""
+    aioclient_mock.get(
+        f"http://{TEST_IP}/http-write.json", status=400, text="BAD REQUEST"
+    )
+    client = CandyClient(
+        async_get_clientsession(hass),
+        device_ip=TEST_IP,
+        encryption_key=TEST_ENCRYPTION_KEY_EMPTY,
+        use_encryption=False,
+    )
+    with pytest.raises(ValueError, match="Write command failed"):
+        await client.send_command("Write=1")
+
+
+async def test_fetch_statistics_encrypted_empty_key(hass, aioclient_mock):
+    """fetch_statistics handles encrypted=1 response with empty key (hex-only)."""
+    stats_hex = b'{"statusCounters": {"Program1": "42"}}'.hex()
+    aioclient_mock.get(
+        f"http://{TEST_IP}/http-prepareStatistics.json", text='{"response":"OK"}'
+    )
+    aioclient_mock.get(f"http://{TEST_IP}/http-getStatistics.json", text=stats_hex)
+    client = CandyClient(
+        async_get_clientsession(hass),
+        device_ip=TEST_IP,
+        encryption_key=TEST_ENCRYPTION_KEY_EMPTY,
+        use_encryption=True,
+    )
+    stats = await client.fetch_statistics()
+    assert stats.total_cycles == 42
+
+
+async def test_fetch_statistics_encrypted_with_key(hass, aioclient_mock):
+    """fetch_statistics decrypts the response when a key is set."""
+    stats_json = b'{"statusCounters": {"Program1": "42"}}'
+    key = TEST_ENCRYPTION_KEY.encode()
+    encrypted_hex = decrypt(key, stats_json).hex()
+    aioclient_mock.get(
+        f"http://{TEST_IP}/http-prepareStatistics.json", text='{"response":"OK"}'
+    )
+    aioclient_mock.get(f"http://{TEST_IP}/http-getStatistics.json", text=encrypted_hex)
+    client = CandyClient(
+        async_get_clientsession(hass),
+        device_ip=TEST_IP,
+        encryption_key=TEST_ENCRYPTION_KEY,
+        use_encryption=True,
+    )
+    stats = await client.fetch_statistics()
+    assert stats.total_cycles == 42
+
+
+async def test_fetch_statistics_missing_status_counters(hass, aioclient_mock):
+    """fetch_statistics raises when statusCounters key is absent in response."""
+    aioclient_mock.get(
+        f"http://{TEST_IP}/http-prepareStatistics.json", text='{"response":"OK"}'
+    )
+    aioclient_mock.get(
+        f"http://{TEST_IP}/http-getStatistics.json",
+        json={"someOtherKey": {}},
+    )
+    client = CandyClient(
+        async_get_clientsession(hass),
+        device_ip=TEST_IP,
+        encryption_key=TEST_ENCRYPTION_KEY_EMPTY,
+        use_encryption=False,
+    )
+    with pytest.raises(Exception, match="Unable to parse statistics"):
+        await client.fetch_statistics()
+
+
+async def test_detect_encryption_brute_force_fails(hass, aioclient_mock):
+    """detect_encryption raises when brute-force key search finds nothing."""
+    aioclient_mock.get(
+        f"http://{TEST_IP}/http-read.json?encrypted=0", json={"response": "BAD REQUEST"}
+    )
+    # 32 bytes of 'a' (0x61): valid UTF-8, triggers JSONDecodeError, not decodable by find_key
+    aioclient_mock.get(f"http://{TEST_IP}/http-read.json?encrypted=1", text="61" * 32)
+    with pytest.raises(ValueError, match="Couldn't brute force key"):
+        await detect_encryption(async_get_clientsession(hass), TEST_IP)
+
+
+@pytest.mark.parametrize("expected_lingering_tasks", [True])
+async def test_discover_devices_finds_washing_machine(hass, aioclient_mock):
+    """discover_devices returns matched IPs with device-type labels."""
+    from custom_components.candy.client import discover_devices
+
+    aioclient_mock.get(
+        "http://192.168.0.1/http-read.json",
+        json={"statusLavatrice": {"WiFiStatus": "1"}},
+    )
+    result = await discover_devices(async_get_clientsession(hass), "192.168.0.0")
+    assert "192.168.0.1" in result
+    assert result["192.168.0.1"] == "Washing Machine"

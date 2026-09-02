@@ -1581,6 +1581,7 @@ async def test_wash_option_resets_on_program_change(
         blocking=True,
     )
     await hass.async_block_till_done()
+    await hass.async_block_till_done()
 
     # Switch is unavailable on Rapid, which means _on_program_changed fired and reset it.
     assert hass.states.get(prewash_eid).state == "unavailable"

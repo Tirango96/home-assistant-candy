@@ -516,3 +516,52 @@ async def test_last_checkup_sensor_unknown_when_never_run(
     state = _sensor_state(hass, entry, UNIQUE_ID_WASH_LAST_CHECKUP)
     assert state is not None
     assert state.state in ("unknown", "unavailable")
+
+
+# ---------------------------------------------------------------------------
+# _register_checkup_listener — guard branches not covered by other tests
+# ---------------------------------------------------------------------------
+
+
+async def test_checkup_listener_returns_early_when_dis_test_res_none(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Listener returns immediately when status.dis_test_res is None."""
+    # Setup with machine having DisTestRes=0 so prev_result is seeded
+    entry = await _setup(
+        hass,
+        aioclient_mock,
+        _IDLE_WITH_DIS_TEST_RES_0,
+        **{CONF_KEY_CHECKUP_ENABLED: True},
+    )
+    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR]
+
+    # Push a status with dis_test_res=None — listener should return at the guard
+    no_dis_status = copy.copy(coordinator.data)
+    no_dis_status.dis_test_res = None
+    coordinator.async_set_updated_data(no_dis_status)
+    await hass.async_block_till_done()
+
+    assert entry.data.get(CONF_KEY_CHECKUP_LAST_DATE) is None
+
+
+async def test_checkup_listener_returns_early_when_prev_code_none(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Listener returns early on first update after initial state had no DisTestRes."""
+    # _IDLE_JSON has no DisTestRes → initial_code=None → prev_result=[None]
+    entry = await _setup(
+        hass,
+        aioclient_mock,
+        _IDLE_JSON,
+        **{CONF_KEY_CHECKUP_ENABLED: True},
+    )
+    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR]
+
+    # Push status WITH DisTestRes=0 — prev_code is None → returns early without writing
+    first_update = copy.copy(coordinator.data)
+    first_update.dis_test_res = CheckUpResult.NOT_RUN
+    coordinator.async_set_updated_data(first_update)
+    await hass.async_block_till_done()
+
+    assert entry.data.get(CONF_KEY_CHECKUP_LAST_DATE) is None
