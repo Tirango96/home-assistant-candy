@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry, load_fixture
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
@@ -23,9 +24,9 @@ from custom_components.candy.const import (
 
 from .common import TEST_IP
 
-_FULL_CHECKUP_BTN = "button.washing_machine_reset_full_check_up_counter"
-_LIMESCALE_BTN = "button.washing_machine_reset_limescale_counter"
-_FILTER_BTN = "button.washing_machine_reset_filter_counter"
+_FULL_CHECKUP_BTN = "button.washing_machine_wash_maint_full_checkup_reset"
+_LIMESCALE_BTN = "button.washing_machine_wash_maint_limescale_reset"
+_FILTER_BTN = "button.washing_machine_wash_maint_filter_reset"
 
 # ---------------------------------------------------------------------------
 # Shared config and helpers
@@ -171,7 +172,9 @@ async def test_reset_full_checkup_sensor_shows_full_threshold_after_reset(
     await _init(hass, aioclient_mock, _MAINTENANCE_CONFIG)
 
     # Before: total=40, last=0 → 60 remaining
-    assert hass.states.get("sensor.full_check_up_reminder").state == "60"
+    assert (
+        hass.states.get("sensor.washing_machine_wash_maint_full_checkup").state == "60"
+    )
 
     await hass.services.async_call(
         "button",
@@ -181,9 +184,9 @@ async def test_reset_full_checkup_sensor_shows_full_threshold_after_reset(
     )
     await hass.async_block_till_done()
 
-    assert hass.states.get("sensor.full_check_up_reminder").state == str(
-        MAINTENANCE_FULL_CHECKUP_THRESHOLD
-    )
+    assert hass.states.get(
+        "sensor.washing_machine_wash_maint_full_checkup"
+    ).state == str(MAINTENANCE_FULL_CHECKUP_THRESHOLD)
 
 
 async def test_reset_counter_that_is_overdue(
@@ -196,7 +199,9 @@ async def test_reset_counter_that_is_overdue(
 
     await _init(hass, aioclient_mock, config)
 
-    assert hass.states.get("sensor.full_check_up_reminder").state == "0"
+    assert (
+        hass.states.get("sensor.washing_machine_wash_maint_full_checkup").state == "0"
+    )
 
     await hass.services.async_call(
         "button",
@@ -206,9 +211,9 @@ async def test_reset_counter_that_is_overdue(
     )
     await hass.async_block_till_done()
 
-    assert hass.states.get("sensor.full_check_up_reminder").state == str(
-        MAINTENANCE_FULL_CHECKUP_THRESHOLD
-    )
+    assert hass.states.get(
+        "sensor.washing_machine_wash_maint_full_checkup"
+    ).state == str(MAINTENANCE_FULL_CHECKUP_THRESHOLD)
 
 
 async def test_reset_idempotent_when_already_at_max(
@@ -221,9 +226,9 @@ async def test_reset_idempotent_when_already_at_max(
 
     entry = await _init(hass, aioclient_mock, config)
 
-    assert hass.states.get("sensor.full_check_up_reminder").state == str(
-        MAINTENANCE_FULL_CHECKUP_THRESHOLD
-    )
+    assert hass.states.get(
+        "sensor.washing_machine_wash_maint_full_checkup"
+    ).state == str(MAINTENANCE_FULL_CHECKUP_THRESHOLD)
 
     await hass.services.async_call(
         "button",
@@ -234,9 +239,9 @@ async def test_reset_idempotent_when_already_at_max(
     await hass.async_block_till_done()
 
     assert entry.data[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] == 40
-    assert hass.states.get("sensor.full_check_up_reminder").state == str(
-        MAINTENANCE_FULL_CHECKUP_THRESHOLD
-    )
+    assert hass.states.get(
+        "sensor.washing_machine_wash_maint_full_checkup"
+    ).state == str(MAINTENANCE_FULL_CHECKUP_THRESHOLD)
 
 
 async def test_reset_when_stats_coordinator_data_unavailable(
@@ -260,4 +265,26 @@ async def test_reset_when_stats_coordinator_data_unavailable(
     # last_reset stored as 0 (total unknown)
     assert entry.data[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] == 0
     # sensor returns unknown because coordinator.data is None and no restored value
-    assert hass.states.get("sensor.full_check_up_reminder").state == "unknown"
+    assert (
+        hass.states.get("sensor.washing_machine_wash_maint_full_checkup").state
+        == "unknown"
+    )
+
+
+async def test_debug_entity_ids(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Debug: print all button/sensor entity IDs for this integration."""
+    await _init(hass, aioclient_mock, _MAINTENANCE_CONFIG)
+    registry = er.async_get(hass)
+    entities = sorted(
+        [
+            e
+            for e in registry.entities.values()
+            if e.domain in ("button", "sensor")
+            and e.config_entry_id == hass.data[DOMAIN].get("test-maint-reset")
+        ],
+        key=lambda x: x.entity_id,
+    )
+    for e in entities:
+        print(f"\n  {e.entity_id}  uid={e.unique_id}")

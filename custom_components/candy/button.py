@@ -146,7 +146,7 @@ async def async_setup_entry(
                     stats_coordinator,
                     CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP,
                     UNIQUE_ID_WASH_MAINT_FULL_CHECKUP_BUTTON,
-                    "Reset Full Check-up Counter",
+                    "Wash maint full checkup reset",
                     "wash_maint_full_checkup_reset",
                     "mdi:washing-machine-alert",
                 ),
@@ -159,7 +159,7 @@ async def async_setup_entry(
                         stats_coordinator,
                         CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
                         UNIQUE_ID_WASH_MAINT_LIMESCALE_BUTTON,
-                        "Reset Limescale Counter",
+                        "Wash maint limescale reset",
                         "wash_maint_limescale_reset",
                         "mdi:water-remove",
                     )
@@ -172,7 +172,7 @@ async def async_setup_entry(
                         stats_coordinator,
                         CONF_KEY_MAINTENANCE_LAST_FILTER,
                         UNIQUE_ID_WASH_MAINT_FILTER_BUTTON,
-                        "Reset Filter Counter",
+                        "Wash maint filter reset",
                         "wash_maint_filter_reset",
                         "mdi:filter-remove",
                     )

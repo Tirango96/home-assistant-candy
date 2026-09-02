@@ -440,9 +440,9 @@ async def test_maintenance_sensors_absent_when_disabled(
         },
     )
 
-    assert hass.states.get("sensor.full_check_up_reminder") is None
-    assert hass.states.get("sensor.limescale_cleaning") is None
-    assert hass.states.get("sensor.filter_clean") is None
+    assert hass.states.get("sensor.washing_machine_wash_maint_full_checkup") is None
+    assert hass.states.get("sensor.washing_machine_wash_maint_limescale") is None
+    assert hass.states.get("sensor.washing_machine_wash_maint_filter") is None
 
 
 async def test_maintenance_sensors_absent_without_statistics(
@@ -455,9 +455,9 @@ async def test_maintenance_sensors_absent_without_statistics(
         extra_config_data=_MAINTENANCE_CONFIG,
     )
 
-    assert hass.states.get("sensor.full_check_up_reminder") is None
-    assert hass.states.get("sensor.limescale_cleaning") is None
-    assert hass.states.get("sensor.filter_clean") is None
+    assert hass.states.get("sensor.washing_machine_wash_maint_full_checkup") is None
+    assert hass.states.get("sensor.washing_machine_wash_maint_limescale") is None
+    assert hass.states.get("sensor.washing_machine_wash_maint_filter") is None
 
 
 async def test_full_checkup_sensor(
@@ -472,7 +472,7 @@ async def test_full_checkup_sensor(
         extra_config_data=_MAINTENANCE_CONFIG,
     )
 
-    state = hass.states.get("sensor.full_check_up_reminder")
+    state = hass.states.get("sensor.washing_machine_wash_maint_full_checkup")
     assert state
     assert state.state == "60"
     assert state.attributes["icon"] == "mdi:washing-machine"
@@ -490,7 +490,7 @@ async def test_limescale_sensor_medium_hardness(
         extra_config_data=_MAINTENANCE_CONFIG,
     )
 
-    state = hass.states.get("sensor.limescale_cleaning")
+    state = hass.states.get("sensor.washing_machine_wash_maint_limescale")
     assert state
     assert state.state == "60"
     assert state.attributes["icon"] == "mdi:water-alert"
@@ -511,7 +511,7 @@ async def test_limescale_sensor_very_hard_water(
         extra_config_data=config,
     )
 
-    state = hass.states.get("sensor.limescale_cleaning")
+    state = hass.states.get("sensor.washing_machine_wash_maint_limescale")
     assert state
     assert state.state == "45"
 
@@ -526,7 +526,7 @@ async def test_filter_sensor(hass: HomeAssistant, aioclient_mock: AiohttpClientM
         extra_config_data=_MAINTENANCE_CONFIG,
     )
 
-    state = hass.states.get("sensor.filter_clean")
+    state = hass.states.get("sensor.washing_machine_wash_maint_filter")
     assert state
     assert state.state == "60"
     assert state.attributes["icon"] == "mdi:filter-check"
@@ -548,7 +548,7 @@ async def test_maintenance_sensor_shows_zero_when_due(
         extra_config_data=config,
     )
 
-    state = hass.states.get("sensor.full_check_up_reminder")
+    state = hass.states.get("sensor.washing_machine_wash_maint_full_checkup")
     assert state
     assert state.state == "0"
 
@@ -569,7 +569,7 @@ async def test_maintenance_sensor_full_threshold_when_just_reset(
         extra_config_data=config,
     )
 
-    state = hass.states.get("sensor.full_check_up_reminder")
+    state = hass.states.get("sensor.washing_machine_wash_maint_full_checkup")
     assert state
     assert state.state == "100"
 

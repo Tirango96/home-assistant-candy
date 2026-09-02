@@ -851,8 +851,9 @@ class CandyWashTotalCyclesSensor(CandyBaseSensor, RestoreSensor):
 class CandyWashMaintFullCheckupSensor(CandyBaseSensor, RestoreSensor):
     """Cycles remaining until the next Full Check-up is due."""
 
+    _attr_has_entity_name = True
     _attr_translation_key = "wash_maint_full_checkup"
-    _attr_name = "Full Check-up Reminder"
+    _attr_name = "Wash maint full checkup"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _restored_value: int | None = None
 
@@ -896,8 +897,9 @@ class CandyWashMaintFullCheckupSensor(CandyBaseSensor, RestoreSensor):
 class CandyWashMaintLimescaleSensor(CandyBaseSensor, RestoreSensor):
     """Cycles remaining until the next descale is due."""
 
+    _attr_has_entity_name = True
     _attr_translation_key = "wash_maint_limescale"
-    _attr_name = "Limescale Cleaning"
+    _attr_name = "Wash maint limescale"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _restored_value: int | None = None
 
@@ -943,8 +945,9 @@ class CandyWashMaintLimescaleSensor(CandyBaseSensor, RestoreSensor):
 class CandyWashMaintFilterSensor(CandyBaseSensor, RestoreSensor):
     """Cycles remaining until the next filter clean is due."""
 
+    _attr_has_entity_name = True
     _attr_translation_key = "wash_maint_filter"
-    _attr_name = "Filter-Clean"
+    _attr_name = "Wash maint filter"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _restored_value: int | None = None
 
