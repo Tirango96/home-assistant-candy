@@ -39,14 +39,14 @@ At setup, you choose between **Read-Only** (sensors only) and **Full Control**. 
 2. Choose mode: **Read-Only** or **Full Control**.
 3. *(Full Control)* Enter your Simply-Fi email and password — programs and device info are downloaded, credentials are discarded.
 4. Select the display language for program names and description, pick your favourite language indipendently the Home Assistant language.
-5. Optionally enable maintenance cycle counters (self-clean, limescale, filter) and set water hardness.
+5. Optionally enable maintenance cycle counters (check-up, limescale, filter) and set water hardness.
 6. Optionally enable automatic self-diagnostic scheduling (every cycle / weekly / monthly).
 
 ### What you get
 
 **Control entities:** program selector (all localized program names), temperature, spin speed, soil level, delay start, option switches (Prewash, Hygiene, Steam, Anti-crease, Good Night, Extra Rinse, AquaPlus), and Start / Pause / Stop buttons.
 
-**Maintenance & diagnostics:** mirrors the Candy app's built-in reminders — self-clean, limescale, and filter counters with configurable water hardness thresholds; self-diagnostic result sensor and last check-up timestamp.
+**Maintenance & diagnostics:** mirrors the Candy app's built-in reminders — check-up, limescale, and filter counters with configurable water hardness thresholds; self-diagnostic result sensor and last check-up timestamp.
 
 ### Improvements over the official app
 
@@ -60,7 +60,7 @@ At setup, you choose between **Read-Only** (sensors only) and **Full Control**. 
 Ready-made Lovelace cards are included in the [`dashboard/`](dashboard/) folder. They require the [Mushroom](https://github.com/piitaya/lovelace-mushroom) custom card collection.
 
 - [`washing-machine.yaml`](dashboard/washing-machine.yaml) — main control card: status, running info, program selector, options, start/pause/stop buttons, and scheduled start/finish times.
-- [`maintenance.yaml`](dashboard/maintenance.yaml) — maintenance card: self-clean, limescale, and filter counters with reset buttons and check-up result.
+- [`maintenance.yaml`](dashboard/maintenance.yaml) — maintenance card: check-up, limescale, and filter counters with reset buttons and check-up result.
 
 To use them, copy the card YAML into a new manual card in your Lovelace dashboard and replace every occurrence of `<machine_name>` with your own machine's entity ID prefix (e.g. `my_washing_machine`).
 
