@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry, load_fixture
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
@@ -269,22 +268,3 @@ async def test_reset_when_stats_coordinator_data_unavailable(
         hass.states.get("sensor.washing_machine_wash_maint_full_checkup").state
         == "unknown"
     )
-
-
-async def test_debug_entity_ids(
-    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
-):
-    """Debug: print all button/sensor entity IDs for this integration."""
-    await _init(hass, aioclient_mock, _MAINTENANCE_CONFIG)
-    registry = er.async_get(hass)
-    entities = sorted(
-        [
-            e
-            for e in registry.entities.values()
-            if e.domain in ("button", "sensor")
-            and e.config_entry_id == hass.data[DOMAIN].get("test-maint-reset")
-        ],
-        key=lambda x: x.entity_id,
-    )
-    for e in entities:
-        print(f"\n  {e.entity_id}  uid={e.unique_id}")

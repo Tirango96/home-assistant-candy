@@ -1405,6 +1405,7 @@ async def _init_full_control_with_options(
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
+    await hass.async_block_till_done()
     return entry
 
 
@@ -1844,6 +1845,8 @@ async def test_limestone_button_sends_command(
     assert "StSt=1" in qs
     assert "PrNm=23" in qs
     assert "PrCode=104" in qs
+    assert "TmpTgt=255" in qs
+    assert "SpdTgt=0" in qs
 
 
 async def test_limestone_button_absent_when_maintenance_disabled(
@@ -1885,3 +1888,41 @@ async def test_full_checkup_button_absent_when_maintenance_disabled(
     )
     state = _state(hass, entry, "button", UNIQUE_ID_WASH_FULL_CHECKUP_BUTTON)
     assert state is None
+
+
+async def test_full_checkup_button_unavailable_when_running(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Full Check-up button is unavailable when machine is running."""
+    entry = await _init_full_control_with_maintenance(
+        hass, aioclient_mock, _RUNNING_JSON, _PROGRAMS_WITH_AUTOCLEAN
+    )
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_FULL_CHECKUP_BUTTON)
+    assert state is not None
+    assert state.state == "unavailable"
+
+
+async def test_full_checkup_button_sends_command(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Pressing Full Check-up sends CheckUpState=1."""
+    entry = await _init_full_control_with_maintenance(
+        hass, aioclient_mock, _IDLE_JSON, _PROGRAMS_WITH_AUTOCLEAN
+    )
+    registry = er.async_get(hass)
+    entity_id = registry.async_get_entity_id(
+        "button", DOMAIN, UNIQUE_ID_WASH_FULL_CHECKUP_BUTTON.format(entry.entry_id)
+    )
+    assert entity_id is not None
+
+    with patch(
+        "custom_components.candy.client.CandyClient.send_command",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        await hass.services.async_call(
+            "button", "press", {"entity_id": entity_id}, blocking=True
+        )
+
+    mock_send.assert_called_once()
+    qs: str = mock_send.call_args[0][0]
+    assert "CheckUpState=1" in qs
