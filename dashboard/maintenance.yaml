@@ -38,7 +38,7 @@ cards:
       states('sensor.<machine_name>_limescale_maintenance_remaining_cycles') | int(-1) %} {%
       set fl = states('sensor.<machine_name>_filter_maintenance_remaining_cycles') | int(-1) %}
       {% if sc == 0 or ls == 0 or fl == 0 %} red {% else %} green {% endif %}
-    entity: sensor.total_wash_cycles
+    entity: sensor.<machine_name>_total_wash_cycles
     tap_action:
       action: more-info
   - type: custom:mushroom-chips-card
@@ -46,12 +46,12 @@ cards:
       - type: template
         icon: mdi:counter
         content: >-
-          {% set v = states('sensor.total_wash_cycles') |
+          {% set v = states('sensor.<machine_name>_total_wash_cycles') |
           int(-1) %} {% if v >= 0 %}{{ v }} total cycles{% else %}—{% endif %}
         icon_color: grey
         tap_action:
           action: more-info
-          entity: sensor.total_wash_cycles
+          entity: sensor.<machine_name>_total_wash_cycles
   - type: custom:mushroom-template-card
     primary: Full Check-up
     secondary: >-
