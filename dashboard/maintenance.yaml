@@ -178,24 +178,24 @@ cards:
       - type: conditional
         conditions:
           - condition: state
-            entity: sensor.last_check_up_result
+            entity: sensor.<machine_name>_last_check_up_result
             state_not: unavailable
         card:
           type: custom:mushroom-template-card
-          entity: sensor.last_check_up_result
+          entity: sensor.<machine_name>_last_check_up_result
           primary: Check-up result
           secondary: >-
             {% set r = states('sensor.last_check_up_result') | lower %}
             {% if 'not run' in r or r == 'not_run' %} Never run
             {% elif 'ok' in r %} OK
             {% elif 'problem' in r %} Problem detected
-            {% else %} {{ states('sensor.last_check_up_result') }}
+            {% else %} {{ states('sensor.<machine_name>_last_check_up_result') }}
             {% endif %}
           icon: mdi:clipboard-check-outline
           tap_action:
             action: more-info
           color: >-
-            {% set r = states('sensor.last_check_up_result') | lower %}
+            {% set r = states('sensor.<machine_name>_last_check_up_result') | lower %}
             {% if 'ok' in r %} green
             {% elif 'problem' in r %} red
             {% else %} grey {% endif %}
@@ -207,11 +207,11 @@ cards:
             state_not: unavailable
         card:
           type: custom:mushroom-template-card
-          entity: sensor.last_check_up
+          entity: sensor.<machine_name>_last_check_up
           primary: Last check-up
           secondary: >-
             {% set ts =
-            states('sensor.last_check_up') |
+            states('sensor.<machine_name>_last_check_up') |
             as_timestamp(default=none) %} {% if ts %}{{ ts |
             timestamp_custom('%d/%m/%Y %H:%M') }}{% else %}—{% endif %}
           icon: mdi:clock-check-outline
