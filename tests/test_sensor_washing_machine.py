@@ -231,12 +231,12 @@ async def test_total_cycles_sensor(
         statistics_response=load_fixture("washing_machine/statistics.json"),
     )
 
-    state = hass.states.get("sensor.wash_total_cycles")
+    state = hass.states.get("sensor.total_wash_cycles")
 
     assert state
     assert state.state == "40"
     assert state.attributes == {
-        "friendly_name": "Wash total cycles",
+        "friendly_name": "Total wash cycles",
         "icon": "mdi:counter",
         "state_class": "total_increasing",
     }
@@ -249,7 +249,7 @@ async def test_total_cycles_sensor_absent_without_statistics(
         hass, aioclient_mock, load_fixture("washing_machine/idle.json")
     )
 
-    state = hass.states.get("sensor.wash_total_cycles")
+    state = hass.states.get("sensor.total_wash_cycles")
 
     assert state is None
 
@@ -407,7 +407,7 @@ async def test_statistics_not_fetched_when_machine_is_off(
         await stats_coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("sensor.wash_total_cycles")
+    state = hass.states.get("sensor.total_wash_cycles")
     assert state is not None
     assert state.state.isdigit()
 
@@ -440,9 +440,18 @@ async def test_maintenance_sensors_absent_when_disabled(
         },
     )
 
-    assert hass.states.get("sensor.washing_machine_wash_maint_full_checkup") is None
-    assert hass.states.get("sensor.washing_machine_wash_maint_limescale") is None
-    assert hass.states.get("sensor.washing_machine_wash_maint_filter") is None
+    assert (
+        hass.states.get("sensor.washing_machine_check_up_maintenance_remaining_cycles")
+        is None
+    )
+    assert (
+        hass.states.get("sensor.washing_machine_limescale_maintenance_remaining_cycles")
+        is None
+    )
+    assert (
+        hass.states.get("sensor.washing_machine_filter_maintenance_remaining_cycles")
+        is None
+    )
 
 
 async def test_maintenance_sensors_absent_without_statistics(
@@ -455,9 +464,18 @@ async def test_maintenance_sensors_absent_without_statistics(
         extra_config_data=_MAINTENANCE_CONFIG,
     )
 
-    assert hass.states.get("sensor.washing_machine_wash_maint_full_checkup") is None
-    assert hass.states.get("sensor.washing_machine_wash_maint_limescale") is None
-    assert hass.states.get("sensor.washing_machine_wash_maint_filter") is None
+    assert (
+        hass.states.get("sensor.washing_machine_check_up_maintenance_remaining_cycles")
+        is None
+    )
+    assert (
+        hass.states.get("sensor.washing_machine_limescale_maintenance_remaining_cycles")
+        is None
+    )
+    assert (
+        hass.states.get("sensor.washing_machine_filter_maintenance_remaining_cycles")
+        is None
+    )
 
 
 async def test_full_checkup_sensor(
@@ -472,7 +490,9 @@ async def test_full_checkup_sensor(
         extra_config_data=_MAINTENANCE_CONFIG,
     )
 
-    state = hass.states.get("sensor.washing_machine_wash_maint_full_checkup")
+    state = hass.states.get(
+        "sensor.washing_machine_check_up_maintenance_remaining_cycles"
+    )
     assert state
     assert state.state == "60"
     assert state.attributes["icon"] == "mdi:washing-machine"
@@ -490,7 +510,9 @@ async def test_limescale_sensor_medium_hardness(
         extra_config_data=_MAINTENANCE_CONFIG,
     )
 
-    state = hass.states.get("sensor.washing_machine_wash_maint_limescale")
+    state = hass.states.get(
+        "sensor.washing_machine_limescale_maintenance_remaining_cycles"
+    )
     assert state
     assert state.state == "60"
     assert state.attributes["icon"] == "mdi:water-alert"
@@ -511,7 +533,9 @@ async def test_limescale_sensor_very_hard_water(
         extra_config_data=config,
     )
 
-    state = hass.states.get("sensor.washing_machine_wash_maint_limescale")
+    state = hass.states.get(
+        "sensor.washing_machine_limescale_maintenance_remaining_cycles"
+    )
     assert state
     assert state.state == "45"
 
@@ -526,7 +550,9 @@ async def test_filter_sensor(hass: HomeAssistant, aioclient_mock: AiohttpClientM
         extra_config_data=_MAINTENANCE_CONFIG,
     )
 
-    state = hass.states.get("sensor.washing_machine_wash_maint_filter")
+    state = hass.states.get(
+        "sensor.washing_machine_filter_maintenance_remaining_cycles"
+    )
     assert state
     assert state.state == "60"
     assert state.attributes["icon"] == "mdi:filter-check"
@@ -548,7 +574,9 @@ async def test_maintenance_sensor_shows_zero_when_due(
         extra_config_data=config,
     )
 
-    state = hass.states.get("sensor.washing_machine_wash_maint_full_checkup")
+    state = hass.states.get(
+        "sensor.washing_machine_check_up_maintenance_remaining_cycles"
+    )
     assert state
     assert state.state == "0"
 
@@ -569,7 +597,9 @@ async def test_maintenance_sensor_full_threshold_when_just_reset(
         extra_config_data=config,
     )
 
-    state = hass.states.get("sensor.washing_machine_wash_maint_full_checkup")
+    state = hass.states.get(
+        "sensor.washing_machine_check_up_maintenance_remaining_cycles"
+    )
     assert state
     assert state.state == "100"
 

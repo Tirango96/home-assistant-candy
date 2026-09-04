@@ -45,14 +45,14 @@
       },
       "maintenance": {
         "title": "Maintenance counters",
-        "description": "The integration can track when your washing machine is due for auto-cleaning, limescale cleaning, and filter cleaning — based on total wash cycles, just like the Simply-Fi app.",
+        "description": "The integration can track when your washing machine is due for limescale cleaning and filter cleaning — based on total wash cycles, just like the Simply-Fi app.",
         "data": {
           "maintenance_enabled": "Enable maintenance counters"
         }
       },
       "maintenance_types": {
         "title": "Counter selection",
-        "description": "Self-cleaning is always tracked. Choose which additional counters to enable.",
+        "description": "Check-up cycles are always tracked. Choose which additional counters to enable.",
         "data": {
           "maintenance_limescale_enabled": "Limescale cleaning",
           "maintenance_filter_enabled": "Filter cleaning"
@@ -120,14 +120,14 @@
       },
       "maintenance": {
         "title": "Maintenance counters",
-        "description": "The integration can track when your washing machine is due for auto-cleaning, limescale cleaning, and filter cleaning — based on total wash cycles, just like the Simply-Fi app.",
+        "description": "The integration can track when your washing machine is due for limescale cleaning and filter cleaning — based on total wash cycles, just like the Simply-Fi app.",
         "data": {
           "maintenance_enabled": "Enable maintenance counters"
         }
       },
       "maintenance_types": {
         "title": "Counter selection",
-        "description": "Self-cleaning is always tracked. Choose which additional counters to enable.",
+        "description": "Check-up cycles are always tracked. Choose which additional counters to enable.",
         "data": {
           "maintenance_limescale_enabled": "Limescale cleaning",
           "maintenance_filter_enabled": "Filter cleaning"
@@ -212,7 +212,7 @@
         "name": "Wash maintenance"
       },
       "wash_checkup_result": {
-        "name": "Wash check-up result",
+        "name": "Last check-up result",
         "state": {
           "not_run": "Not yet run",
           "ok": "OK",
@@ -220,19 +220,19 @@
         }
       },
       "wash_last_checkup": {
-        "name": "Last wash check-up"
+        "name": "Last check-up"
       },
       "wash_total_cycles": {
-        "name": "Total cycles"
+        "name": "Total wash cycles"
       },
       "wash_maint_full_checkup": {
-        "name": "Full Check-up Reminder"
+        "name": "Check-up maintenance remaining cycles"
       },
       "wash_maint_limescale": {
-        "name": "Limescale Cleaning"
+        "name": "Limescale maintenance remaining cycles"
       },
       "wash_maint_filter": {
-        "name": "Filter-Clean"
+        "name": "Filter maintenance remaining cycles"
       },
       "wash_soil_level": {
         "name": "Stain level",
@@ -366,17 +366,17 @@
       "wash_full_checkup": {
         "name": "Full check-up"
       },
-      "wash_limestone_clean": {
-        "name": "Limestone Cleaning"
+      "wash_limescale_clean": {
+        "name": "Limescale Cleaning"
       },
       "wash_maint_full_checkup_reset": {
-        "name": "Reset Full Check-up Counter"
+        "name": "Check-up maintenance reset"
       },
       "wash_maint_limescale_reset": {
-        "name": "Reset Limescale Counter"
+        "name": "Limescale maintenance reset"
       },
       "wash_maint_filter_reset": {
-        "name": "Reset Filter Counter"
+        "name": "Filter maintenance reset"
       }
     }
   },

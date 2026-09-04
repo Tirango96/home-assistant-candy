@@ -16,7 +16,7 @@ from homeassistant.components.persistent_notification import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -260,6 +260,15 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 
     session = async_get_clientsession(hass)
     client = CandyClient(session, ip_address, encryption_key, use_encryption)
+
+    @callback
+    def _migrate_unique_ids(entry: er.RegistryEntry) -> dict[str, Any] | None:
+        old = f"{config_entry.entry_id}-wash_limestone_button"
+        if entry.unique_id == old:
+            return {"new_unique_id": f"{config_entry.entry_id}-wash_limescale_button"}
+        return None
+
+    await er.async_migrate_entries(hass, config_entry.entry_id, _migrate_unique_ids)
 
     # Attempt to restore the last known status from HA's entity registry + state machine.
     # HA persists entity states in its recorder database and restores them on startup,

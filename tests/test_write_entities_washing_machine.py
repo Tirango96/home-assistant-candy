@@ -31,7 +31,7 @@ from custom_components.candy.const import (
     UNIQUE_ID_WASH_DELAY_NUMBER,
     UNIQUE_ID_WASH_ESTIMATED_DURATION,
     UNIQUE_ID_WASH_FULL_CHECKUP_BUTTON,
-    UNIQUE_ID_WASH_LIMESTONE_BUTTON,
+    UNIQUE_ID_WASH_LIMESCALE_BUTTON,
     UNIQUE_ID_WASH_NFC_SWITCH,
     UNIQUE_ID_WASH_OPTION_GOODNIGHT,
     UNIQUE_ID_WASH_OPTION_HYGIENE,
@@ -1718,7 +1718,7 @@ async def test_controls_unavailable_when_remote_control_off(
 
 
 # ---------------------------------------------------------------------------
-# AUTOCLEAN filtering and Limestone Cleaning button
+# AUTOCLEAN filtering and Limescale Cleaning button
 # ---------------------------------------------------------------------------
 
 
@@ -1773,62 +1773,62 @@ async def test_autoclean_not_in_program_options(
     assert "Rapid 30 Min." in options
 
 
-async def test_limestone_button_registered_when_autoclean_present(
+async def test_limescale_button_registered_when_autoclean_present(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    """Limestone Cleaning button is registered when AUTOCLEAN program exists."""
+    """Limescale Cleaning button is registered when AUTOCLEAN program exists."""
     entry = await _init_full_control_with_maintenance(
         hass, aioclient_mock, _IDLE_JSON, _PROGRAMS_WITH_AUTOCLEAN
     )
-    state = _state(hass, entry, "button", UNIQUE_ID_WASH_LIMESTONE_BUTTON)
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_LIMESCALE_BUTTON)
     assert state is not None
 
 
-async def test_limestone_button_absent_when_no_autoclean(
+async def test_limescale_button_absent_when_no_autoclean(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    """Limestone Cleaning button is NOT registered when AUTOCLEAN program absent."""
+    """Limescale Cleaning button is NOT registered when AUTOCLEAN program absent."""
     entry = await _init_full_control_with_maintenance(
         hass, aioclient_mock, _IDLE_JSON, _PROGRAMS
     )
-    state = _state(hass, entry, "button", UNIQUE_ID_WASH_LIMESTONE_BUTTON)
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_LIMESCALE_BUTTON)
     assert state is None
 
 
-async def test_limestone_button_available_when_idle(
+async def test_limescale_button_available_when_idle(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    """Limestone Cleaning button is available when machine is idle."""
+    """Limescale Cleaning button is available when machine is idle."""
     entry = await _init_full_control_with_maintenance(
         hass, aioclient_mock, _IDLE_JSON, _PROGRAMS_WITH_AUTOCLEAN
     )
-    state = _state(hass, entry, "button", UNIQUE_ID_WASH_LIMESTONE_BUTTON)
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_LIMESCALE_BUTTON)
     assert state is not None
     assert state.state != "unavailable"
 
 
-async def test_limestone_button_unavailable_when_running(
+async def test_limescale_button_unavailable_when_running(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    """Limestone Cleaning button is unavailable when machine is running."""
+    """Limescale Cleaning button is unavailable when machine is running."""
     entry = await _init_full_control_with_maintenance(
         hass, aioclient_mock, _RUNNING_JSON, _PROGRAMS_WITH_AUTOCLEAN
     )
-    state = _state(hass, entry, "button", UNIQUE_ID_WASH_LIMESTONE_BUTTON)
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_LIMESCALE_BUTTON)
     assert state is not None
     assert state.state == "unavailable"
 
 
-async def test_limestone_button_sends_command(
+async def test_limescale_button_sends_command(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    """Pressing Limestone Cleaning sends write command with AUTOCLEAN params."""
+    """Pressing Limescale Cleaning sends write command with AUTOCLEAN params."""
     entry = await _init_full_control_with_maintenance(
         hass, aioclient_mock, _IDLE_JSON, _PROGRAMS_WITH_AUTOCLEAN
     )
     registry = er.async_get(hass)
     entity_id = registry.async_get_entity_id(
-        "button", DOMAIN, UNIQUE_ID_WASH_LIMESTONE_BUTTON.format(entry.entry_id)
+        "button", DOMAIN, UNIQUE_ID_WASH_LIMESCALE_BUTTON.format(entry.entry_id)
     )
     assert entity_id is not None
 
@@ -1850,10 +1850,10 @@ async def test_limestone_button_sends_command(
     assert "SpdTgt=0" in qs
 
 
-async def test_limestone_button_absent_when_maintenance_disabled(
+async def test_limescale_button_absent_when_maintenance_disabled(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    """Limestone Cleaning button requires maintenance_enabled."""
+    """Limescale Cleaning button requires maintenance_enabled."""
     entry = await _init_full_control_with_maintenance(
         hass,
         aioclient_mock,
@@ -1861,8 +1861,54 @@ async def test_limestone_button_absent_when_maintenance_disabled(
         _PROGRAMS_WITH_AUTOCLEAN,
         maintenance_enabled=False,
     )
-    state = _state(hass, entry, "button", UNIQUE_ID_WASH_LIMESTONE_BUTTON)
+    state = _state(hass, entry, "button", UNIQUE_ID_WASH_LIMESCALE_BUTTON)
     assert state is None
+
+
+async def test_limescale_button_unique_id_migrated_from_limestone(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """A pre-existing 'wash_limestone_button' unique_id is migrated to 'wash_limescale_button'."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="test-limescale-migration",
+        data={
+            CONF_IP_ADDRESS: TEST_IP,
+            CONF_KEY_USE_ENCRYPTION: False,
+            CONF_PASSWORD: "",
+            CONF_KEY_MODE: MODE_FULL_CONTROL,
+            CONF_KEY_PROGRAMS: _PROGRAMS_WITH_AUTOCLEAN,
+            CONF_KEY_MAINTENANCE_ENABLED: True,
+            CONF_KEY_PROGRAM_LANGUAGE: "en",
+        },
+    )
+    entry.add_to_hass(hass)
+
+    registry = er.async_get(hass)
+    old_unique_id = f"{entry.entry_id}-wash_limestone_button"
+    registry_entry = registry.async_get_or_create(
+        "button",
+        DOMAIN,
+        old_unique_id,
+        config_entry=entry,
+    )
+
+    aioclient_mock.get(f"http://{TEST_IP}/http-read.json?encrypted=0", text=_IDLE_JSON)
+    aioclient_mock.get(
+        f"http://{TEST_IP}/http-prepareStatistics.json?encrypted=0",
+        text='{"response":"SUCCESS"}',
+    )
+    aioclient_mock.get(
+        f"http://{TEST_IP}/http-getStatistics.json?encrypted=0",
+        text=_STATS_OK,
+    )
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    migrated_entry = registry.async_get(registry_entry.entity_id)
+    assert migrated_entry is not None
+    assert migrated_entry.unique_id == f"{entry.entry_id}-wash_limescale_button"
+    assert registry.async_get_entity_id("button", DOMAIN, old_unique_id) is None
 
 
 async def test_full_checkup_button_in_diagnostics_when_maintenance_enabled(

@@ -54,11 +54,11 @@ from .const import (
     DOMAIN,
     MODE_FULL_CONTROL,
     NOTIF_ID_FULL_CHECKUP,
-    NOTIF_ID_LIMESTONE,
+    NOTIF_ID_LIMESCALE,
     SOIL_LABELS_REVERSE,
     UNIQUE_ID_WASH_DELAY_NUMBER,
     UNIQUE_ID_WASH_FULL_CHECKUP_BUTTON,
-    UNIQUE_ID_WASH_LIMESTONE_BUTTON,
+    UNIQUE_ID_WASH_LIMESCALE_BUTTON,
     UNIQUE_ID_WASH_MAINT_FILTER_BUTTON,
     UNIQUE_ID_WASH_MAINT_FULL_CHECKUP_BUTTON,
     UNIQUE_ID_WASH_MAINT_LIMESCALE_BUTTON,
@@ -135,7 +135,7 @@ async def async_setup_entry(
             )
             if autoclean is not None:
                 buttons.append(
-                    WashLimestoneCleanButton(
+                    WashLimescaleCleanButton(
                         coordinator, config_entry, client, autoclean
                     )
                 )
@@ -146,7 +146,7 @@ async def async_setup_entry(
                     stats_coordinator,
                     CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP,
                     UNIQUE_ID_WASH_MAINT_FULL_CHECKUP_BUTTON,
-                    "Wash maint full checkup reset",
+                    "Check-up maintenance reset",
                     "wash_maint_full_checkup_reset",
                     "mdi:washing-machine-alert",
                 ),
@@ -159,7 +159,7 @@ async def async_setup_entry(
                         stats_coordinator,
                         CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
                         UNIQUE_ID_WASH_MAINT_LIMESCALE_BUTTON,
-                        "Wash maint limescale reset",
+                        "Limescale maintenance reset",
                         "wash_maint_limescale_reset",
                         "mdi:water-remove",
                     )
@@ -172,7 +172,7 @@ async def async_setup_entry(
                         stats_coordinator,
                         CONF_KEY_MAINTENANCE_LAST_FILTER,
                         UNIQUE_ID_WASH_MAINT_FILTER_BUTTON,
-                        "Wash maint filter reset",
+                        "Filter maintenance reset",
                         "wash_maint_filter_reset",
                         "mdi:filter-remove",
                     )
@@ -557,11 +557,11 @@ class WashFullCheckUpButton(CandyWashButtonBase):
         )
 
 
-class WashLimestoneCleanButton(CandyWashButtonBase):
+class WashLimescaleCleanButton(CandyWashButtonBase):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_has_entity_name = True
-    _attr_name = "Limestone Cleaning"
-    _attr_translation_key = "wash_limestone_clean"
+    _attr_name = "Limescale Cleaning"
+    _attr_translation_key = "wash_limescale_clean"
     _attr_icon = "mdi:water-remove"
 
     def __init__(
@@ -576,7 +576,7 @@ class WashLimestoneCleanButton(CandyWashButtonBase):
 
     @property
     def unique_id(self) -> str:
-        return UNIQUE_ID_WASH_LIMESTONE_BUTTON.format(self.config_id)
+        return UNIQUE_ID_WASH_LIMESCALE_BUTTON.format(self.config_id)
 
     @property
     def available(self) -> bool:
@@ -617,6 +617,6 @@ class WashLimestoneCleanButton(CandyWashButtonBase):
                 "a washing machine limescale remover. Do not start the programme with "
                 "laundry in the drum."
             ),
-            title="Limestone Cleaning",
-            notification_id=NOTIF_ID_LIMESTONE.format(self.config_id),
+            title="Limescale Cleaning",
+            notification_id=NOTIF_ID_LIMESCALE.format(self.config_id),
         )

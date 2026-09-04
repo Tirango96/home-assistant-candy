@@ -23,9 +23,9 @@ from custom_components.candy.const import (
 
 from .common import TEST_IP
 
-_FULL_CHECKUP_BTN = "button.washing_machine_wash_maint_full_checkup_reset"
-_LIMESCALE_BTN = "button.washing_machine_wash_maint_limescale_reset"
-_FILTER_BTN = "button.washing_machine_wash_maint_filter_reset"
+_FULL_CHECKUP_BTN = "button.washing_machine_check_up_maintenance_reset"
+_LIMESCALE_BTN = "button.washing_machine_limescale_maintenance_reset"
+_FILTER_BTN = "button.washing_machine_filter_maintenance_reset"
 
 # ---------------------------------------------------------------------------
 # Shared config and helpers
@@ -172,7 +172,10 @@ async def test_reset_full_checkup_sensor_shows_full_threshold_after_reset(
 
     # Before: total=40, last=0 → 60 remaining
     assert (
-        hass.states.get("sensor.washing_machine_wash_maint_full_checkup").state == "60"
+        hass.states.get(
+            "sensor.washing_machine_check_up_maintenance_remaining_cycles"
+        ).state
+        == "60"
     )
 
     await hass.services.async_call(
@@ -184,7 +187,7 @@ async def test_reset_full_checkup_sensor_shows_full_threshold_after_reset(
     await hass.async_block_till_done()
 
     assert hass.states.get(
-        "sensor.washing_machine_wash_maint_full_checkup"
+        "sensor.washing_machine_check_up_maintenance_remaining_cycles"
     ).state == str(MAINTENANCE_FULL_CHECKUP_THRESHOLD)
 
 
@@ -199,7 +202,10 @@ async def test_reset_counter_that_is_overdue(
     await _init(hass, aioclient_mock, config)
 
     assert (
-        hass.states.get("sensor.washing_machine_wash_maint_full_checkup").state == "0"
+        hass.states.get(
+            "sensor.washing_machine_check_up_maintenance_remaining_cycles"
+        ).state
+        == "0"
     )
 
     await hass.services.async_call(
@@ -211,7 +217,7 @@ async def test_reset_counter_that_is_overdue(
     await hass.async_block_till_done()
 
     assert hass.states.get(
-        "sensor.washing_machine_wash_maint_full_checkup"
+        "sensor.washing_machine_check_up_maintenance_remaining_cycles"
     ).state == str(MAINTENANCE_FULL_CHECKUP_THRESHOLD)
 
 
@@ -226,7 +232,7 @@ async def test_reset_idempotent_when_already_at_max(
     entry = await _init(hass, aioclient_mock, config)
 
     assert hass.states.get(
-        "sensor.washing_machine_wash_maint_full_checkup"
+        "sensor.washing_machine_check_up_maintenance_remaining_cycles"
     ).state == str(MAINTENANCE_FULL_CHECKUP_THRESHOLD)
 
     await hass.services.async_call(
@@ -239,7 +245,7 @@ async def test_reset_idempotent_when_already_at_max(
 
     assert entry.data[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] == 40
     assert hass.states.get(
-        "sensor.washing_machine_wash_maint_full_checkup"
+        "sensor.washing_machine_check_up_maintenance_remaining_cycles"
     ).state == str(MAINTENANCE_FULL_CHECKUP_THRESHOLD)
 
 
@@ -265,6 +271,8 @@ async def test_reset_when_stats_coordinator_data_unavailable(
     assert entry.data[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] == 0
     # sensor returns unknown because coordinator.data is None and no restored value
     assert (
-        hass.states.get("sensor.washing_machine_wash_maint_full_checkup").state
+        hass.states.get(
+            "sensor.washing_machine_check_up_maintenance_remaining_cycles"
+        ).state
         == "unknown"
     )

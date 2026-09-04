@@ -726,7 +726,7 @@ class CandyWashCheckUpResultSensor(CandyBaseSensor, RestoreSensor):
     """Result of the last completed automatic diagnostic (DisTestRes)."""
 
     _attr_translation_key = "wash_checkup_result"
-    _attr_name = "Wash check-up result"
+    _attr_name = "Last check-up result"
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = ["not_run", "ok", "problem"]
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -775,7 +775,7 @@ class CandyWashLastCheckUpSensor(CandyBaseSensor):
     """Timestamp of the last completed automatic diagnostic."""
 
     _attr_translation_key = "wash_last_checkup"
-    _attr_name = "Last wash check-up"
+    _attr_name = "Last check-up"
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
@@ -809,7 +809,7 @@ class CandyWashTotalCyclesSensor(CandyBaseSensor, RestoreSensor):
     """Total number of wash cycles completed by the washing machine."""
 
     _attr_translation_key = "wash_total_cycles"
-    _attr_name = "Wash total cycles"
+    _attr_name = "Total wash cycles"
     _restored_cycles: int | None = None
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
@@ -853,7 +853,7 @@ class CandyWashMaintFullCheckupSensor(CandyBaseSensor, RestoreSensor):
 
     _attr_has_entity_name = True
     _attr_translation_key = "wash_maint_full_checkup"
-    _attr_name = "Wash maint full checkup"
+    _attr_name = "Check-up maintenance remaining cycles"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _restored_value: int | None = None
 
@@ -899,7 +899,7 @@ class CandyWashMaintLimescaleSensor(CandyBaseSensor, RestoreSensor):
 
     _attr_has_entity_name = True
     _attr_translation_key = "wash_maint_limescale"
-    _attr_name = "Wash maint limescale"
+    _attr_name = "Limescale maintenance remaining cycles"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _restored_value: int | None = None
 
@@ -947,7 +947,7 @@ class CandyWashMaintFilterSensor(CandyBaseSensor, RestoreSensor):
 
     _attr_has_entity_name = True
     _attr_translation_key = "wash_maint_filter"
-    _attr_name = "Wash maint filter"
+    _attr_name = "Filter maintenance remaining cycles"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _restored_value: int | None = None
 
