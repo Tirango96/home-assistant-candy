@@ -100,7 +100,7 @@ CHECKUP_ENABLE_SCHEMA = vol.Schema(
 CHECKUP_SCHEDULE_SCHEMA = vol.Schema(
     {
         vol.Required(
-            CONF_KEY_CHECKUP_SCHEDULE, default=CHECKUP_SCHEDULE_EVERY_CYCLE
+            CONF_KEY_CHECKUP_SCHEDULE, default=str(CHECKUP_SCHEDULE_EVERY_CYCLE)
         ): SelectSelector(
             SelectSelectorConfig(
                 options=[
@@ -489,7 +489,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 data_schema=vol.Schema(
                     {
                         vol.Required(
-                            CONF_KEY_CHECKUP_SCHEDULE, default=current
+                            CONF_KEY_CHECKUP_SCHEDULE, default=str(current)
                         ): SelectSelector(
                             SelectSelectorConfig(
                                 options=[
