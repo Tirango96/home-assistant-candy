@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, patch
 
 from homeassistant import config_entries, data_entry_flow
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
+from homeassistant.helpers import entity_registry as er
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -40,6 +41,7 @@ from custom_components.candy.const import (
     CONF_KEY_WATER_HARDNESS,
     MODE_FULL_CONTROL,
     MODE_READ_ONLY,
+    UNIQUE_ID_WASH_MAINT_FULL_CHECKUP,
 )
 
 _IDLE_WASHING_MACHINE = WashingMachineStatus(
@@ -1092,6 +1094,58 @@ async def test_options_flow_maintenance_limescale_disabled(hass):
     )
     # limescale=False → hardness step skipped
     assert result["step_id"] == "maintenance_baselines"
+
+
+async def test_options_flow_maintenance_baselines_defaults_from_sensor_state(
+    hass,
+):
+    """When the stats coordinator has no data yet, baseline defaults come from the
+    live sensor state instead of always falling back to the raw threshold."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="opts-baseline-sensor-default",
+        data={
+            CONF_IP_ADDRESS: "192.168.0.66",
+            CONF_KEY_USE_ENCRYPTION: False,
+            CONF_PASSWORD: "",
+            CONF_KEY_MODE: MODE_READ_ONLY,
+            CONF_KEY_IS_WASHING_MACHINE: True,
+            CONF_KEY_MAINTENANCE_ENABLED: True,
+            CONF_KEY_WATER_HARDNESS: 2,
+            CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP: 0,
+            CONF_KEY_MAINTENANCE_LAST_LIMESCALE: 0,
+            CONF_KEY_MAINTENANCE_LAST_FILTER: 0,
+        },
+    )
+    entry.add_to_hass(hass)
+
+    registry = er.async_get(hass)
+    ent = registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        UNIQUE_ID_WASH_MAINT_FULL_CHECKUP.format(entry.entry_id),
+        config_entry=entry,
+    )
+    hass.states.async_set(ent.entity_id, "37")
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], user_input={CONF_KEY_MAINTENANCE_ENABLED: True}
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED: False,
+            CONF_KEY_MAINTENANCE_FILTER_ENABLED: False,
+        },
+    )
+
+    assert result["step_id"] == "maintenance_baselines"
+    schema_keys = list(result["data_schema"].schema)
+    default = next(
+        k for k in schema_keys if k == CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP
+    ).default()
+    assert default == 37
 
 
 # ---------------------------------------------------------------------------

@@ -10,6 +10,8 @@ from homeassistant import config_entries
 from homeassistant.components.network import async_get_source_ip
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     SelectOptionDict,
@@ -57,6 +59,9 @@ from .const import (
     MODE_FULL_CONTROL,
     MODE_READ_ONLY,
     PROGRAM_LANGUAGES,
+    UNIQUE_ID_WASH_MAINT_FILTER,
+    UNIQUE_ID_WASH_MAINT_FULL_CHECKUP,
+    UNIQUE_ID_WASH_MAINT_LIMESCALE,
 )
 from .helpers import cycles_remaining
 
@@ -143,6 +148,26 @@ def _remaining_to_last_reset(remaining: int, total: int, threshold: int) -> int:
     if total == 0:
         return 0
     return total - (threshold - remaining)
+
+
+def _current_remaining_cycles(
+    hass: HomeAssistant, entry_id: str, unique_id_template: str
+) -> int | None:
+    """Read the current remaining-cycles value from the sensor's live state.
+
+    Used as the reconfigure-form default when total_cycles is not yet available
+    from the stats coordinator, so the form shows the machine's real state
+    instead of always defaulting to the threshold.
+    """
+    entity_id = er.async_get(hass).async_get_entity_id(
+        "sensor", DOMAIN, unique_id_template.format(entry_id)
+    )
+    if entity_id is None:
+        return None
+    state = hass.states.get(entity_id)
+    if state is None or not state.state.isdigit():
+        return None
+    return int(state.state)
 
 
 def _baselines_schema(
@@ -374,23 +399,40 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             )
             last_ls = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_LIMESCALE, 0)
             last_ft = self.config_entry.data.get(CONF_KEY_MAINTENANCE_LAST_FILTER, 0)
-            sc_default = (
-                cycles_remaining(
+            entry_id = self.config_entry.entry_id
+            if total_cycles:
+                sc_default = cycles_remaining(
                     total_cycles, last_sc, MAINTENANCE_FULL_CHECKUP_THRESHOLD
                 )
-                if total_cycles
-                else MAINTENANCE_FULL_CHECKUP_THRESHOLD
-            )
-            ls_default = (
-                cycles_remaining(total_cycles, last_ls, limescale_threshold)
-                if total_cycles
-                else limescale_threshold
-            )
-            ft_default = (
-                cycles_remaining(total_cycles, last_ft, MAINTENANCE_FILTER_THRESHOLD)
-                if total_cycles
-                else MAINTENANCE_FILTER_THRESHOLD
-            )
+                ls_default = cycles_remaining(
+                    total_cycles, last_ls, limescale_threshold
+                )
+                ft_default = cycles_remaining(
+                    total_cycles, last_ft, MAINTENANCE_FILTER_THRESHOLD
+                )
+            else:
+                current_sc = _current_remaining_cycles(
+                    self.hass, entry_id, UNIQUE_ID_WASH_MAINT_FULL_CHECKUP
+                )
+                current_ls = _current_remaining_cycles(
+                    self.hass, entry_id, UNIQUE_ID_WASH_MAINT_LIMESCALE
+                )
+                current_ft = _current_remaining_cycles(
+                    self.hass, entry_id, UNIQUE_ID_WASH_MAINT_FILTER
+                )
+                sc_default = (
+                    current_sc
+                    if current_sc is not None
+                    else MAINTENANCE_FULL_CHECKUP_THRESHOLD
+                )
+                ls_default = (
+                    current_ls if current_ls is not None else limescale_threshold
+                )
+                ft_default = (
+                    current_ft
+                    if current_ft is not None
+                    else MAINTENANCE_FILTER_THRESHOLD
+                )
             fields: dict[vol.Required, type] = {
                 vol.Required(
                     CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP, default=sc_default
