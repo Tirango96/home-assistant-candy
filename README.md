@@ -46,12 +46,14 @@ At setup, you choose between **Read-Only** (sensors only) and **Full Control**. 
 
 **Control entities:** program selector (all localized program names), temperature, spin speed, soil level, delay start, option switches (Prewash, Hygiene, Steam, Anti-crease, Good Night, Extra Rinse, AquaPlus), and Start / Pause / Stop buttons.
 
-**Maintenance & diagnostics:** mirrors the Candy app's built-in reminders — check-up, limescale, and filter counters with configurable water hardness thresholds; self-diagnostic result sensor and last check-up timestamp.
+**Maintenance & diagnostics:** mirrors the Candy app's built-in reminders — check-up, limescale, and filter counters with configurable water hardness thresholds; self-diagnostic result sensor and last check-up timestamp. Running the check-up or limescale cycle does **not** reset its counter automatically — press the matching reset button once the cycle finishes. The filter counter has no start button at all: clean the filter by hand, then reset it manually.
+
+**Remote Control status:** a dedicated sensor tracks whether the machine currently accepts remote commands, and disables every control entity while it doesn't. See [`docs/remote-control.md`](docs/remote-control.md) for details.
 
 ### Improvements over the official app
 
-- **Faster feedback:** Home Assistant refreshes device state immediately after a command is sent, rather than waiting for the next polling cycle.
-- **Faster Wake-up** When the machine is off, Home Assistant polls its state every 20 seconds instead of 60, for a faster wake-up.
+- **Faster feedback:** every write command locks the controls, waits for the machine to process it, then forces an immediate refresh — so the dashboard reflects the new state in a few seconds instead of waiting for the next 60-second poll.
+- **Faster wake-up:** while the machine is off, Home Assistant polls every 20 seconds instead of 60, so it notices when the machine turns back on much sooner.
 - **Accurate end-time calculation:** The integration computes the actual scheduled finish timestamp, accounting for delay-start and remaining cycle time.
 - **Always-on visibility:** Machine state and controls are available on your dashboard without opening the app.
 
