@@ -73,7 +73,11 @@ from .const import (
     UNIQUE_ID_WASH_TEMP_SELECT,
     WASH_OPTIONS,
 )
-from .helpers import remote_control_enabled, wash_device_info
+from .helpers import (
+    localized_notification_text,
+    remote_control_enabled,
+    wash_device_info,
+)
 
 
 def _should_send_checkup(config_entry: ConfigEntry, now: datetime) -> int:
@@ -545,14 +549,13 @@ class WashFullCheckUpButton(CandyWashButtonBase):
         await self._send_command_and_refresh(
             urlencode({"CheckUpState": 1}, quote_via=quote)
         )
+        lang = self.config_entry.data.get(
+            CONF_KEY_PROGRAM_LANGUAGE, self.hass.config.language
+        )
         pn_async_create(
             self.hass,
-            (
-                "Make sure the drum is empty before proceeding with the Full Check-up.\n\n"
-                "This cycle will take about three minutes. "
-                "A beep sound from the washing machine will warn you at the end of the process."
-            ),
-            title="Full Check-up",
+            localized_notification_text("checkup_button_message", lang),
+            title=localized_notification_text("full_checkup_title", lang),
             notification_id=NOTIF_ID_FULL_CHECKUP.format(self.config_id),
         )
 
@@ -610,13 +613,7 @@ class WashLimescaleCleanButton(CandyWashButtonBase):
         await self._send_command_and_refresh(urlencode(params, quote_via=quote))
         pn_async_create(
             self.hass,
-            (
-                "To keep your washing machine always clean and to remove any deposits, "
-                "we suggest you start the Limescale Removal cycle.\n\n"
-                "Designed to clean and sanitize the drum, using only powder detergent or "
-                "a washing machine limescale remover. Do not start the programme with "
-                "laundry in the drum."
-            ),
-            title="Limescale Cleaning",
+            localized_notification_text("limescale_message", lang),
+            title=localized_notification_text("limescale_title", lang),
             notification_id=NOTIF_ID_LIMESCALE.format(self.config_id),
         )

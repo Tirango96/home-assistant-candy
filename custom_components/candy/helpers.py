@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
@@ -16,6 +19,18 @@ from .const import (
     MODE_FULL_CONTROL,
     SUGGESTED_AREA_BATHROOM,
 )
+
+_NOTIFICATION_STRINGS: dict[str, dict[str, str]] = json.loads(
+    (Path(__file__).parent / "client" / "notification_strings.json").read_text(
+        encoding="utf-8"
+    )
+)
+
+
+def localized_notification_text(key: str, language: str) -> str:
+    """Return the notification string for key, falling back to English."""
+    translations = _NOTIFICATION_STRINGS[key]
+    return translations.get(language, translations["en"])
 
 
 def remote_control_enabled(data: object) -> bool:

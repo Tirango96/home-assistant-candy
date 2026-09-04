@@ -1,0 +1,58 @@
+{
+  "checkup_button_message": {
+    "en": "Make sure the drum is empty before proceeding with the Clever Check-up\n\nThis cycle will take about three minutes.\nA beep sound from the washing machine will warn you at the end of the process.",
+    "es": "Asegúrate de que el tambor esté vacío antes de iniciar la Comprobación Inteligente\n\nEste ciclo durará unos tres minutos.\n Una alarma sonora te avisará al finalizar el proceso.",
+    "fr": "Assurez-vous que le tambour est vide avant d'effectuer l'examen préventif intelligent\n\nCe cycle prendra environ trois minutes .\n Un bip sonore de la machine à laver vous avertira à la fin du processus.",
+    "it": "Assicurati che il cesto sia vuoto prima di procedere con l'avvio del Clever Check-up\n\nIl ciclo dura circa tre minuti.\nUn bip della lavatrice indicherà che il programma è concluso.",
+    "pt": "Certifique-se de que o tambor está vazio antes de continuar com a Inspeção Engenhosa\n\nO ciclo demora cerca de três minutos.\nUm bip da máquina avisa-o do fim do processo..",
+    "ru": "Прежде чем выполнить проверку Clever Check-up, убедитесь, что барабан пуст\n\nВыполнение этого цикла занимает около трех минут.\nКороткий звуковой сигнал стиральной машины уведомит вас об окончании процесса."
+  },
+  "filter_due_message": {
+    "en": "To always guarantee the best performance, we suggest you clean the filter\n\nIt's time to check your washing machine filter: \n • Start a drain only cycle.\n • Place an absorbent cloth under the filter door to collect the residual water .\n • Remove the filter and clean it under the tap. \n • Replace the filter.",
+    "es": "Para garantizar siempre el mejor rendimiento, te sugerimos que limpies el filtro\n\nEs el momento de revisar el filtro de tu lavadora: \n • Inicia un ciclo de solo desagüe.\n • Coloca un paño absorbente debajo de la puerta del filtro para recoger el agua residual .\n • Retira el filtro y límpialo debajo del grifo. \n • Vuelve a colocar el filtro.",
+    "fr": "Afin d'assurer toujours les meilleures performances, nous vous conseillons de nettoyer le filtre\n\nIl est temps de vérifier l'état du filtre de votre machine:\n• Lancez un cycle de vidange uniquement\n• Placez un chiffon absorbant sous la porte du filtre afin de récupérer l'exédent d'eau\n• Retirez le filtre et nettoyez en dessous.\n• Replacez le filtre.",
+    "it": "Per garantire sempre le migliori prestazioni, ti suggeriamo di effettuare la pulizia del filtro\n\nÉ giunto il momento di controllare il filtro della tua lavatrice:\n• Esegui un ciclo di solo scarico.\n• Posiziona un panno assorbente sotto lo sportello del filtro per raccogliere l'acqua residua.\n• Svitare il filtro e pulirlo sotto il rubinetto.\n• Riavvitare il filtro.",
+    "pt": "Para garantir sempre o melhor desempenho, sugerimos que limpe o filtro\n\nEstá na altura de verificar o filtro da máquina:\n• Inicie ciclo de descarga simples.\n• Ponha um pano absorvente sob a tampa do filtro para apanhar água residual.\n• Tire o filtro e lave à torneira.\n• Volte a montar o filtro.",
+    "ru": "Для постоянного обеспечения лучших результатов рекомендуем очищать фильтр\n\nПора проверить фильтр вашей стиральной машины: \n • Запустите только цикл слива.\n • Положите впитывающую ткань под люк фильтра, чтобы собрать остаточную воду.\n • Извлеките фильтр и промойте его под краном. \n • Установите фильтр на место."
+  },
+  "filter_title": {
+    "en": "Filter cleaning",
+    "es": "Limpieza del filtro",
+    "fr": "Nettoyage du filtre",
+    "it": "Pulizia filtro",
+    "pt": "Limpeza do filtro",
+    "ru": "Очистка фильтра"
+  },
+  "full_checkup_due_message": {
+    "en": "To always guarantee the best performance, we suggest you start the FULL CHECK-UP cycle\n\nShort diagnostic cycle (about 3-5 min), to control the correct functioning of the main components of your machine.\nStart it with empty drum.",
+    "es": "Para garantizar siempre el mejor rendimiento, te sugerimos que inicies el ciclo completo de comprobación.\n\nCiclo corto de diagnóstico (3-5 minutos), para controlar el correcto funcionamiento de los cprincipales componentes de la lavadora.\nComenzar con el tambor vacío.",
+    "fr": "Afin d'assurer toujours les meilleures performances, nous vous conseillons de lancer le cycle Full Check-up.\n\nCycle de diagnostic court (environ 3-5 minutes), pour contrôler le bon fonctionnement des composants principaux de votre machine .\n Commencez avec un tambour vide.",
+    "it": "Per garantire sempre le migliori prestazioni, ti suggeriamo di avviare il ciclo di CHECK-UP COMPLETO\n\nBreve ciclo di diagnosi (3-5 min circa) per verificare il corretto funzionamento dei principali componenti della lavatrice.\nDa avviare con il cesto vuoto. Al termine, riceverai una notifica sul tuo dispositivo con l'esito del check-up.",
+    "pt": "Para garantir sempre o melhor desempenho, sugerimos que inicie oCiclo de verificação complet\n\nCiclo curto de diagnóstico (3-5 min), para comprovar a operação correta dos principais componentes da máquina.\nInicie-o com o tambor vazio.",
+    "ru": "Для обеспечения лучших результатов рекомендуем вам запустить цикл Full - Check - up (Полная проверка)\n\nКороткий цикл диагностики (около 3-5 минут) для контроля работы основных компонентов машины.\nЗапустить с пустым барабаном."
+  },
+  "full_checkup_title": {
+    "en": "Check-up",
+    "es": "Check-up",
+    "fr": "Contrôle",
+    "it": "Check-up",
+    "pt": "Check-up",
+    "ru": "Полная проверка"
+  },
+  "limescale_message": {
+    "en": "To keep your washing machine always clean and to remove any deposits, we suggest you start the Limescale Removal cycle.\n\nDesigned to clean and sanitaze the drum, using only powder detergent or a washing machine limescale remover. Do not start the programme with laundry in the drum.",
+    "es": "Para mantener tu lavadora siempre limpia y eliminar los depósitos, te sugerimos que inicies el ciclo de Eliminación de cal.\n\nCiclo especial para el mantenimiento y limpieza del tambor, utilizando detergente en polvo o un producto específico antical. Este programa se debe utilizar únicamente con el tabor vacío.",
+    "fr": "Pour avoir toujours une machine propre et enlever les éventuels dépôts, nous vous conseillons de lancer le cycle anticalcaire.\n\nConçu pour nettoyer et assainir le tambour. Utiliser de la lessive en poudre uniquement ou un nettoyant anti-tartre. Ne pas démarrer le programme avec du linge dans le tambour.",
+    "it": "Per avere sempre una macchina pulita e rimuovere eventuali depositi, ti suggeriamo di avviare il ciclo di Pulizia Calcare.\n\nCiclo speciale di manutenzione (a macchina vuota) per la pulizia del cesto, usando normale detersivo in polvere per lavatrice o un prodotto specifico anticalcare.",
+    "pt": "Para manter a sua máquina de lavar sempre limpa e para remover quaisquer depósitos existentes, sugerimos que inicie o cicloRemoção de calcári.\n\nConcebido para lavar e desinfetar o tambor, usando apenas detergente em pó para máquina de lavar e um produto de remoção de calcário. Não comece o programa com a roupa no tambor.",
+    "ru": "Чтобы ваша стиральная машина всегда была чистой, а также для удаления отложений рекомендуем запустить цикл Удаление накипи (Limescale Removal).\n\nПредназначено для чистки и дезинфекции барабана при использовании только стирального порошка или средства для снятия известкового налета для стиральной машины. Эту программу не следует запускать при наличии белья в машине."
+  },
+  "limescale_title": {
+    "en": "Limescale cleaning",
+    "es": "Limpieza calcárea",
+    "fr": "Nettoyage anticalcaire",
+    "it": "Pulizia calcare",
+    "pt": "Limpeza do calcário",
+    "ru": "Очистка известкового налета"
+  }
+}

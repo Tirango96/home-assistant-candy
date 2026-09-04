@@ -46,6 +46,7 @@ from .const import (
     CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP,
     CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
     CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED,
+    CONF_KEY_PROGRAM_LANGUAGE,
     CONF_KEY_USE_ENCRYPTION,
     CONF_KEY_WATER_HARDNESS,
     DATA_KEY_CHECKUP_UNSUB,
@@ -68,7 +69,7 @@ from .const import (
     UNIQUE_ID_WASH_TOTAL_CYCLES,
     UNIQUE_ID_WASHING_MACHINE,
 )
-from .helpers import cycles_remaining
+from .helpers import cycles_remaining, localized_notification_text
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -416,14 +417,15 @@ def _register_maintenance_notifications(
     entry_id = config_entry.entry_id
     hardness = config_entry.data.get(CONF_KEY_WATER_HARDNESS, 2)
     limescale_threshold = MAINTENANCE_HARDNESS_THRESHOLDS[hardness]
+    lang = config_entry.data.get(CONF_KEY_PROGRAM_LANGUAGE, hass.config.language)
 
     _MAINTENANCE_ITEMS = [
         (
             CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP,
             MAINTENANCE_FULL_CHECKUP_THRESHOLD,
             NOTIF_ID_MAINT_FULL_CHECKUP.format(entry_id),
-            "Full Check-up",
-            "To always guarantee the best performance, we suggest you start the FULL CHECK-UP cycle.\n\nShort diagnostic cycle (about 3-5 min), to control the correct functioning of the main components of your machine. Start it with empty drum.",
+            localized_notification_text("full_checkup_title", lang),
+            localized_notification_text("full_checkup_due_message", lang),
         ),
     ]
     if config_entry.data.get(CONF_KEY_MAINTENANCE_LIMESCALE_ENABLED, True):
@@ -432,8 +434,8 @@ def _register_maintenance_notifications(
                 CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
                 limescale_threshold,
                 NOTIF_ID_MAINT_LIMESCALE.format(entry_id),
-                "Limescale cleaning",
-                "To keep your washing machine always clean and to remove any deposits, we suggest you start the Limescale Removal cycle.\n\nDesigned to clean and sanitize the drum, using only powder detergent or a washing machine limescale remover. Do not start the programme with laundry in the drum.",
+                localized_notification_text("limescale_title", lang),
+                localized_notification_text("limescale_message", lang),
             )
         )
     if config_entry.data.get(CONF_KEY_MAINTENANCE_FILTER_ENABLED, True):
@@ -442,8 +444,8 @@ def _register_maintenance_notifications(
                 CONF_KEY_MAINTENANCE_LAST_FILTER,
                 MAINTENANCE_FILTER_THRESHOLD,
                 NOTIF_ID_MAINT_FILTER.format(entry_id),
-                "Filter cleaning",
-                "To always guarantee the best performance, we suggest you clean the filter.\n\nIt's time to check your washing machine filter: • Start a drain only cycle. • Place an absorbent cloth under the filter door to collect the residual water. • Remove the filter and clean it under the tap. • Replace the filter.",
+                localized_notification_text("filter_title", lang),
+                localized_notification_text("filter_due_message", lang),
             )
         )
 
