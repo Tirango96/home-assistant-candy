@@ -78,4 +78,4 @@ def test_wash_device_info_full_control():
     info = wash_device_info(entry)
     assert info["model"] == "RO41274DWMSE"
     assert info["serial_number"] == "SN123456"
-    assert info["hw_version"] == "2024-01-15"
+    assert "hw_version" not in info
