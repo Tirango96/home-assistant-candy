@@ -56,6 +56,10 @@ At setup, you choose between **Read-Only** (sensors only) and **Full Control**. 
 - **Faster wake-up:** while the machine is off, Home Assistant polls every 20 seconds instead of 60, so it notices when the machine turns back on much sooner.
 - **Accurate end-time calculation:** The integration computes the actual scheduled finish timestamp, accounting for delay-start and remaining cycle time.
 - **Always-on visibility:** Machine state and controls are available on your dashboard without opening the app.
+- **Correct lifetime cycle count:** the official app derives total wash cycles from per-program
+  counters that are 8-bit and silently wrap at 256 — after enough washes on one program its
+  total jumps *backwards* by 256. This integration reads the wide temperature counters instead,
+  so the total keeps climbing correctly.
 
 ### Dashboard cards
 

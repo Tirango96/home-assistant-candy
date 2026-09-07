@@ -63,7 +63,7 @@ _STATUS_RUNNING = """{
   }
 }"""
 
-_STATS_OK = '{"statusCounters": {"Program1": "40"}}'
+_STATS_OK = '{"statusCounters": {"Temp0to30": "40"}}'
 
 # ---------------------------------------------------------------------------
 # _make_off_status — dishwasher and oven branches

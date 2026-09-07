@@ -453,8 +453,16 @@ class WashingMachineStatistics:
 
     @classmethod
     def from_json(cls, json):
+        # Program1..21 are 8-bit device counters that wrap at 256, which would
+        # periodically collapse total_cycles by 256. Temp0to30/Temp40/Temp60to90
+        # are wider counters tracking the same events (confirmed equal to the
+        # program sum in captures), so they're used instead. Programs that never
+        # heat may not increment any temperature bucket, causing a small
+        # under-count — an accepted trade-off versus the wraparound.
         total = sum(
-            int(v) for k, v in json.items() if k.startswith("Program") and v.isdigit()
+            int(v)
+            for k, v in json.items()
+            if k in ("Temp0to30", "Temp40", "Temp60to90") and v.isdigit()
         )
         return cls(total_cycles=total)
 

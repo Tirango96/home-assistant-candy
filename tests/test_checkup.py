@@ -106,7 +106,7 @@ _IDLE_WITH_DIS_TEST_RES_2 = """{
   }
 }"""
 
-_STATS_OK = '{"statusCounters": {"Program1": "40"}}'
+_STATS_OK = '{"statusCounters": {"Temp0to30": "40"}}'
 
 _NOW = datetime(2024, 6, 1, 12, 0, 0, tzinfo=UTC)
 

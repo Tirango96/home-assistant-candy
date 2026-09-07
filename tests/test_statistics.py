@@ -11,7 +11,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.candy import CONF_KEY_USE_ENCRYPTION, DOMAIN
-from custom_components.candy.client.model import MachineState
+from custom_components.candy.client.model import MachineState, WashingMachineStatistics
 from custom_components.candy.const import (
     DATA_KEY_COORDINATOR,
     DATA_KEY_STATS_COORDINATOR,
@@ -59,7 +59,7 @@ _STATUS_PAUSED = """{
   }
 }"""
 
-_STATS_OK = '{"statusCounters": {"Program1": "42"}}'
+_STATS_OK = '{"statusCounters": {"Temp0to30": "42"}}'
 
 
 async def _setup(
@@ -232,3 +232,26 @@ async def test_no_refresh_on_running_to_paused(
         await hass.async_block_till_done()
 
     mock_refresh.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# from_json — Program* counters wrap at 256, temperature counters must not
+# ---------------------------------------------------------------------------
+
+
+def test_total_cycles_survives_program_counter_wraparound():
+    """Program11 wrapped from 254 to 5 after seven more washes crossed 256.
+
+    Real incident: total_cycles collapsed from 394 to 139 (a drop of exactly 256)
+    because it summed the 8-bit Program* counters. The wide temperature counters
+    track the same events and don't wrap, so the total must be derived from those.
+    """
+    payload = {
+        "Program1": "10",
+        "Program11": "5",
+        "Temp0to30": "318",
+        "Temp40": "77",
+        "Temp60to90": "0",
+    }
+    stats = WashingMachineStatistics.from_json(payload)
+    assert stats.total_cycles == 395

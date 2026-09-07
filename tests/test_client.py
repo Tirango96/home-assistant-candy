@@ -213,7 +213,7 @@ async def test_send_command_error_response(hass, aioclient_mock):
 
 async def test_fetch_statistics_encrypted_empty_key(hass, aioclient_mock):
     """fetch_statistics handles encrypted=1 response with empty key (hex-only)."""
-    stats_hex = b'{"statusCounters": {"Program1": "42"}}'.hex()
+    stats_hex = b'{"statusCounters": {"Temp0to30": "42"}}'.hex()
     aioclient_mock.get(
         f"http://{TEST_IP}/http-prepareStatistics.json", text='{"response":"OK"}'
     )
@@ -230,7 +230,7 @@ async def test_fetch_statistics_encrypted_empty_key(hass, aioclient_mock):
 
 async def test_fetch_statistics_encrypted_with_key(hass, aioclient_mock):
     """fetch_statistics decrypts the response when a key is set."""
-    stats_json = b'{"statusCounters": {"Program1": "42"}}'
+    stats_json = b'{"statusCounters": {"Temp0to30": "42"}}'
     key = TEST_ENCRYPTION_KEY.encode()
     encrypted_hex = decrypt(key, stats_json).hex()
     aioclient_mock.get(
