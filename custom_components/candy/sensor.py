@@ -838,8 +838,15 @@ class CandyWashPurchaseDateSensor(CandyBaseSensor):
         return UNIQUE_ID_WASH_PURCHASE_DATE.format(self.config_id)
 
     @property
-    def native_value(self) -> StateType:
-        return self.config_entry.data.get(CONF_KEY_PURCHASE_DATE)
+    def device_class(self) -> SensorDeviceClass:
+        return SensorDeviceClass.DATE
+
+    @property
+    def native_value(self) -> datetime.date | None:
+        raw = self.config_entry.data.get(CONF_KEY_PURCHASE_DATE)
+        if not raw:
+            return None
+        return datetime.date.fromisoformat(raw)
 
     @property
     def icon(self) -> str:
