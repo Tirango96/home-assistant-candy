@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import copy
 from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, patch
 
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
@@ -20,6 +22,7 @@ from custom_components.candy.const import (
     CHECKUP_SCHEDULE_WEEKLY,
     CONF_KEY_CHECKUP_ENABLED,
     CONF_KEY_CHECKUP_LAST_DATE,
+    CONF_KEY_CHECKUP_LAST_RESULT,
     CONF_KEY_CHECKUP_SCHEDULE,
     CONF_KEY_MODE,
     CONF_KEY_PROGRAMS,
@@ -27,6 +30,7 @@ from custom_components.candy.const import (
     MODE_FULL_CONTROL,
     UNIQUE_ID_WASH_CHECKUP_RESULT,
     UNIQUE_ID_WASH_LAST_CHECKUP,
+    UNIQUE_ID_WASH_START_BUTTON,
 )
 
 from .common import TEST_IP
@@ -316,10 +320,10 @@ def test_checkup_result_from_code():
 # ---------------------------------------------------------------------------
 
 
-async def test_dis_test_res_transition_0_to_1_writes_timestamp(
+async def test_dis_test_res_transition_0_to_1_writes_result_not_date(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    """DisTestRes 0->1: config entry must be updated with checkup_last_date."""
+    """DisTestRes 0->1: result is cached; date is NOT written by the listener."""
     entry = await _setup(
         hass,
         aioclient_mock,
@@ -333,13 +337,14 @@ async def test_dis_test_res_transition_0_to_1_writes_timestamp(
     coordinator.async_set_updated_data(new_status)
     await hass.async_block_till_done()
 
-    assert entry.data.get(CONF_KEY_CHECKUP_LAST_DATE) is not None
+    assert entry.data.get(CONF_KEY_CHECKUP_LAST_RESULT) == CheckUpResult.OK.code
+    assert entry.data.get(CONF_KEY_CHECKUP_LAST_DATE) is None
 
 
-async def test_dis_test_res_transition_0_to_2_writes_timestamp(
+async def test_dis_test_res_transition_0_to_2_writes_result_not_date(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    """DisTestRes 0->2 (problem): config entry must still be updated."""
+    """DisTestRes 0->2 (problem): result is cached; date is NOT written by the listener."""
     entry = await _setup(
         hass,
         aioclient_mock,
@@ -353,13 +358,14 @@ async def test_dis_test_res_transition_0_to_2_writes_timestamp(
     coordinator.async_set_updated_data(new_status)
     await hass.async_block_till_done()
 
-    assert entry.data.get(CONF_KEY_CHECKUP_LAST_DATE) is not None
+    assert entry.data.get(CONF_KEY_CHECKUP_LAST_RESULT) == CheckUpResult.PROBLEM.code
+    assert entry.data.get(CONF_KEY_CHECKUP_LAST_DATE) is None
 
 
 async def test_dis_test_res_stays_non_zero_no_duplicate_write(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    """DisTestRes already non-zero on second update: no timestamp overwrite."""
+    """DisTestRes already non-zero on second update: result not overwritten; date never written."""
     entry = await _setup(
         hass,
         aioclient_mock,
@@ -368,14 +374,15 @@ async def test_dis_test_res_stays_non_zero_no_duplicate_write(
     )
     coordinator = hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR]
 
-    # First update: 0 -> 1 (listener fires, writes timestamp)
+    # First update: 0 -> 1 (listener fires, writes result)
     ok_status = copy.copy(coordinator.data)
     ok_status.dis_test_res = CheckUpResult.OK
     coordinator.async_set_updated_data(ok_status)
     await hass.async_block_till_done()
 
-    first_ts = entry.data.get(CONF_KEY_CHECKUP_LAST_DATE)
-    assert first_ts is not None
+    first_result = entry.data.get(CONF_KEY_CHECKUP_LAST_RESULT)
+    assert first_result == CheckUpResult.OK.code
+    assert entry.data.get(CONF_KEY_CHECKUP_LAST_DATE) is None
 
     # Second update: still 1, no 0->non-zero transition, must NOT overwrite
     still_ok = copy.copy(coordinator.data)
@@ -383,7 +390,8 @@ async def test_dis_test_res_stays_non_zero_no_duplicate_write(
     coordinator.async_set_updated_data(still_ok)
     await hass.async_block_till_done()
 
-    assert entry.data.get(CONF_KEY_CHECKUP_LAST_DATE) == first_ts
+    assert entry.data.get(CONF_KEY_CHECKUP_LAST_RESULT) == first_result
+    assert entry.data.get(CONF_KEY_CHECKUP_LAST_DATE) is None
 
 
 async def test_dis_test_res_1_to_0_no_write(
@@ -563,5 +571,109 @@ async def test_checkup_listener_returns_early_when_prev_code_none(
     first_update.dis_test_res = CheckUpResult.NOT_RUN
     coordinator.async_set_updated_data(first_update)
     await hass.async_block_till_done()
+
+    assert entry.data.get(CONF_KEY_CHECKUP_LAST_DATE) is None
+
+
+# ---------------------------------------------------------------------------
+# WashStartButton — checkup scheduling date written at request time
+# ---------------------------------------------------------------------------
+
+
+async def test_start_button_weekly_no_last_date_records_checkup(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Weekly schedule, no prior date: pressing Start sends StartCheckUp=1 and records the date."""
+    entry = await _setup(
+        hass,
+        aioclient_mock,
+        _IDLE_JSON,
+        **{
+            CONF_KEY_CHECKUP_ENABLED: True,
+            CONF_KEY_CHECKUP_SCHEDULE: CHECKUP_SCHEDULE_WEEKLY,
+        },
+    )
+    registry = er.async_get(hass)
+    start_entity_id = registry.async_get_entity_id(
+        "button", DOMAIN, UNIQUE_ID_WASH_START_BUTTON.format(entry.entry_id)
+    )
+    assert start_entity_id is not None
+
+    with patch(
+        "custom_components.candy.client.CandyClient.send_command",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        await hass.services.async_call(
+            "button", "press", {"entity_id": start_entity_id}, blocking=True
+        )
+
+    query_string: str = mock_send.call_args[0][0]
+    assert "StartCheckUp=1" in query_string
+    assert entry.data.get(CONF_KEY_CHECKUP_LAST_DATE) is not None
+
+
+async def test_start_button_weekly_recent_date_skips_checkup(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Weekly schedule, last checkup 3 days ago: StartCheckUp=0 and date is unchanged."""
+    three_days_ago = (datetime.now(UTC) - timedelta(days=3)).timestamp()
+    entry = await _setup(
+        hass,
+        aioclient_mock,
+        _IDLE_JSON,
+        **{
+            CONF_KEY_CHECKUP_ENABLED: True,
+            CONF_KEY_CHECKUP_SCHEDULE: CHECKUP_SCHEDULE_WEEKLY,
+            CONF_KEY_CHECKUP_LAST_DATE: three_days_ago,
+        },
+    )
+    registry = er.async_get(hass)
+    start_entity_id = registry.async_get_entity_id(
+        "button", DOMAIN, UNIQUE_ID_WASH_START_BUTTON.format(entry.entry_id)
+    )
+
+    with patch(
+        "custom_components.candy.client.CandyClient.send_command",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        await hass.services.async_call(
+            "button", "press", {"entity_id": start_entity_id}, blocking=True
+        )
+
+    query_string: str = mock_send.call_args[0][0]
+    assert "StartCheckUp=0" in query_string
+    assert entry.data.get(CONF_KEY_CHECKUP_LAST_DATE) == three_days_ago
+
+
+async def test_start_button_command_failure_does_not_record_checkup(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Failed start command must not advance the checkup schedule clock."""
+    entry = await _setup(
+        hass,
+        aioclient_mock,
+        _IDLE_JSON,
+        **{
+            CONF_KEY_CHECKUP_ENABLED: True,
+            CONF_KEY_CHECKUP_SCHEDULE: CHECKUP_SCHEDULE_WEEKLY,
+        },
+    )
+    registry = er.async_get(hass)
+    start_entity_id = registry.async_get_entity_id(
+        "button", DOMAIN, UNIQUE_ID_WASH_START_BUTTON.format(entry.entry_id)
+    )
+
+    with (
+        patch("asyncio.sleep"),
+        patch(
+            "custom_components.candy.client.CandyClient.send_command",
+            new_callable=AsyncMock,
+            side_effect=Exception("connection refused"),
+        ),
+        contextlib.suppress(Exception),
+    ):
+        await hass.services.async_call(
+            "button", "press", {"entity_id": start_entity_id}, blocking=True
+        )
 
     assert entry.data.get(CONF_KEY_CHECKUP_LAST_DATE) is None

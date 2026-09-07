@@ -217,6 +217,11 @@ class CandyWashButtonBase(CoordinatorEntity, ButtonEntity):
             if data[DATA_KEY_WRITE_PENDING] == 0:
                 await self.coordinator.async_request_refresh()
 
+    def _record_checkup_requested(self) -> None:
+        new_data = dict(self.config_entry.data)
+        new_data[CONF_KEY_CHECKUP_LAST_DATE] = dt_util.utcnow().timestamp()
+        self.hass.config_entries.async_update_entry(self.config_entry, data=new_data)
+
     @property
     def device_info(self) -> DeviceInfo:
         return wash_device_info(self.config_entry)
@@ -325,6 +330,7 @@ class WashStartButton(CandyWashButtonBase):
                 self.hass.states.get(steam_entity_id) if steam_entity_id else None
             )
             steam = steam_state.state == "on" if steam_state else False
+            checkup = _should_send_checkup(self.config_entry, dt_util.utcnow())
             params = {
                 "Write": 1,
                 "StSt": 1,
@@ -344,12 +350,12 @@ class WashStartButton(CandyWashButtonBase):
                 "Dry": 0,
                 "ED": 0,
                 "RecipeId": nfc.recipe_id,
-                "StartCheckUp": _should_send_checkup(
-                    self.config_entry, dt_util.utcnow()
-                ),
+                "StartCheckUp": checkup,
                 "DispTestOn": 1,
             }
             await self._send_command_and_refresh(urlencode(params, quote_via=quote))
+            if checkup == 1:
+                self._record_checkup_requested()
             return
 
         temp_str = _get_state(UNIQUE_ID_WASH_TEMP_SELECT)
@@ -404,6 +410,7 @@ class WashStartButton(CandyWashButtonBase):
             if switch_state and switch_state.state == "on":
                 opt_mask |= bitmask
 
+        checkup = _should_send_checkup(self.config_entry, dt_util.utcnow())
         params = {
             "Write": 1,
             "StSt": 1,
@@ -421,10 +428,12 @@ class WashStartButton(CandyWashButtonBase):
             "Dry": 0,
             "ED": 0,
             "RecipeId": 0,
-            "StartCheckUp": _should_send_checkup(self.config_entry, dt_util.utcnow()),
+            "StartCheckUp": checkup,
             "DispTestOn": 1,
         }
         await self._send_command_and_refresh(urlencode(params, quote_via=quote))
+        if checkup == 1:
+            self._record_checkup_requested()
 
 
 class WashMaintResetButton(CoordinatorEntity, ButtonEntity):

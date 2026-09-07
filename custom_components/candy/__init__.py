@@ -20,7 +20,6 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.util import dt as dt_util
 
 from .client import CandyClient
 from .client.model import (
@@ -38,7 +37,6 @@ from .client.model import (
 )
 from .const import (
     CONF_KEY_CHECKUP_ENABLED,
-    CONF_KEY_CHECKUP_LAST_DATE,
     CONF_KEY_CHECKUP_LAST_RESULT,
     CONF_KEY_MAINTENANCE_ENABLED,
     CONF_KEY_MAINTENANCE_FILTER_ENABLED,
@@ -488,7 +486,6 @@ def _register_checkup_listener(
             return
         if curr_code != 0 and prev_code == 0:
             new_data = dict(config_entry.data)
-            new_data[CONF_KEY_CHECKUP_LAST_DATE] = dt_util.utcnow().timestamp()
             new_data[CONF_KEY_CHECKUP_LAST_RESULT] = curr_code
             hass.config_entries.async_update_entry(config_entry, data=new_data)
 
