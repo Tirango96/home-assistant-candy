@@ -30,6 +30,7 @@ from homeassistant.helpers.update_coordinator import (
 from homeassistant.util import dt as dt_util
 
 from .client import (
+    DownloadableProgram,
     WashingMachineStatus,
     WashingMachineWashProgram,
     load_downloadable_programs,
@@ -134,9 +135,13 @@ async def async_setup_entry(
 
     if isinstance(coordinator.data, WashingMachineStatus):
         status = coordinator.data
+        programs = parse_wash_programs(config_entry.data.get(CONF_KEY_PROGRAMS, []))
+        dl_programs = load_downloadable_programs(
+            config_entry.data.get(CONF_KEY_DOWNLOADABLE_PROGRAMS, [])
+        )
         entities: list[CandyBaseSensor] = [
             CandyWashingMachineSensor(coordinator, config_entry),
-            CandyWashProgramSensor(coordinator, config_entry),
+            CandyWashProgramSensor(coordinator, config_entry, programs, dl_programs),
             CandyWashCycleStatusSensor(coordinator, config_entry),
             CandyWashRemainingTimeSensor(coordinator, config_entry),
             CandyWashTemperatureSensor(coordinator, config_entry),
@@ -169,7 +174,6 @@ async def async_setup_entry(
             entities.append(CandyWashMotorFreqSensor(coordinator, config_entry))
         if status.soil_level is not None or _was_registered(UNIQUE_ID_WASH_SOIL_LEVEL):
             entities.append(CandyWashSoilLevelSensor(coordinator, config_entry))
-        programs = parse_wash_programs(config_entry.data.get(CONF_KEY_PROGRAMS, []))
         if programs:
             entities.append(
                 CandyWashEstimatedDurationSensor(coordinator, config_entry, programs)
@@ -328,6 +332,17 @@ class CandyWashProgramSensor(CandyBaseSensor):
     _attr_translation_key = "wash_program"
     _attr_name = "Wash program"
 
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        programs: list[WashingMachineWashProgram],
+        dl_programs: list[DownloadableProgram],
+    ) -> None:
+        super().__init__(coordinator, config_entry)
+        self._programs = programs
+        self._dl_programs = dl_programs
+
     def device_name(self) -> str:
         return DEVICE_NAME_WASHING_MACHINE
 
@@ -344,22 +359,17 @@ class CandyWashProgramSensor(CandyBaseSensor):
         lang = self.config_entry.data.get(
             CONF_KEY_PROGRAM_LANGUAGE, self.hass.config.language
         )
-        raw = self.config_entry.data.get(CONF_KEY_PROGRAMS)
-        if raw:
-            programs = parse_wash_programs(raw)
-            match = next(
-                (p for p in programs if p.selector_position == status.program), None
-            )
-            if match is not None:
-                return match.localized_name(lang)
-        dl_raw = self.config_entry.data.get(CONF_KEY_DOWNLOADABLE_PROGRAMS)
-        if dl_raw:
-            dl_programs = load_downloadable_programs(dl_raw)
-            dl_match = next(
-                (p for p in dl_programs if p.position == status.program), None
-            )
-            if dl_match is not None:
-                return dl_match.display_name(lang)
+        match = next(
+            (p for p in self._programs if p.selector_position == status.program),
+            None,
+        )
+        if match is not None:
+            return match.localized_name(lang)
+        dl_match = next(
+            (p for p in self._dl_programs if p.position == status.program), None
+        )
+        if dl_match is not None:
+            return dl_match.display_name(lang)
         return status.program
 
     @property
