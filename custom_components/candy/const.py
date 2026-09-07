@@ -79,6 +79,7 @@ UNIQUE_ID_WASH_SCHEDULED_FINISH = "{0}-wash_scheduled_finish"
 UNIQUE_ID_WASH_LIQUID_DETERGENT = "{0}-wash_liquid_detergent"
 UNIQUE_ID_WASH_POWDER_DETERGENT = "{0}-wash_powder_detergent"
 UNIQUE_ID_WASH_CYCLE_CAPACITY = "{0}-wash_cycle_capacity"
+UNIQUE_ID_WASH_PURCHASE_DATE = "{0}-wash_purchase_date"
 
 CONF_KEY_IS_WASHING_MACHINE = "is_washing_machine"
 CONF_KEY_INTERFACE_TYPE = "interface_type"

@@ -109,6 +109,7 @@ from .const import (
     UNIQUE_ID_WASH_POWDER_DETERGENT,
     UNIQUE_ID_WASH_PROGRAM,
     UNIQUE_ID_WASH_PROGRAM_SELECT,
+    UNIQUE_ID_WASH_PURCHASE_DATE,
     UNIQUE_ID_WASH_REMAINING_TIME,
     UNIQUE_ID_WASH_SCHEDULED_FINISH,
     UNIQUE_ID_WASH_SCHEDULED_START,
@@ -191,6 +192,8 @@ async def async_setup_entry(
             if config_entry.data.get(CONF_KEY_CHECKUP_ENABLED):
                 entities.append(CandyWashCheckUpResultSensor(coordinator, config_entry))
                 entities.append(CandyWashLastCheckUpSensor(coordinator, config_entry))
+            if config_entry.data.get(CONF_KEY_PURCHASE_DATE):
+                entities.append(CandyWashPurchaseDateSensor(coordinator, config_entry))
         stats_coordinator = hass.data[DOMAIN][config_id].get(DATA_KEY_STATS_COORDINATOR)
         if stats_coordinator is not None:
             entities.append(CandyWashTotalCyclesSensor(stats_coordinator, config_entry))
@@ -262,8 +265,6 @@ class CandyBaseSensor(CoordinatorEntity, SensorEntity):
                 info["model"] = self.config_entry.data[CONF_KEY_DEVICE_MODEL]
             if self.config_entry.data.get(CONF_KEY_SERIAL_NUMBER):
                 info["serial_number"] = self.config_entry.data[CONF_KEY_SERIAL_NUMBER]
-            if self.config_entry.data.get(CONF_KEY_PURCHASE_DATE):
-                info["hw_version"] = self.config_entry.data[CONF_KEY_PURCHASE_DATE]
         return info
 
     @abstractmethod
@@ -803,6 +804,36 @@ class CandyWashLastCheckUpSensor(CandyBaseSensor):
     @property
     def icon(self) -> str:
         return "mdi:calendar-check"
+
+
+class CandyWashPurchaseDateSensor(CandyBaseSensor):
+    """Purchase date of the appliance, as reported by the cloud API."""
+
+    _attr_translation_key = "wash_purchase_date"
+    _attr_name = "Purchase date"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def device_name(self) -> str:
+        return DEVICE_NAME_WASHING_MACHINE
+
+    def suggested_area(self) -> str:
+        return SUGGESTED_AREA_BATHROOM
+
+    @property
+    def available(self) -> bool:
+        return True
+
+    @property
+    def unique_id(self) -> str:
+        return UNIQUE_ID_WASH_PURCHASE_DATE.format(self.config_id)
+
+    @property
+    def native_value(self) -> StateType:
+        return self.config_entry.data.get(CONF_KEY_PURCHASE_DATE)
+
+    @property
+    def icon(self) -> str:
+        return "mdi:calendar"
 
 
 class CandyWashTotalCyclesSensor(CandyBaseSensor, RestoreSensor):

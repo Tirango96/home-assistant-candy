@@ -12,7 +12,6 @@ from .const import (
     CONF_KEY_DEVICE_MODEL,
     CONF_KEY_MAC_ADDRESS,
     CONF_KEY_MODE,
-    CONF_KEY_PURCHASE_DATE,
     CONF_KEY_SERIAL_NUMBER,
     DEVICE_NAME_WASHING_MACHINE,
     DOMAIN,
@@ -71,6 +70,4 @@ def wash_device_info(config_entry: ConfigEntry) -> DeviceInfo:
             info["model"] = config_entry.data[CONF_KEY_DEVICE_MODEL]
         if config_entry.data.get(CONF_KEY_SERIAL_NUMBER):
             info["serial_number"] = config_entry.data[CONF_KEY_SERIAL_NUMBER]
-        if config_entry.data.get(CONF_KEY_PURCHASE_DATE):
-            info["hw_version"] = config_entry.data[CONF_KEY_PURCHASE_DATE]
     return info
