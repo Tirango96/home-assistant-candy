@@ -9,7 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.event import async_call_later, async_track_state_change_event
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -118,7 +118,7 @@ class _WashSwitchBase(CoordinatorEntity, SwitchEntity):
                     )
                 )
 
-        self.hass.async_call_later(0, _late_subscribe)
+        async_call_later(self.hass, 0, _late_subscribe)
 
     @callback
     def _on_program_changed(self, event) -> None:
