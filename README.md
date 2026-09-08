@@ -18,6 +18,7 @@ Fully compliant with strictly-typed Home Assistant (>= 2024.x) development stand
   - 🌫️ Tumble Dryer
   - 🔪 Dishwasher
   - 🍳 Oven
+  - 🍷 Wine Cooler / Cellar
 - **Zero-Config Decryption:** Say goodbye to manually extracting encryption keys. This integration boasts a natively built-in *sliding-window/known-plaintext* algorithm that unlocks your device seamlessly in fractions of a second during setup.
 - **Strict HA Compatibility:** Follows the rigorous MyPy styling standards enforced by Home Assistant 2025.
 - Uses the local device API for real-time responsiveness.

@@ -2,13 +2,21 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import pytest
 from pytest_homeassistant_custom_component.common import load_fixture
 
-from custom_components.candy.client import CandyClient, Encryption, detect_encryption
+from custom_components.candy.client import (
+    CandyClient,
+    Encryption,
+    _xor_encrypt,
+    detect_encryption,
+)
 from custom_components.candy.client.decryption import decrypt
 from custom_components.candy.client.model import (
     DishwasherStatus,
     MachineState,
     WashingMachineStatus,
     WashProgramState,
+    WineCoolerProgram,
+    WineCoolerState,
+    WineCoolerStatus,
 )
 
 from .common import (
@@ -289,3 +297,71 @@ async def test_discover_devices_finds_washing_machine(hass, aioclient_mock):
     result = await discover_devices(async_get_clientsession(hass), "192.168.0.0")
     assert "192.168.0.1" in result
     assert result["192.168.0.1"] == "Washing Machine"
+
+
+async def test_status_wine_cooler(hass, aioclient_mock):
+    aioclient_mock.get(
+        f"http://{TEST_IP}/http-read.json",
+        text='{"statusWCool":{"r1":"1","r2":"E0","r3":"1","r4":"16","r5":"2","r6":"0","r7":"0","r8":"0","r9":"0","r10":"1"}}',
+    )
+
+    client = CandyClient(
+        async_get_clientsession(hass),
+        device_ip=TEST_IP,
+        encryption_key="",
+        use_encryption=False,
+    )
+    status = await client.status()
+
+    assert isinstance(status, WineCoolerStatus)
+    assert status.machine_state == WineCoolerState.ON
+    assert status.program == WineCoolerProgram.RED_WINE
+    assert status.temp == 16
+    assert status.light is True
+    assert status.remote_control is True
+    assert status.error is None
+
+
+async def test_detect_encryption_with_trailing_null_bytes(hass, aioclient_mock):
+    """Test detect_encryption when device appends trailing null bytes."""
+    aioclient_mock.get(
+        f"http://{TEST_IP}/http-read.json?encrypted=0",
+        text='{"statusWCool":{"r1":"1","r2":"E0","r3":"1","r4":"16","r5":"2","r6":"0","r7":"0","r8":"0","r9":"0","r10":"0"}}\x00',
+    )
+
+    encryption_type, key = await detect_encryption(
+        async_get_clientsession(hass), device_ip=TEST_IP
+    )
+    assert encryption_type is Encryption.NO_ENCRYPTION
+    assert key is None
+
+
+async def test_set_wine_cooler_light_encrypted(hass, aioclient_mock):
+    """Test sending encrypted light control command."""
+    key = "NHCm1edvvWJdVMIb"
+    query = "Write=1&w1=1&w2=16&w7=1"
+    encrypted_data = _xor_encrypt(query, key)
+
+    aioclient_mock.get(
+        f"http://{TEST_IP}/http-write.json?encrypted=1&data={encrypted_data}",
+        text='{"response":"OK"}',
+    )
+
+    client = CandyClient(
+        async_get_clientsession(hass),
+        device_ip=TEST_IP,
+        encryption_key=key,
+        use_encryption=True,
+    )
+
+    status = WineCoolerStatus(
+        machine_state=WineCoolerState.ON,
+        program=WineCoolerProgram.RED_WINE,
+        temp=16,
+        light=False,
+        error=None,
+        remote_control=True,
+    )
+
+    await client.set_wine_cooler_light(True, status)
+    assert aioclient_mock.call_count == 1

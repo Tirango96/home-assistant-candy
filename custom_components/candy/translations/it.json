@@ -115,6 +115,21 @@
       "dishwasher_program": {
         "name": "Programma lavastoviglie"
       },
+      "wine_cooler": {
+        "name": "Cantinetta vino"
+      },
+      "wine_cooler_program": {
+        "name": "Programma cantinetta vino"
+      },
+      "wine_cooler_temperature": {
+        "name": "Temperatura target cantinetta vino"
+      },
+      "wine_cooler_light": {
+        "name": "Luce cantinetta vino"
+      },
+      "wine_cooler_error_code": {
+        "name": "Codice errore cantinetta vino"
+      },
       "wash_scheduled_start": {
         "name": "Wash scheduled start"
       },
@@ -147,6 +162,11 @@
       },
       "wash_stop_button": {
         "name": "Ferma lavaggio"
+      }
+    },
+    "light": {
+      "wine_cooler_light": {
+        "name": "Luce"
       }
     }
   },

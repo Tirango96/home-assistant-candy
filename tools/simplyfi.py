@@ -55,7 +55,7 @@ def get_candy_simplyfi_data(device_ip: str, method: str, port: int = 80) -> byte
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.settimeout(10)
             sock.connect((device_ip, port))
-            message = f"GET /http-{method}.json?encrypted=1 HTTP/1.1\nHost: {device_ip}\n\nConnection: close\r\n\r\n"
+            message = f"GET /http-{method}.json?encrypted=1 HTTP/1.1\r\nHost: {device_ip}\r\nConnection: close\r\n\r\n"
             sock.sendall(message.encode('utf-8'))
 
             response = b""
@@ -91,10 +91,11 @@ def show_header(error: bool = False):
     print("## Candy Simply-Fi tool by Melvin Groenendaal ## (Python Port)", file=out)
 
 def main():
-    if (len(sys.argv) == 3 and sys.argv[2] != "getkey") or len(sys.argv) < 3 or len(sys.argv) > 4:
+    if len(sys.argv) < 3 or len(sys.argv) > 4:
         show_header(True)
-        print(f"Usage to retreive key: {sys.argv[0]} <ip> getkey", file=sys.stderr)
-        print(f"Usage to get data    : {sys.argv[0]} <ip> <key> <method: config, getStatistics, read>", file=sys.stderr)
+        print(f"Usage to retrieve key: {sys.argv[0]} <ip> getkey", file=sys.stderr)
+        print(f"Usage to read status : {sys.argv[0]} <ip> <method: read, config, getStatistics>", file=sys.stderr)
+        print(f"Usage with key       : {sys.argv[0]} <ip> <key> <method: read, config, getStatistics>", file=sys.stderr)
         sys.exit(-1)
 
     if sys.argv[2] == "getkey":
@@ -109,7 +110,37 @@ def main():
             "{\"WiFiStatus\":\"1\"",
             "{\"StatoWiFi\":\"0\"",
             "{\"StatoWiFi\":\"1\"",
-            "\"CheckUpState\":\""
+            "\"WiFiStatus\":\"0\"",
+            "\"WiFiStatus\":\"1\"",
+            "\"StatoWiFi\":\"0\",",
+            "\"StatoWiFi\":\"1\",",
+            "\"CodiceErrore\":\"",
+            "\"CheckUpState\":\"",
+            "{\r\n\t\"statusWCool",
+            "{\r\n\t\"statusLavat",
+            "{\r\n\t\"statusTD\":{",
+            "{\r\n\t\"statusForno",
+            "{\r\n\t\"statusDWash",
+            "{\r\n  \"statusWCool",
+            "{\r\n  \"statusLavat",
+            "{\r\n  \"statusTD\":{",
+            "{\r\n  \"statusForno",
+            "{\r\n  \"statusDWash",
+            "{\n\t\"statusWCool\"",
+            "{\n\t\"statusLavatri",
+            "{\n\t\"statusForno\":",
+            "{\n\t\"statusDWash\":",
+            "{\n  \"statusWCool\":",
+            "{\n  \"statusLavatri",
+            "{\n  \"statusForno\":",
+            "{\n  \"statusDWash\":",
+            "{\"statusWCool\":{",
+            "{\"statusLavatrice",
+            "{\"statusTD\":{",
+            "{\"statusForno\":{",
+            "{\"statusDWash\":{",
+            "\"statusWCool\":{",
+            "\"statusWCool\": {",
         ])
 
         if not key:
@@ -117,6 +148,14 @@ def main():
             sys.exit(-3)
         else:
             print(f"Found key: {key}")
+    elif len(sys.argv) == 3:
+        ip = sys.argv[1]
+        method = sys.argv[2]
+        data = get_candy_simplyfi_data(ip, method)
+        if not data:
+            print("error: get_candySimplify_data, could not get data from server", file=sys.stderr)
+            sys.exit(-4)
+        print(xor_string(data, ""))
     else:
         ip = sys.argv[1]
         key = sys.argv[2]
@@ -128,6 +167,7 @@ def main():
             sys.exit(-4)
 
         print(xor_string(data, key))
+
 
 if __name__ == "__main__":
     main()

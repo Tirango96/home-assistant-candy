@@ -1,7 +1,7 @@
 """Constants for the Candy integration."""
 
 DOMAIN = "candy"
-PLATFORMS = ["sensor", "binary_sensor", "select", "number", "button", "switch"]
+PLATFORMS = ["sensor", "binary_sensor", "select", "number", "button", "switch", "light"]
 
 DATA_KEY_COORDINATOR = "coordinator"
 DATA_KEY_STATS_COORDINATOR = "stats_coordinator"
@@ -174,10 +174,21 @@ UNIQUE_ID_DISHWASHER = "{0}-dishwasher"
 UNIQUE_ID_DISHWASHER_PROGRAM = "{0}-dishwasher_program"
 UNIQUE_ID_DISHWASHER_REMAINING_TIME = "{0}-dishwasher_remaining_time"
 
+UNIQUE_ID_WINE_COOLER = "{0}-wine_cooler"
+UNIQUE_ID_WINE_COOLER_PROGRAM = "{0}-wine_cooler_program"
+UNIQUE_ID_WINE_COOLER_TEMP = "{0}-wine_cooler_temp"
+UNIQUE_ID_WINE_COOLER_LIGHT = "{0}-wine_cooler_light"
+UNIQUE_ID_WINE_COOLER_LIGHT_ENTITY = "{0}-wine_cooler_light_control"
+UNIQUE_ID_WINE_COOLER_ERROR = "{0}-wine_cooler_error"
+UNIQUE_ID_WINE_COOLER_TEMP_DOWN = "{0}-wine_cooler_temp_down"
+UNIQUE_ID_WINE_COOLER_PROGRAM_DOWN = "{0}-wine_cooler_program_down"
+
 DEVICE_NAME_WASHING_MACHINE = "Washing machine"
 DEVICE_NAME_TUMBLE_DRYER = "Tumble dryer"
 DEVICE_NAME_OVEN = "Oven"
 DEVICE_NAME_DISHWASHER = "Dishwasher"
+DEVICE_NAME_WINE_COOLER = "Wine cooler"
 
 SUGGESTED_AREA_BATHROOM = "Bathroom"
 SUGGESTED_AREA_KITCHEN = "Kitchen"
+SUGGESTED_AREA_CELLAR = "Cellar"

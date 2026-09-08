@@ -3,7 +3,7 @@ import json
 from json import JSONDecodeError
 import logging
 from pathlib import Path
-from typing import Union
+from typing import Any
 
 import aiohttp
 from aiohttp import ClientSession
@@ -20,6 +20,7 @@ from .model import (
     WashingMachineStatistics,
     WashingMachineStatus,
     WashingMachineWashProgram as WashingMachineWashProgram,
+    WineCoolerStatus,
     load_downloadable_programs as load_downloadable_programs,
 )
 
@@ -80,6 +81,14 @@ def resolve_downloadable_programs(
 _LIMITER = AsyncLimiter(max_rate=1, time_period=3)
 
 
+def _parse_json_safe(text: str | bytes) -> dict[str, Any]:
+    """Safely decode and parse JSON, stripping leading/trailing whitespace and null bytes."""
+    if isinstance(text, bytes):
+        text = text.decode("utf-8", errors="ignore")
+    text = text.strip().strip("\x00").strip()
+    return json.loads(text)
+
+
 class CandyClient:
     def __init__(
         self,
@@ -101,18 +110,31 @@ class CandyClient:
     @backoff.on_exception(backoff.expo, TimeoutError, max_tries=3, logger=__name__)
     async def status_with_retry(
         self,
-    ) -> WashingMachineStatus | TumbleDryerStatus | DishwasherStatus | OvenStatus:
+    ) -> (
+        WashingMachineStatus
+        | TumbleDryerStatus
+        | DishwasherStatus
+        | OvenStatus
+        | WineCoolerStatus
+    ):
         return await self.status()
 
     async def status(
         self,
-    ) -> WashingMachineStatus | TumbleDryerStatus | DishwasherStatus | OvenStatus:
+    ) -> (
+        WashingMachineStatus
+        | TumbleDryerStatus
+        | DishwasherStatus
+        | OvenStatus
+        | WineCoolerStatus
+    ):
         url = _status_url(self.device_ip, self.use_encryption)
         async with _LIMITER, self.session.get(url) as resp:
             if self.use_encryption:
                 resp_hex = (
                     await resp.text()
                 )  # Response is hex encoded, either encrypted or not
+                resp_hex = resp_hex.strip().strip("\x00").strip()
                 if self.encryption_key != "":
                     decrypted_text = decrypt(
                         self.encryption_key.encode(), bytes.fromhex(resp_hex)
@@ -120,9 +142,10 @@ class CandyClient:
                 else:
                     # Response is just hex encoded without encryption (details in detect_encryption())
                     decrypted_text = bytes.fromhex(resp_hex)
-                resp_json = json.loads(decrypted_text)
+                resp_json = _parse_json_safe(decrypted_text)
             else:
-                resp_json = await resp.json(content_type="text/html")
+                text = await resp.text()
+                resp_json = _parse_json_safe(text)
 
             _LOGGER.debug(resp_json)
 
@@ -134,6 +157,8 @@ class CandyClient:
                 status = OvenStatus.from_json(resp_json["statusForno"])
             elif "statusDWash" in resp_json:
                 status = DishwasherStatus.from_json(resp_json["statusDWash"])
+            elif "statusWCool" in resp_json:
+                status = WineCoolerStatus.from_json(resp_json["statusWCool"])
             else:
                 raise Exception(
                     "Unable to detect machine type from API response", resp_json
@@ -178,15 +203,17 @@ class CandyClient:
         async with _LIMITER, self.session.get(url) as resp:
             if self.use_encryption:
                 resp_hex = await resp.text()
+                resp_hex = resp_hex.strip().strip("\x00").strip()
                 if self.encryption_key != "":
                     decrypted_text = decrypt(
                         self.encryption_key.encode(), bytes.fromhex(resp_hex)
                     )
                 else:
                     decrypted_text = bytes.fromhex(resp_hex)
-                resp_json = json.loads(decrypted_text)
+                resp_json = _parse_json_safe(decrypted_text)
             else:
-                resp_json = await resp.json(content_type="text/html")
+                text = await resp.text()
+                resp_json = _parse_json_safe(text)
 
             _LOGGER.debug(resp_json)
 
@@ -198,6 +225,42 @@ class CandyClient:
 
             return WashingMachineStatistics.from_json(resp_json["statusCounters"])
 
+    async def set_wine_cooler_light(
+        self, turn_on: bool, current_status: WineCoolerStatus
+    ) -> None:
+        """Control wine cooler light state."""
+        params: dict[str, str] = {
+            "Write": "1",
+            "w1": str(current_status.program.code),
+            "w2": str(current_status.temp),
+        }
+        if current_status.program_down is not None:
+            params["w4"] = str(current_status.program_down.code)
+        if current_status.temp_down is not None:
+            params["w5"] = str(current_status.temp_down)
+        params["w7"] = "1" if turn_on else "0"
+
+        encoded_query = "&".join(f"{k}={v}" for k, v in params.items())
+
+        if self.use_encryption and self.encryption_key != "":
+            encrypted_data = _xor_encrypt(encoded_query, self.encryption_key)
+            url = f"http://{self.device_ip}/http-write.json?encrypted=1&data={encrypted_data}"
+        else:
+            url = f"http://{self.device_ip}/http-write.json?encrypted=0&{encoded_query}"
+
+        async with _LIMITER, self.session.get(url) as resp:
+            resp.raise_for_status()
+
+
+def _xor_encrypt(plaintext: str, key: str) -> str:
+    """Encrypt plaintext string using sliding XOR key and return uppercase hex string."""
+    pt_bytes = plaintext.encode("utf-8")
+    k_bytes = key.encode("utf-8")
+    encrypted = bytes(
+        [pt_bytes[i] ^ k_bytes[i % len(k_bytes)] for i in range(len(pt_bytes))]
+    )
+    return encrypted.hex().upper()
+
 
 async def detect_encryption(
     session: aiohttp.ClientSession, device_ip: str
@@ -207,7 +270,8 @@ async def detect_encryption(
         _LOGGER.info("Trying to get a response without encryption (encrypted=0)...")
         url = _status_url(device_ip, use_encryption=False)
         async with _LIMITER, session.get(url) as resp:
-            resp_json = await resp.json(content_type="text/html")
+            text = await resp.text()
+            resp_json = _parse_json_safe(text)
             assert resp_json.get("response") != "BAD REQUEST"
             _LOGGER.info(
                 "Received unencrypted JSON response, no need to use key for decryption"
@@ -221,9 +285,11 @@ async def detect_encryption(
         url = _status_url(device_ip, use_encryption=True)
         async with _LIMITER, session.get(url) as resp:
             resp_hex = await resp.text()  # Response is hex encoded encrypted data
+            resp_hex = resp_hex.strip().strip("\x00").strip()
             try:
-                json.loads(bytes.fromhex(resp_hex))
-            except JSONDecodeError as json_err:
+                unhexed = bytes.fromhex(resp_hex)
+                _parse_json_safe(unhexed)
+            except Exception as json_err:
                 _LOGGER.info(
                     "Brute force decryption key from the encrypted response..."
                 )
@@ -266,6 +332,7 @@ _DEVICE_TYPE_LABELS: dict[str, str] = {
     "statusTD": "Tumble Dryer",
     "statusDWash": "Dishwasher",
     "statusForno": "Oven",
+    "statusWCool": "Wine Cooler",
 }
 
 
@@ -285,7 +352,8 @@ async def discover_devices(
             ) as resp:
                 if resp.status != 200:
                     return None
-                data = await resp.json(content_type=None)
+                text = await resp.text()
+                data = _parse_json_safe(text)
                 for key, label in _DEVICE_TYPE_LABELS.items():
                     if key in data:
                         return ip, label
