@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 import functools
 import operator
 from typing import cast
@@ -103,7 +104,7 @@ class _WashSwitchBase(CoordinatorEntity, SwitchEntity):
         await super().async_added_to_hass()
 
         @callback
-        def _late_subscribe() -> None:
+        def _late_subscribe(_now: datetime) -> None:
             """Subscribe after all platforms finish loading so the select entity is registered."""
             if self.registry_entry is None:
                 return
