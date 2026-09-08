@@ -7,6 +7,7 @@ from custom_components.candy.client import (
     Encryption,
     _xor_encrypt,
     detect_encryption,
+    discover_devices,
 )
 from custom_components.candy.client.decryption import decrypt
 from custom_components.candy.client.model import (
@@ -288,8 +289,6 @@ async def test_detect_encryption_brute_force_fails(hass, aioclient_mock):
 @pytest.mark.parametrize("expected_lingering_tasks", [True])
 async def test_discover_devices_finds_washing_machine(hass, aioclient_mock):
     """discover_devices returns matched IPs with device-type labels."""
-    from custom_components.candy.client import discover_devices
-
     aioclient_mock.get(
         "http://192.168.0.1/http-read.json",
         json={"statusLavatrice": {"WiFiStatus": "1"}},

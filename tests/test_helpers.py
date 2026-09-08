@@ -1,6 +1,6 @@
-import pytest
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
 from homeassistant.helpers import device_registry as dr
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.candy import CONF_KEY_USE_ENCRYPTION

@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import copy
 from unittest.mock import patch
 
-import pytest
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
@@ -16,8 +14,8 @@ from custom_components.candy import (
     CONF_KEY_USE_ENCRYPTION,
     DOMAIN,
     _make_off_status,
-    _restore_last_known_status,
     _restore_last_known_statistics,
+    _restore_last_known_status,
 )
 from custom_components.candy.client.model import (
     DishwasherState,

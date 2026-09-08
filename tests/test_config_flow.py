@@ -1100,7 +1100,8 @@ async def test_options_flow_maintenance_baselines_defaults_from_sensor_state(
     hass,
 ):
     """When the stats coordinator has no data yet, baseline defaults come from the
-    live sensor state instead of always falling back to the raw threshold."""
+    live sensor state instead of always falling back to the raw threshold.
+    """
     entry = MockConfigEntry(
         domain=DOMAIN,
         unique_id="opts-baseline-sensor-default",
