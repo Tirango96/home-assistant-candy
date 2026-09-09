@@ -28,7 +28,12 @@ Fully compliant with strictly-typed Home Assistant (>= 2024.x) development stand
 
 ## 🧺 Washing Machine — Full Control
 
-Full Control mode turns the integration into a complete remote panel, going beyond status monitoring to let you program, start, and track your machine from Home Assistant. The protocol was reverse-engineered from the official Candy/Simply-Fi app, and the feature set matches everything the mobile app offers.
+Full Control mode turns the integration into a complete remote panel, going beyond status monitoring to let you program, start, and track your washing machine from Home Assistant. The protocol was reverse-engineered from the official Candy/Simply-Fi app, and the feature set matches everything the mobile app offers.
+
+<p float="left">
+  <img src="docs//images/dashboard_washing_machine.png" width="300" />
+  <img src="docs//images/dashboard_maintenance.png" width="300" /> 
+</p>
 
 ### How it works
 
@@ -55,7 +60,7 @@ At setup, you choose between **Read-Only** (sensors only) and **Full Control**. 
 
 - **Faster feedback:** every write command locks the controls, waits for the machine to process it, then forces an immediate refresh — so the dashboard reflects the new state in a few seconds instead of waiting for the next 60-second poll.
 - **Faster wake-up:** while the machine is off, Home Assistant polls every 20 seconds instead of 60, so it notices when the machine turns back on much sooner.
-- **Accurate end-time calculation:** The integration computes the actual scheduled finish timestamp, accounting for delay-start and remaining cycle time.
+- **Accurate end-time calculation:** The integration computes an accurate scheduled finish timestamp, accounting for all variables.
 - **Always-on visibility:** Machine state and controls are available on your dashboard without opening the app.
 - **Correct lifetime cycle count:** the official app derives total wash cycles from per-program
   counters that are 8-bit and silently wrap at 256 — after enough washes on one program its
@@ -64,16 +69,18 @@ At setup, you choose between **Read-Only** (sensors only) and **Full Control**. 
 
 ### Dashboard cards
 
-Ready-made Lovelace cards are included in the [`dashboard/`](dashboard/) folder. They require the [Mushroom](https://github.com/piitaya/lovelace-mushroom) custom card collection.
+Ready-made Lovelace cards are included in the [`dashboard/`](dashboard/) folder. 
+
+[Mushroom](https://github.com/piitaya/lovelace-mushroom) custom card is required.
 
 - [`washing-machine.yaml`](dashboard/washing-machine.yaml) — main control card: status, running info, program selector, options, start/pause/stop buttons, and scheduled start/finish times.
 - [`maintenance.yaml`](dashboard/maintenance.yaml) — maintenance card: check-up, limescale, and filter counters with reset buttons and check-up result.
 
 To use them, copy the card YAML into a new manual card in your Lovelace dashboard and replace every occurrence of `<machine_name>` with your own machine's entity ID prefix (e.g. `my_washing_machine`).
 
-### Compatibility
+### Compatibility Note
 
-Full functionality has been tested on the **RAPIDO'** series. Other washing machine series may behave differently. If you encounter issues or unexpected behaviour, please share your findings in the [Discussions](https://github.com/bigmoby/home-assistant-candy/discussions/categories/device-support-improvements) section or open an Issue — feedback is very welcome.
+Full functionality has been tested on the **RAPIDO** series. Other washing machine series may behave differently. If you encounter issues or unexpected behaviour, please share your findings in the [Discussions](https://github.com/bigmoby/home-assistant-candy/discussions/categories/device-support-improvements) section or open an Issue — feedback is very welcome.
 
 ---
 
