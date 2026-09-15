@@ -172,6 +172,18 @@
     "binary_sensor": {
       "remote_control": {
         "name": "Remote control"
+      },
+      "wash_detergent_warning": {
+        "name": "Detergent empty"
+      },
+      "wash_softener_warning": {
+        "name": "Softener empty"
+      },
+      "wash_detergent_autodose": {
+        "name": "Auto detergent"
+      },
+      "wash_softener_autodose": {
+        "name": "Auto softener"
       }
     },
     "sensor": {

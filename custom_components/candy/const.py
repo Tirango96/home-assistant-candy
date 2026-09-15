@@ -64,8 +64,11 @@ UNIQUE_ID_WASH_MOTOR_FREQ = "{0}-wash_motor_freq"
 UNIQUE_ID_WASH_TOTAL_CYCLES = "{0}-wash_total_cycles"
 UNIQUE_ID_WASH_SOIL_LEVEL = "{0}-wash_soil_level"
 UNIQUE_ID_WASH_CHECKUP_RESULT = "{0}-wash_checkup_result"
-UNIQUE_ID_WASH_LAST_CHECKUP = "{0}-wash_last_checkup"
 UNIQUE_ID_WASH_REMOTE_CONTROL = "{0}-wash_remote_control"
+UNIQUE_ID_WASH_DETERGENT_WARN = "{0}-wash_detergent_warning"
+UNIQUE_ID_WASH_SOFTENER_WARN = "{0}-wash_softener_warning"
+UNIQUE_ID_WASH_DETERGENT_AUTODOSE = "{0}-wash_detergent_autodose"
+UNIQUE_ID_WASH_SOFTENER_AUTODOSE = "{0}-wash_softener_autodose"
 
 SOIL_LABELS: dict[int, str] = {1: "low", 2: "normal", 3: "high"}
 SOIL_LABELS_REVERSE: dict[str, int] = {v: k for k, v in SOIL_LABELS.items()}

@@ -1,0 +1,80 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Gerät ist bereits konfiguriert"
+    },
+    "error": {
+      "unknown": "Unerwarteter Fehler",
+      "detect_encryption": "Verschlüsselungserkennung fehlgeschlagen",
+      "cloud_auth": "Verbindung zur Simply-Fi Cloud fehlgeschlagen"
+    },
+    "step": {
+      "user": {
+        "data": {
+          "ip_address": "Geräte-IP-Adresse"
+        }
+      },
+      "select": {
+        "title": "Gefundene Candy-Geräte",
+        "data": {
+          "ip_address": "Gerät"
+        }
+      },
+      "mode": {
+        "title": "Integrations-Modus",
+        "data": {
+          "mode": "Modus"
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "remote_control": {
+        "name": "Fernsteuerung"
+      },
+      "wash_detergent_warning": {
+        "name": "Waschmittel leer"
+      },
+      "wash_softener_warning": {
+        "name": "Weichspüler leer"
+      },
+      "wash_detergent_autodose": {
+        "name": "Auto-Dosierung Waschmittel"
+      },
+      "wash_softener_autodose": {
+        "name": "Auto-Dosierung Weichspüler"
+      }
+    },
+    "sensor": {
+      "washing_machine": {
+        "name": "Waschmaschine"
+      },
+      "wash_cycle_status": {
+        "name": "Zyklus-Status"
+      },
+      "wash_remaining_time": {
+        "name": "Restzeit"
+      },
+      "wash_temperature": {
+        "name": "Temperatur"
+      },
+      "wash_spin_speed": {
+        "name": "Schleuderdrehzahl"
+      },
+      "wash_program": {
+        "name": "Programm"
+      },
+      "wash_error": {
+        "name": "Fehlercode"
+      },
+      "wash_fill_level": {
+        "name": "Füllstand"
+      },
+      "wash_total_cycles": {
+        "name": "Waschzyklen Gesamt"
+      }
+    }
+  },
+  "title": "Candy"
+}

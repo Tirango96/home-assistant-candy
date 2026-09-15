@@ -97,6 +97,10 @@ class WashingMachineStatus:
     fault_count: int | None  # numF — total fault count
     dis_test_res: CheckUpResult | None  # DisTestRes — result of last diagnostic
     soil_level: int | None  # SLevel — 0–4 soil level setting
+    detergent_warning: bool | None = None  # DetWarn — 1 means detergent empty/low
+    softener_warning: bool | None = None  # SoftWarn — 1 means softener empty/low
+    detergent_autodose: bool | None = None  # Det — 1 means auto detergent enabled
+    softener_autodose: bool | None = None  # Soft — 1 means auto softener enabled
 
     @classmethod
     def from_json(cls, json):
@@ -123,6 +127,10 @@ class WashingMachineStatus:
             if "DisTestRes" in json
             else None,
             soil_level=int(json["SLevel"]) if "SLevel" in json else None,
+            detergent_warning=int(json["DetWarn"]) == 1 if "DetWarn" in json else None,
+            softener_warning=int(json["SoftWarn"]) == 1 if "SoftWarn" in json else None,
+            detergent_autodose=int(json["Det"]) == 1 if "Det" in json else None,
+            softener_autodose=int(json["Soft"]) == 1 if "Soft" in json else None,
         )
 
 
