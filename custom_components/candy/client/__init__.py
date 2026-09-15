@@ -173,8 +173,7 @@ class CandyClient:
         'Write=1&StSt=1&PrNm=11&...'
         """
         if self.use_encryption and self.encryption_key:
-            payload = decrypt(self.encryption_key.encode(), query_string.encode())
-            hex_data = payload.hex()
+            hex_data = _xor_encrypt(query_string, self.encryption_key)
             url = _write_url(self.device_ip, use_encryption=True, data=hex_data)
         else:
             url = _write_url(self.device_ip, use_encryption=False, data=query_string)
