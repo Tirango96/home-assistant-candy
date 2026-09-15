@@ -5,13 +5,79 @@
     },
     "error": {
       "unknown": "Erro inesperado",
-      "detect_encryption": "Falha ao detectar criptografia, verifique os logs."
+      "detect_encryption": "Falha ao detectar criptografia, verifique os logs.",
+      "cloud_auth": "Não foi possível conectar ao cloud Simply-Fi. Verifique suas credenciais e tente novamente."
     },
     "step": {
       "user": {
         "data": {
           "ip_address": "Endereço IP do dispositivo"
         }
+      },
+      "select": {
+        "title": "Dispositivos Candy encontrados na sua rede",
+        "description": "Selecione um dispositivo para configurar, ou escolha \"Introduzir IP manualmente\".",
+        "data": {
+          "ip_address": "Dispositivo"
+        }
+      },
+      "mode": {
+        "title": "Modo de integração",
+        "description": "Escolha **Somente leitura** para monitorar o dispositivo sem conexão à nuvem.\n\nEscolha **Controlo total** para iniciar/parar programas. As credenciais Simply-Fi são necessárias uma única vez — usadas apenas para descarregar as definições do dispositivo e nunca armazenadas.",
+        "data": {
+          "mode": "Modo"
+        }
+      },
+      "cloud": {
+        "title": "Conta Simply-Fi",
+        "data": {
+          "email": "E-mail",
+          "password": "Senha"
+        }
+      },
+      "language": {
+        "title": "Idioma dos programas",
+        "description": "Escolha o idioma para os nomes dos programas na interface. Pode ser diferente do idioma do Home Assistant.",
+        "data": {
+          "program_language": "Idioma"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "wash_scheduled_start": {
+        "name": "Wash scheduled start"
+      },
+      "wash_scheduled_finish": {
+        "name": "Wash scheduled finish"
+      }
+    },
+    "select": {
+      "wash_program_select": {
+        "name": "Programa de lavagem"
+      },
+      "wash_temp_select": {
+        "name": "Temperatura de lavagem"
+      },
+      "wash_spin_select": {
+        "name": "Velocidade de centrifugação"
+      },
+      "wash_soil_select": {
+        "name": "Nível de sujidade"
+      }
+    },
+    "number": {
+      "wash_delay_number": {
+        "name": "Atraso de início"
+      }
+    },
+    "button": {
+      "wash_start_button": {
+        "name": "Iniciar lavagem"
+      },
+      "wash_stop_button": {
+        "name": "Parar lavagem"
       }
     }
   },

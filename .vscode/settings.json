@@ -10,4 +10,5 @@
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter"
     },
+    "makefile.configureOnOpen": false,
 }

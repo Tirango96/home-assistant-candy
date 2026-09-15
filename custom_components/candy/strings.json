@@ -12,53 +12,250 @@
         "data": {
           "ip_address": "Device"
         }
+      },
+      "mode": {
+        "title": "Integration mode",
+        "description": "Choose **Read-Only** to monitor your device without any cloud connection.\n\nChoose **Full Control** to also start/stop programs. This requires your Simply-Fi account credentials once — they are used only to download your appliance settings and are never stored.",
+        "data": {
+          "mode": "Mode"
+        }
+      },
+      "cloud": {
+        "title": "Simply-Fi account",
+        "description": "Enter your Simply-Fi / hOn credentials.\n\nCredentials are only used to download the machine data, then discarded. Your machine should be already registered with the Candy Simply-Fi service.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "language": {
+        "title": "Program language",
+        "description": "Choose which language to use for program names in the UI. This can differ from your Home Assistant language.",
+        "data": {
+          "program_language": "Language"
+        }
+      },
+      "maintenance": {
+        "title": "Maintenance counters",
+        "description": "The integration can track when your washing machine is due for limescale cleaning and filter cleaning — based on total wash cycles, just like the Simply-Fi app.",
+        "data": {
+          "maintenance_enabled": "Enable maintenance counters"
+        }
+      },
+      "maintenance_types": {
+        "title": "Counter selection",
+        "description": "Check-up cycles are always tracked. Choose which additional counters to enable.",
+        "data": {
+          "maintenance_limescale_enabled": "Limescale cleaning",
+          "maintenance_filter_enabled": "Filter cleaning"
+        }
+      },
+      "hardness": {
+        "title": "Water hardness",
+        "description": "Select your local water hardness. This determines how often the descale reminder fires.",
+        "data": {
+          "water_hardness": "Water hardness"
+        }
+      },
+      "maintenance_baselines": {
+        "title": "Current counter values",
+        "description": "Enter the current counter values from the Simply-Fi app if known. Leave at the default to start a fresh full cycle from now.",
+        "data": {
+          "maintenance_last_full_checkup": "Full Check-up: remaining cycles",
+          "maintenance_last_limescale": "Limescale Cleaning counter",
+          "maintenance_last_filter": "Filter-Clean counter"
+        }
+      },
+      "checkup": {
+        "title": "Automatic self check-up",
+        "description": "The integration can trigger the machine's built-in electronic self-diagnostic at the end of each wash. The result will be available as a sensor in Home Assistant.",
+        "data": {
+          "checkup_enabled": "Enable automatic self check-up"
+        }
+      },
+      "checkup_schedule": {
+        "title": "Check-up schedule",
+        "description": "How often should the self check-up run?",
+        "data": {
+          "checkup_schedule": "Schedule"
+        }
+      },
+      "reconfigure": {
+        "title": "Upgrade to Full Control",
+        "description": "Enter your Simply-Fi / hOn credentials.\n\nCredentials are only used to download the machine data, then discarded. Your machine should be already registered with the Candy Simply-Fi service.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
       }
     },
     "error": {
       "unknown": "[%key:common::config_flow::error::unknown%]",
-      "detect_encryption": "Failed to detect encryption, check logs"
+      "detect_encryption": "Failed to detect encryption, check logs",
+      "cloud_auth": "Failed to connect to Simply-Fi cloud. Check your credentials and try again."
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Integration settings",
+        "description": "Choose an action.",
+        "data": {
+          "next_step": "Action"
+        }
+      },
+      "update_cloud_data": {
+        "title": "Simply-Fi account",
+        "description": "Enter your Simply-Fi / hOn credentials.\n\nCredentials are only used to download the machine data, then discarded. Your machine should be already registered with the Candy Simply-Fi service.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "switch_to_read_only": {
+        "title": "Switch to Read-Only",
+        "description": "This will remove all write controls (program select, start/stop, steam, delay). The integration will continue to monitor your device.\n\nClick Submit to confirm."
+      },
+      "language": {
+        "title": "Program language",
+        "description": "Choose which language to use for program names in the UI. This can differ from your Home Assistant language.",
+        "data": {
+          "program_language": "Language"
+        }
+      },
+      "maintenance": {
+        "title": "Maintenance counters",
+        "description": "The integration can track when your washing machine is due for limescale cleaning and filter cleaning — based on total wash cycles, just like the Simply-Fi app.",
+        "data": {
+          "maintenance_enabled": "Enable maintenance counters"
+        }
+      },
+      "hardness": {
+        "title": "Water hardness",
+        "description": "Select your local water hardness. This determines how often the descale reminder fires.",
+        "data": {
+          "water_hardness": "Water hardness"
+        }
+      },
+      "maintenance_baselines": {
+        "title": "Current counter values",
+        "description": "Enter the current counter values from the Simply-Fi app if known. Leave at the default to start a fresh full cycle from now.",
+        "data": {
+          "maintenance_last_full_checkup": "Full Check-up: remaining cycles",
+          "maintenance_last_limescale": "Limescale Cleaning counter",
+          "maintenance_last_filter": "Filter-Clean counter"
+        }
+      },
+      "checkup": {
+        "title": "Automatic self check-up",
+        "description": "The integration can trigger the machine's built-in electronic self-diagnostic at the end of each wash. The result will be available as a sensor in Home Assistant.",
+        "data": {
+          "checkup_enabled": "Enable automatic self check-up"
+        }
+      },
+      "checkup_schedule": {
+        "title": "Check-up schedule",
+        "description": "How often should the self check-up run?",
+        "data": {
+          "checkup_schedule": "Schedule"
+        }
+      }
+    },
+    "error": {
+      "cloud_auth": "Failed to connect to Simply-Fi cloud. Check your credentials and try again."
+    }
+  },
   "entity": {
+    "binary_sensor": {
+      "remote_control": {
+        "name": "Remote control"
+      }
+    },
     "sensor": {
       "washing_machine": {
         "name": "Washing machine"
       },
+      "wash_program": {
+        "name": "Wash program"
+      },
+      "wash_program_description": {
+        "name": "Program description"
+      },
       "wash_cycle_status": {
-        "name": "Wash cycle status"
+        "name": "Cycle status"
       },
       "wash_remaining_time": {
-        "name": "Wash cycle remaining time"
+        "name": "Cycle remaining time"
       },
       "wash_temperature": {
-        "name": "Wash temperature"
+        "name": "Temperature"
       },
       "wash_spin_speed": {
-        "name": "Wash spin speed"
+        "name": "Spin speed"
       },
       "wash_fill_level": {
-        "name": "Wash fill level"
+        "name": "Fill level"
       },
       "wash_error_code": {
-        "name": "Wash error code"
+        "name": "Error code"
       },
       "wash_delay_start": {
         "name": "Wash delay start"
       },
       "wash_ntc_water": {
-        "name": "Wash NTC water"
+        "name": "NTC water"
       },
       "wash_ntc_drum": {
-        "name": "Wash NTC drum"
+        "name": "NTC drum"
       },
       "wash_motor_frequency": {
-        "name": "Wash motor frequency"
+        "name": "Motor frequency"
+      },
+      "wash_maintenance": {
+        "name": "Wash maintenance"
+      },
+      "wash_checkup_result": {
+        "name": "Last check-up result",
+        "state": {
+          "not_run": "Not yet run",
+          "ok": "OK",
+          "problem": "Problem detected"
+        }
+      },
+      "wash_last_checkup": {
+        "name": "Last check-up"
+      },
+      "wash_total_cycles": {
+        "name": "Total wash cycles"
+      },
+      "wash_maint_full_checkup": {
+        "name": "Check-up maintenance remaining cycles"
+      },
+      "wash_maint_limescale": {
+        "name": "Limescale maintenance remaining cycles"
+      },
+      "wash_maint_filter": {
+        "name": "Filter maintenance remaining cycles"
+      },
+      "wash_soil_level": {
+        "name": "Stain level",
+        "state": {
+          "low": "Low",
+          "normal": "Normal",
+          "high": "High"
+        }
+      },
+      "wash_estimated_duration": {
+        "name": "Estimated cycle duration"
       },
       "tumble_dryer": {
         "name": "Tumble dryer"
+      },
+      "tumble_program": {
+        "name": "Dryer program"
       },
       "tumble_cycle_status": {
         "name": "Tumble cycle status"
@@ -69,11 +266,17 @@
       "oven": {
         "name": "Oven"
       },
+      "oven_program": {
+        "name": "Oven program"
+      },
       "oven_temperature": {
         "name": "Oven temperature"
       },
       "dishwasher": {
         "name": "Dishwasher"
+      },
+      "dishwasher_program": {
+        "name": "Dishwasher program"
       },
       "dishwasher_remaining_time": {
         "name": "Dishwasher remaining time"
@@ -97,6 +300,115 @@
     "light": {
       "wine_cooler_light": {
         "name": "Light"
+      }
+    },
+    "select": {
+      "wash_program_select": {
+        "name": "Wash program"
+      },
+      "wash_temp_select": {
+        "name": "Temperature"
+      },
+      "wash_spin_select": {
+        "name": "Spin speed"
+      },
+      "wash_soil_select": {
+        "name": "Stain level",
+        "state": {
+          "low": "Low",
+          "normal": "Normal",
+          "high": "High"
+        }
+      }
+    },
+    "number": {
+      "wash_delay_number": {
+        "name": "Delay"
+      }
+    },
+    "switch": {
+      "wash_steam_switch": {
+        "name": "Steam"
+      },
+      "wash_nfc_switch": {
+        "name": "Special programs"
+      },
+      "wash_option_prewash": {
+        "name": "Prewash"
+      },
+      "wash_option_hygiene": {
+        "name": "Hygiene"
+      },
+      "wash_option_anticrease": {
+        "name": "Anti-crease"
+      },
+      "wash_option_goodnight": {
+        "name": "Good Night"
+      },
+      "wash_option_rinse_1": {
+        "name": "Extra rinse +1"
+      },
+      "wash_option_rinse_2": {
+        "name": "Extra rinse +2"
+      },
+      "wash_option_rinse_3": {
+        "name": "Extra rinse +3"
+      },
+      "wash_option_acquaplus": {
+        "name": "AquaPlus"
+      }
+    },
+    "button": {
+      "wash_start_button": {
+        "name": "Start wash"
+      },
+      "wash_pause_button": {
+        "name": "Pause wash"
+      },
+      "wash_stop_button": {
+        "name": "Stop wash"
+      },
+      "wash_full_checkup": {
+        "name": "Full check-up"
+      },
+      "wash_limescale_clean": {
+        "name": "Limescale Cleaning"
+      },
+      "wash_maint_full_checkup_reset": {
+        "name": "Check-up maintenance reset"
+      },
+      "wash_maint_limescale_reset": {
+        "name": "Limescale maintenance reset"
+      },
+      "wash_maint_filter_reset": {
+        "name": "Filter maintenance reset"
+      }
+    }
+  },
+  "selector": {
+    "next_step": {
+      "options": {
+        "update_cloud_data": "Update cloud data",
+        "switch_to_read_only": "Switch to Read-Only",
+        "maintenance_settings": "Maintenance counter settings",
+        "checkup_settings": "Self check-up settings"
+      }
+    },
+    "water_hardness": {
+      "options": {
+        "0": "Very soft (0–3 °fH / 0–4 °dH)",
+        "1": "Soft (4–6 °fH / 4–8 °dH)",
+        "2": "Medium (7–11 °fH / 8–12 °dH)",
+        "3": "Moderately hard (12–16 °fH / 12–18 °dH)",
+        "4": "Hard (17–22 °fH / 18–30 °dH)",
+        "5": "Very hard (23–27 °fH / >30 °dH)"
+      }
+    },
+    "checkup_schedule": {
+      "options": {
+        "0": "Every cycle",
+        "1": "Weekly",
+        "2": "Monthly"
       }
     }
   }

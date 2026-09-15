@@ -20,21 +20,30 @@ async def init_integration(
     aioclient_mock,
     status_response: str,
     statistics_response: str | None = None,
-):
+    extra_config_data: dict | None = None,
+) -> MockConfigEntry:
+    base_data = {
+        CONF_IP_ADDRESS: "192.168.0.66",
+        CONF_KEY_USE_ENCRYPTION: False,
+        CONF_PASSWORD: "",
+    }
+    if extra_config_data:
+        base_data.update(extra_config_data)
+
     entry = MockConfigEntry(
         domain=DOMAIN,
         unique_id="123-456",
-        data={
-            CONF_IP_ADDRESS: "192.168.0.66",
-            CONF_KEY_USE_ENCRYPTION: False,
-            CONF_PASSWORD: "",
-        },
+        data=base_data,
     )
 
     aioclient_mock.get(
         f"http://{TEST_IP}/http-read.json?encrypted=0", text=status_response
     )
     if statistics_response is not None:
+        aioclient_mock.get(
+            f"http://{TEST_IP}/http-prepareStatistics.json?encrypted=0",
+            text='{"response":"SUCCESS"}',
+        )
         aioclient_mock.get(
             f"http://{TEST_IP}/http-getStatistics.json?encrypted=0",
             text=statistics_response,
@@ -43,3 +52,4 @@ async def init_integration(
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
+    return entry

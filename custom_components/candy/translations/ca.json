@@ -5,13 +5,79 @@
     },
     "error": {
       "unknown": "Error inesperat",
-      "detect_encryption": "No s'ha pogut detectar el xifratge, comproveu els registres"
+      "detect_encryption": "No s'ha pogut detectar el xifratge, comproveu els registres",
+      "cloud_auth": "No s'ha pogut connectar al núvol Simply-Fi. Comproveu les credencials i torneu a intentar-ho."
     },
     "step": {
       "user": {
         "data": {
           "ip_address": "Adreça IP del dispositiu"
         }
+      },
+      "select": {
+        "title": "Dispositius Candy trobats a la xarxa",
+        "description": "Seleccioneu un dispositiu per configurar, o trieu \"Introduir IP manualment\".",
+        "data": {
+          "ip_address": "Dispositiu"
+        }
+      },
+      "mode": {
+        "title": "Mode d'integració",
+        "description": "Trieu **Només lectura** per monitorar el dispositiu sense connexió al núvol.\n\nTrieu **Control total** per iniciar/aturar programes. Requereix les credencials de Simply-Fi una sola vegada — s'utilitzen únicament per descarregar la configuració i no s'emmagatzemen.",
+        "data": {
+          "mode": "Mode"
+        }
+      },
+      "cloud": {
+        "title": "Compte Simply-Fi",
+        "data": {
+          "email": "Correu electrònic",
+          "password": "Contrasenya"
+        }
+      },
+      "language": {
+        "title": "Idioma dels programes",
+        "description": "Trieu l'idioma per als noms dels programes a la interfície. Pot ser diferent de l'idioma de Home Assistant.",
+        "data": {
+          "program_language": "Idioma"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "wash_scheduled_start": {
+        "name": "Wash scheduled start"
+      },
+      "wash_scheduled_finish": {
+        "name": "Wash scheduled finish"
+      }
+    },
+    "select": {
+      "wash_program_select": {
+        "name": "Programa de rentat"
+      },
+      "wash_temp_select": {
+        "name": "Temperatura de rentat"
+      },
+      "wash_spin_select": {
+        "name": "Velocitat de centrifugat"
+      },
+      "wash_soil_select": {
+        "name": "Nivell de brutícia"
+      }
+    },
+    "number": {
+      "wash_delay_number": {
+        "name": "Retard de rentat"
+      }
+    },
+    "button": {
+      "wash_start_button": {
+        "name": "Inicia rentat"
+      },
+      "wash_stop_button": {
+        "name": "Atura rentat"
       }
     }
   },

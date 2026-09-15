@@ -14,7 +14,7 @@ Fully compliant with strictly-typed Home Assistant (>= 2024.x) development stand
 ## ✨ Features
 
 - **Supported appliances**:
-  - 🧺 Washing Machine
+  - 🧺 Washing Machine — with optional **Full Remote Control** (see below)
   - 🌫️ Tumble Dryer
   - 🔪 Dishwasher
   - 🍳 Oven
@@ -23,6 +23,64 @@ Fully compliant with strictly-typed Home Assistant (>= 2024.x) development stand
 - **Strict HA Compatibility:** Follows the rigorous MyPy styling standards enforced by Home Assistant 2025.
 - Uses the local device API for real-time responsiveness.
 - Creates dedicated, native semantic sensors (e.g., remaining time, current status, machine cycle) and exposes granular information cleanly as sensor attributes.
+
+---
+
+## 🧺 Washing Machine — Full Control
+
+Full Control mode turns the integration into a complete remote panel, going beyond status monitoring to let you program, start, and track your washing machine from Home Assistant. The protocol was reverse-engineered from the official Candy/Simply-Fi app, and the feature set matches everything the mobile app offers.
+
+<p float="left">
+  <img src="docs//images/dashboard_washing_machine.png" width="300" />
+  <img src="docs//images/dashboard_maintenance.png" width="300" /> 
+</p>
+
+### How it works
+
+At setup, you choose between **Read-Only** (sensors only) and **Full Control**. Full Control prompts for your Simply-Fi cloud credentials once — they are used to download the program catalog, encryption key, and device metadata, then immediately discarded and never stored. Program names, descriptions, and option labels come directly from the official app, available in 17 languages, and default to your Home Assistant language.
+
+### Setup flow
+
+1. Device is discovered automatically on the local network (or enter the IP manually).
+2. Choose mode: **Read-Only** or **Full Control**.
+3. *(Full Control)* Enter your Simply-Fi email and password — programs and device info are downloaded, credentials are discarded.
+4. Select the display language for program names and description, pick your favourite language indipendently the Home Assistant language.
+5. Optionally enable maintenance cycle counters (check-up, limescale, filter) and set water hardness.
+6. Optionally enable automatic self-diagnostic scheduling (every cycle / weekly / monthly).
+
+### What you get
+
+**Control entities:** program selector (all localized program names), temperature, spin speed, soil level, delay start, option switches (Prewash, Hygiene, Steam, Anti-crease, Good Night, Extra Rinse, AquaPlus), and Start / Pause / Stop buttons.
+
+**Maintenance & diagnostics:** mirrors the Candy app's built-in reminders — check-up, limescale, and filter counters with configurable water hardness thresholds; self-diagnostic result sensor and last check-up timestamp. Running the check-up or limescale cycle does **not** reset its counter automatically — press the matching reset button once the cycle finishes. The filter counter has no start button at all: clean the filter by hand, then reset it manually.
+
+**Remote Control status:** a dedicated sensor tracks whether the machine currently accepts remote commands, and disables every control entity while it doesn't. See [`docs/remote-control.md`](docs/remote-control.md) for details.
+
+### Improvements over the official app
+
+- **Faster feedback:** every write command locks the controls, waits for the machine to process it, then forces an immediate refresh — so the dashboard reflects the new state in a few seconds instead of waiting for the next 60-second poll.
+- **Faster wake-up:** while the machine is off, Home Assistant polls every 20 seconds instead of 60, so it notices when the machine turns back on much sooner.
+- **Accurate end-time calculation:** The integration computes an accurate scheduled finish timestamp, accounting for all variables.
+- **Always-on visibility:** Machine state and controls are available on your dashboard without opening the app.
+- **Correct lifetime cycle count:** the official app derives total wash cycles from per-program
+  counters that are 8-bit and silently wrap at 256 — after enough washes on one program its
+  total jumps *backwards* by 256. This integration reads the wide temperature counters instead,
+  so the total keeps climbing correctly.
+
+### Dashboard cards
+
+Ready-made Lovelace cards are included in the [`dashboard/`](dashboard/) folder. 
+
+[Mushroom](https://github.com/piitaya/lovelace-mushroom) custom card is required.
+
+- [`washing-machine.yaml`](dashboard/washing-machine.yaml) — main control card: status, running info, program selector, options, start/pause/stop buttons, and scheduled start/finish times.
+- [`maintenance.yaml`](dashboard/maintenance.yaml) — maintenance card: check-up, limescale, and filter counters with reset buttons and check-up result.
+
+To use them, copy the card YAML into a new manual card in your Lovelace dashboard and replace every occurrence of `<machine_name>` with your own machine's entity ID prefix (e.g. `my_washing_machine`).
+
+### Compatibility Note
+
+Full functionality has been tested on the **RAPIDO** series. Other washing machine series may behave differently. If you encounter issues or unexpected behaviour, please share your findings in the [Discussions](https://github.com/bigmoby/home-assistant-candy/discussions/categories/device-support-improvements) section or open an Issue — feedback is very welcome.
 
 ---
 

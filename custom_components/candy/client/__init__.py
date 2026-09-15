@@ -2,24 +2,78 @@ import asyncio
 import json
 from json import JSONDecodeError
 import logging
-from typing import Any, Union
+from pathlib import Path
+from typing import Any
 
 import aiohttp
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
+import async_timeout
 import backoff
 
 from .decryption import Encryption, decrypt, find_key
 from .model import (
     DishwasherStatus,
+    DownloadableProgram as DownloadableProgram,
     OvenStatus,
     TumbleDryerStatus,
     WashingMachineStatistics,
     WashingMachineStatus,
+    WashingMachineWashProgram as WashingMachineWashProgram,
     WineCoolerStatus,
+    load_downloadable_programs as load_downloadable_programs,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+_raw_parent_map = json.loads(
+    (Path(__file__).parent / "parent_to_program.json").read_text(encoding="utf-8")
+)
+_PARENT_TO_PROGRAM: dict[int, list[str]] = {}
+for _entry in sorted(_raw_parent_map, key=lambda e: e["Priority"]):
+    _PARENT_TO_PROGRAM.setdefault(_entry["Output"], []).append(_entry["Name"])
+del _raw_parent_map, _entry
+
+
+def parse_wash_programs(raw: list[dict]) -> list[WashingMachineWashProgram]:
+    """Parse and filter the raw program list stored in a config entry."""
+    programs = [WashingMachineWashProgram.from_dict(p) for p in raw]
+    return [p for p in programs if p.position != 0]
+
+
+def resolve_downloadable_programs(
+    programs: list[DownloadableProgram],
+    standard_programs: list[WashingMachineWashProgram],
+) -> list[tuple[DownloadableProgram, WashingMachineWashProgram]]:
+    """Match each downloadable program to its base standard program via parentToProgram.json.
+
+    parent is an Output index in parentToProgram.json, not a position. The app walks the
+    priority-ordered list of program names for that output and picks the first one present
+    in the device's own catalog. That program's pr_code and position go into the write command.
+    """
+    parent_map = _PARENT_TO_PROGRAM
+    # Build lookup by full API name (parentToProgram.json uses full names with prefix)
+    _PREFIXES = ("DUAL_WM_WD_PROGRAM_NAME_", "DUAL_WM_WD_")
+    name_to_prog: dict[str, WashingMachineWashProgram] = {}
+    for p in standard_programs:
+        # p.name is already stripped; reconstruct the full name for each possible prefix
+        for prefix in _PREFIXES:
+            name_to_prog[prefix + p.name] = p
+
+    result = []
+    for dl in programs:
+        candidates = parent_map.get(dl.parent, [])
+        base = next((name_to_prog[n] for n in candidates if n in name_to_prog), None)
+        if base is not None:
+            result.append((dl, base))
+        else:
+            _LOGGER.warning(
+                "Downloadable program %s (parent=%d) did not match any standard program",
+                dl.name,
+                dl.parent,
+            )
+    return result
+
 
 # Some devices reportedly can't handle too frequent requests and respond with BAD_REQUEST
 # This global limiter makes sure we don't call the API too fast
@@ -56,24 +110,24 @@ class CandyClient:
     @backoff.on_exception(backoff.expo, TimeoutError, max_tries=3, logger=__name__)
     async def status_with_retry(
         self,
-    ) -> Union[
-        WashingMachineStatus,
-        TumbleDryerStatus,
-        DishwasherStatus,
-        OvenStatus,
-        WineCoolerStatus,
-    ]:
+    ) -> (
+        WashingMachineStatus
+        | TumbleDryerStatus
+        | DishwasherStatus
+        | OvenStatus
+        | WineCoolerStatus
+    ):
         return await self.status()
 
     async def status(
         self,
-    ) -> Union[
-        WashingMachineStatus,
-        TumbleDryerStatus,
-        DishwasherStatus,
-        OvenStatus,
-        WineCoolerStatus,
-    ]:
+    ) -> (
+        WashingMachineStatus
+        | TumbleDryerStatus
+        | DishwasherStatus
+        | OvenStatus
+        | WineCoolerStatus
+    ):
         url = _status_url(self.device_ip, self.use_encryption)
         async with _LIMITER, self.session.get(url) as resp:
             if self.use_encryption:
@@ -112,6 +166,25 @@ class CandyClient:
 
             return status
 
+    async def send_command(self, query_string: str) -> None:
+        """Send a write command to the device.
+
+        query_string is a URL-encoded parameter string, e.g.
+        'Write=1&StSt=1&PrNm=11&...'
+        """
+        if self.use_encryption and self.encryption_key:
+            hex_data = _xor_encrypt(query_string, self.encryption_key)
+            url = _write_url(self.device_ip, use_encryption=True, data=hex_data)
+        else:
+            url = _write_url(self.device_ip, use_encryption=False, data=query_string)
+
+        async with async_timeout.timeout(5), self.session.get(url) as resp:
+            if resp.status != 200:
+                text = await resp.text()
+                raise ValueError(
+                    f"Write command failed (HTTP {resp.status}): {text[:200]}"
+                )
+
     @backoff.on_exception(
         backoff.expo, aiohttp.ClientError, max_tries=3, logger=__name__
     )
@@ -121,6 +194,10 @@ class CandyClient:
         return await self.fetch_statistics()
 
     async def fetch_statistics(self) -> WashingMachineStatistics:
+        prepare_url = _prepare_statistics_url(self.device_ip, self.use_encryption)
+        async with _LIMITER, self.session.get(prepare_url) as resp:
+            await resp.read()
+
         url = _statistics_url(self.device_ip, self.use_encryption)
         async with _LIMITER, self.session.get(url) as resp:
             if self.use_encryption:
@@ -234,8 +311,18 @@ def _status_url(device_ip: str, use_encryption: bool) -> str:
     return f"http://{device_ip}/http-read.json?encrypted={1 if use_encryption else 0}"
 
 
+def _write_url(device_ip: str, use_encryption: bool, data: str) -> str:
+    if use_encryption:
+        return f"http://{device_ip}/http-write.json?encrypted=1&data={data}"
+    return f"http://{device_ip}/http-write.json?encrypted=0&{data}"
+
+
 def _statistics_url(device_ip: str, use_encryption: bool) -> str:
     return f"http://{device_ip}/http-getStatistics.json?encrypted={1 if use_encryption else 0}"
+
+
+def _prepare_statistics_url(device_ip: str, use_encryption: bool) -> str:
+    return f"http://{device_ip}/http-prepareStatistics.json?encrypted={1 if use_encryption else 0}"
 
 
 # Maps JSON root keys to human-readable device type labels

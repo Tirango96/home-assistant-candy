@@ -96,6 +96,7 @@ async def test_temp_sensor_heating(
     assert state
     assert state.state == "143"
     assert state.attributes == {
+        "device_class": "temperature",
         "friendly_name": "Oven temperature",
         "icon": "mdi:thermometer",
         "unit_of_measurement": "°C",

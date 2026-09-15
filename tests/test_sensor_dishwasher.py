@@ -127,6 +127,7 @@ async def test_remaining_time_sensor_idle(
     assert state
     assert state.state == "0"
     assert state.attributes == {
+        "device_class": "duration",
         "friendly_name": "Dishwasher remaining time",
         "icon": "mdi:progress-clock",
         "unit_of_measurement": "min",
@@ -143,6 +144,7 @@ async def test_remaining_time_sensor_wash(
     assert state
     assert state.state == "68"
     assert state.attributes == {
+        "device_class": "duration",
         "friendly_name": "Dishwasher remaining time",
         "icon": "mdi:progress-clock",
         "unit_of_measurement": "min",

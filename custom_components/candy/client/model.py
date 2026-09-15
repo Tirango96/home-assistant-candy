@@ -1,5 +1,26 @@
 from dataclasses import dataclass
 from enum import Enum
+import json
+from pathlib import Path
+
+_PROGRAM_NAMES: dict[str, dict[str, str]] = json.loads(
+    (Path(__file__).parent / "program_names.json").read_text(encoding="utf-8")
+)
+
+_NFC_PROGRAMS_RAW: list[dict] = json.loads(
+    (Path(__file__).parent / "nfc_programs.json").read_text(encoding="utf-8")
+)
+
+# Maps DUAL_WM_WD_PROGRAM_DOWNLOAD_NAME_* → {translations, category_translations, description_translations}
+# Used by load_downloadable_programs to filter and translate the cloud catalog.
+_DOWNLOADABLE_PROGRAM_TRANSLATIONS: dict[str, dict] = {
+    e["name"].replace("NFC_PROGRAM_NAME_", "DUAL_WM_WD_PROGRAM_DOWNLOAD_NAME_"): {
+        "translations": e["translations"],
+        "category_translations": e["category_translations"],
+        "description_translations": e.get("description_translations", {}),
+    }
+    for e in _NFC_PROGRAMS_RAW
+}
 
 
 class StatusCode(Enum):
@@ -31,6 +52,12 @@ class MachineState(StatusCode):
     ERROR = (6, "Error")
     FINISHED1 = (7, "Finished")
     FINISHED2 = (8, "Finished")
+
+
+class CheckUpResult(StatusCode):
+    NOT_RUN = (0, "Not run")
+    OK = (1, "OK")
+    PROBLEM = (2, "Problem detected")
 
 
 class WashProgramState(StatusCode):
@@ -68,7 +95,8 @@ class WashingMachineStatus:
     unbalance_fault: int | None  # unbF — unbalance fault count
     unbalance_count: int | None  # unbC — unbalance count
     fault_count: int | None  # numF — total fault count
-    check_up_state: int | None  # CheckUpState — 0 = ok, non-zero = service due
+    dis_test_res: CheckUpResult | None  # DisTestRes — result of last diagnostic
+    soil_level: int | None  # SLevel — 0–4 soil level setting
 
     @classmethod
     def from_json(cls, json):
@@ -91,9 +119,10 @@ class WashingMachineStatus:
             unbalance_fault=int(json["unbF"]) if "unbF" in json else None,
             unbalance_count=int(json["unbC"]) if "unbC" in json else None,
             fault_count=int(json["numF"]) if "numF" in json else None,
-            check_up_state=int(json["CheckUpState"])
-            if "CheckUpState" in json
+            dis_test_res=CheckUpResult.from_code(int(json["DisTestRes"]))
+            if "DisTestRes" in json
             else None,
+            soil_level=int(json["SLevel"]) if "SLevel" in json else None,
         )
 
 
@@ -233,13 +262,208 @@ class OvenStatus:
 
 
 @dataclass
+class WashingMachineWashProgram:
+    position: int
+    selector_position: int
+    name: str
+    pr_code: int
+    max_temperature: int
+    default_temperature: int
+    max_spin_speed: int
+    default_spin_speed: int
+    min_soil_level: int
+    max_soil_level: int
+    default_soil_level: int
+    steam: bool
+    steam_type: str
+    default_duration: int
+    duration_soil_max: int
+    duration_soil_medium: int
+    duration_soil_min: int
+    liquid_detergent_dose: int | None  # 1–4 dose level, or None if not applicable
+    powder_detergent_dose: int | None  # 1–4 dose level, or None if not applicable
+    max_cycle_capacity: int | None  # kg
+    available_options: int  # OptMsk1 bitmask of valid options for this program
+
+    @classmethod
+    def from_dict(cls, program_dict: dict) -> "WashingMachineWashProgram":
+        """Parse a program entry from the Simply-Fi appliances JSON."""
+        p = program_dict["program"]
+        params = {
+            cp["command_parameter"]["name"]: cp["command_parameter"]["validation"]
+            for cp in p["command_parameters"]
+        }
+
+        def _int(key: str, fallback: int = 0) -> int:
+            val = params.get(key, "")
+            try:
+                return int(val)
+            except (ValueError, TypeError):
+                return fallback
+
+        def _int_or_none(key: str) -> int | None:
+            val = params.get(key, "")
+            try:
+                result = int(val)
+            except (ValueError, TypeError):
+                return None
+            else:
+                return result if result > 0 else None
+
+        raw_name: str = p.get("name", "")
+        for prefix in ("DUAL_WM_WD_PROGRAM_NAME_", "DUAL_WM_WD_"):
+            if raw_name.startswith(prefix):
+                raw_name = raw_name[len(prefix) :]
+                break
+
+        return cls(
+            position=int(p["position"]),
+            selector_position=_int("selector_position"),
+            name=raw_name,
+            pr_code=_int("pr_code"),
+            max_temperature=_int("maximum_temperature"),
+            default_temperature=_int("default_temperature"),
+            max_spin_speed=_int("maximum_spin_speed"),
+            default_spin_speed=_int("default_spin_speed"),
+            min_soil_level=_int("minimum_soil_level"),
+            max_soil_level=_int("maximum_soil_level"),
+            default_soil_level=_int("default_soil_level"),
+            steam=_int("steam") != 0,
+            steam_type=params.get("steam_type", ""),
+            default_duration=_int("default_duration"),
+            duration_soil_max=_int("remaining_time_soil_max"),
+            duration_soil_medium=_int("remaining_time_soil_medium"),
+            duration_soil_min=_int("remaining_time_soil_min"),
+            liquid_detergent_dose=_int_or_none("liquid_detergent_dose"),
+            powder_detergent_dose=_int_or_none("powder_detergent_dose"),
+            max_cycle_capacity=_int_or_none("max_cycle_capacity"),
+            available_options=_int("available_options"),
+        )
+
+    @property
+    def display_name(self) -> str:
+        return self.localized_name("en")
+
+    def localized_name(self, language: str) -> str:
+        """Return the program name in the given BCP-47 language code.
+
+        Falls back to English, then to title-casing the raw key.
+        """
+        translations = _PROGRAM_NAMES.get(self.name, {})
+        return (
+            translations.get(language)
+            or translations.get("en")
+            or self.name.replace("_", " ").title()
+        )
+
+    def localized_description(self, language: str) -> str | None:
+        """Return the program description in the given BCP-47 language code, or None."""
+        translations = _PROGRAM_NAMES.get(self.name + "_DESCRIPTION", {})
+        return translations.get(language) or translations.get("en") or None
+
+
+@dataclass
+class DownloadableProgram:
+    """A special/downloadable program fetched from the Simply-Fi cloud catalog.
+
+    Write-command parameters come from cloud wm_wd_programs; display translations
+    come from nfc_programs.json (APK-sourced, explicit per-language strings).
+    """
+
+    position: int
+    name: str
+    parent: int  # Output index into parentToProgram.json; resolved to base program via priority walk
+    temperature: int
+    spin_speed: int | None  # RPM; None means "MAX" → use base.max_spin_speed
+    soil_level: int
+    options: int
+    steam: int
+    translations: dict[str, str]
+    category_translations: dict[str, str]
+    description_translations: dict[str, str]
+
+    @property
+    def recipe_id(self) -> str:
+        return f"D_{self.position}"
+
+    def display_name(self, lang: str) -> str:
+        return self.translations.get(lang) or self.translations.get("en", self.name)
+
+    def category_name(self, lang: str) -> str:
+        return self.category_translations.get(lang) or self.category_translations.get(
+            "en", ""
+        )
+
+    def category_prefixed(self, lang: str) -> str:
+        return f"{self.category_name(lang)} - {self.display_name(lang)}"
+
+    def description(self, lang: str) -> str:
+        return self.description_translations.get(
+            lang
+        ) or self.description_translations.get("en", "")
+
+
+def load_downloadable_programs(cloud_raw: list[dict]) -> list["DownloadableProgram"]:
+    """Build DownloadableProgram list from cloud wm_wd_programs response.
+
+    Only programs present in nfc_programs.json (APK allowlist) are included,
+    since those are the only ones with user-visible translated display names.
+    Dry-only programs are skipped via the nfc_programs.json allowlist (they have no translations).
+    """
+    result = []
+    for entry in cloud_raw:
+        position_str = entry.get("position", "")
+        try:
+            position = int(position_str)
+        except (ValueError, TypeError):
+            continue
+        name = entry.get("name", "")
+        trans = _DOWNLOADABLE_PROGRAM_TRANSLATIONS.get(name)
+        if trans is None:
+            continue
+        spin_raw = entry.get("spin_speed", "0")
+        spin: int | None
+        if str(spin_raw).upper() == "MAX":
+            spin = None
+        else:
+            try:
+                spin = int(spin_raw)
+            except (ValueError, TypeError):
+                spin = None
+        result.append(
+            DownloadableProgram(
+                position=position,
+                name=name,
+                parent=int(entry.get("parent", 0)),
+                temperature=int(entry.get("temperature", 0)),
+                spin_speed=spin,
+                soil_level=int(entry.get("soil_level", 0)),
+                options=int(entry.get("options", 0)),
+                steam=int(entry.get("steam", 0)),
+                translations=trans["translations"],
+                category_translations=trans["category_translations"],
+                description_translations=trans["description_translations"],
+            )
+        )
+    return result
+
+
+@dataclass
 class WashingMachineStatistics:
     total_cycles: int
 
     @classmethod
     def from_json(cls, json):
+        # Program1..21 are 8-bit device counters that wrap at 256, which would
+        # periodically collapse total_cycles by 256. Temp0to30/Temp40/Temp60to90
+        # are wider counters tracking the same events (confirmed equal to the
+        # program sum in captures), so they're used instead. Programs that never
+        # heat may not increment any temperature bucket, causing a small
+        # under-count — an accepted trade-off versus the wraparound.
         total = sum(
-            int(v) for k, v in json.items() if k.startswith("Program") and v.isdigit()
+            int(v)
+            for k, v in json.items()
+            if k in ("Temp0to30", "Temp40", "Temp60to90") and v.isdigit()
         )
         return cls(total_cycles=total)
 

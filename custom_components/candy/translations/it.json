@@ -5,7 +5,8 @@
     },
     "error": {
       "unknown": "Errore sconosciuto",
-      "detect_encryption": "Rilevamento crittografia fallito, controlla i log"
+      "detect_encryption": "Rilevamento crittografia fallito, controlla i log",
+      "cloud_auth": "Impossibile connettersi al cloud Simply-Fi. Controlla le credenziali e riprova."
     },
     "step": {
       "user": {
@@ -18,6 +19,27 @@
         "description": "Seleziona un dispositivo da configurare, oppure scegli \"Inserisci IP manualmente\".",
         "data": {
           "ip_address": "Dispositivo"
+        }
+      },
+      "mode": {
+        "title": "Modalità di integrazione",
+        "description": "Scegli **Solo lettura** per monitorare il dispositivo senza connessione al cloud.\n\nScegli **Controllo completo** per avviare/fermare i programmi. Le credenziali Simply-Fi sono richieste una sola volta — vengono usate solo per scaricare le impostazioni del dispositivo e non vengono mai salvate.",
+        "data": {
+          "mode": "Modalità"
+        }
+      },
+      "cloud": {
+        "title": "Account Simply-Fi",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "language": {
+        "title": "Lingua dei programmi",
+        "description": "Scegli la lingua da usare per i nomi dei programmi nell'interfaccia. Può essere diversa dalla lingua di Home Assistant.",
+        "data": {
+          "program_language": "Lingua"
         }
       }
     }
@@ -59,6 +81,9 @@
       },
       "wash_program": {
         "name": "Programma di lavaggio"
+      },
+      "wash_program_description": {
+        "name": "Descrizione programma"
       },
       "tumble_dryer": {
         "name": "Asciugatrice"
@@ -104,6 +129,39 @@
       },
       "wine_cooler_error_code": {
         "name": "Codice errore cantinetta vino"
+      },
+      "wash_scheduled_start": {
+        "name": "Wash scheduled start"
+      },
+      "wash_scheduled_finish": {
+        "name": "Wash scheduled finish"
+      }
+    },
+    "select": {
+      "wash_program_select": {
+        "name": "Programma di lavaggio"
+      },
+      "wash_temp_select": {
+        "name": "Temperatura di lavaggio"
+      },
+      "wash_spin_select": {
+        "name": "Velocità centrifuga"
+      },
+      "wash_soil_select": {
+        "name": "Livello di sporco"
+      }
+    },
+    "number": {
+      "wash_delay_number": {
+        "name": "Ritardo partenza"
+      }
+    },
+    "button": {
+      "wash_start_button": {
+        "name": "Avvia lavaggio"
+      },
+      "wash_stop_button": {
+        "name": "Ferma lavaggio"
       }
     },
     "light": {

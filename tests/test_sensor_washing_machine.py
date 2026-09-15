@@ -13,11 +13,24 @@ from pytest_homeassistant_custom_component.common import (
 )
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
-from custom_components.candy import CONF_KEY_USE_ENCRYPTION
+from custom_components.candy import (
+    CONF_KEY_USE_ENCRYPTION,
+    SCAN_INTERVAL_ACTIVE,
+    SCAN_INTERVAL_RESTING,
+)
 from custom_components.candy.const import (
+    CONF_KEY_IS_WASHING_MACHINE,
+    CONF_KEY_MAINTENANCE_ENABLED,
+    CONF_KEY_MAINTENANCE_LAST_FILTER,
+    CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP,
+    CONF_KEY_MAINTENANCE_LAST_LIMESCALE,
+    CONF_KEY_PROGRAMS,
+    CONF_KEY_WATER_HARDNESS,
     DATA_KEY_COORDINATOR,
     DATA_KEY_STATS_COORDINATOR,
     DOMAIN,
+    UNIQUE_ID_WASH_LIQUID_DETERGENT,
+    UNIQUE_ID_WASH_POWDER_DETERGENT,
 )
 
 from .common import TEST_IP, init_integration
@@ -94,6 +107,7 @@ async def test_remaining_time_sensor_wash(
     assert state
     assert state.state == "8"
     assert state.attributes == {
+        "device_class": "duration",
         "friendly_name": "Wash cycle remaining time",
         "icon": "mdi:progress-clock",
         "unit_of_measurement": "min",
@@ -112,6 +126,7 @@ async def test_remaining_time_sensor_idle(
     assert state
     assert state.state == "0"
     assert state.attributes == {
+        "device_class": "duration",
         "friendly_name": "Wash cycle remaining time",
         "icon": "mdi:progress-clock",
         "unit_of_measurement": "min",
@@ -206,37 +221,6 @@ async def test_sensors_device_info(
     assert main_device == cycle_device == time_device
 
 
-async def test_check_up_sensor_ok(
-    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
-):
-    await init_integration(
-        hass, aioclient_mock, load_fixture("washing_machine/idle.json")
-    )
-
-    state = hass.states.get("sensor.wash_maintenance")
-
-    assert state
-    assert state.state == "Ok"
-    assert state.attributes == {
-        "friendly_name": "Wash maintenance",
-        "icon": "mdi:wrench-check",
-    }
-
-
-async def test_check_up_sensor_service_due(
-    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
-):
-    service_due_fixture = load_fixture("washing_machine/idle.json").replace(
-        '"CheckUpState": "0"', '"CheckUpState": "1"'
-    )
-    await init_integration(hass, aioclient_mock, service_due_fixture)
-
-    state = hass.states.get("sensor.wash_maintenance")
-
-    assert state
-    assert state.state == "Service due"
-
-
 async def test_total_cycles_sensor(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
@@ -247,13 +231,14 @@ async def test_total_cycles_sensor(
         statistics_response=load_fixture("washing_machine/statistics.json"),
     )
 
-    state = hass.states.get("sensor.wash_total_cycles")
+    state = hass.states.get("sensor.total_wash_cycles")
 
     assert state
     assert state.state == "40"
     assert state.attributes == {
-        "friendly_name": "Wash total cycles",
+        "friendly_name": "Total wash cycles",
         "icon": "mdi:counter",
+        "state_class": "total_increasing",
     }
 
 
@@ -264,7 +249,7 @@ async def test_total_cycles_sensor_absent_without_statistics(
         hass, aioclient_mock, load_fixture("washing_machine/idle.json")
     )
 
-    state = hass.states.get("sensor.wash_total_cycles")
+    state = hass.states.get("sensor.total_wash_cycles")
 
     assert state is None
 
@@ -356,59 +341,36 @@ async def test_total_cycles_shows_cached_value_after_offline_startup(
     assert state.state == "40"
 
 
-async def test_check_up_sensor_shows_cached_value_after_offline_startup(
+async def test_soil_level_sensor_idle(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ):
-    """Wash maintenance sensor should show last known value when startup uses synthetic offline status."""
-    # Build a fixture with no CheckUpState field so check_up_state parses as None
-    fixture_no_checkup = load_fixture("washing_machine/idle.json").replace(
-        '"CheckUpState": "0",', ""
+    await init_integration(
+        hass, aioclient_mock, load_fixture("washing_machine/idle.json")
     )
 
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        unique_id="123-456",
-        data={
-            CONF_IP_ADDRESS: TEST_IP,
-            CONF_KEY_USE_ENCRYPTION: False,
-            CONF_PASSWORD: "",
-        },
-    )
-    entry.add_to_hass(hass)
+    state = hass.states.get("sensor.wash_stain_level")
 
-    # Pre-register the maintenance entity and capture the actual entity_id
-    registry = entity_registry.async_get(hass)
-    checkup_entry = registry.async_get_or_create(
-        "sensor",
-        DOMAIN,
-        f"{entry.entry_id}-wash_check_up",
-        config_entry=entry,
-    )
+    assert state
+    assert state.state == "unknown"  # SLevel=0 has no label
+    assert state.attributes == {
+        "friendly_name": "Wash stain level",
+        "icon": "mdi:water-opacity",
+        "options": ["low", "normal", "high"],
+        "device_class": "enum",
+    }
 
-    # Seed the RestoreSensor cache using the actual entity_id HA assigned
-    mock_restore_cache_with_extra_data(
-        hass,
-        [
-            (
-                State(checkup_entry.entity_id, "Ok"),
-                SensorExtraStoredData(
-                    native_value="Ok", native_unit_of_measurement=None
-                ).as_dict(),
-            )
-        ],
+
+async def test_soil_level_sensor_running(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    await init_integration(
+        hass, aioclient_mock, load_fixture("washing_machine/running_wash.json")
     )
 
-    aioclient_mock.get(
-        f"http://{TEST_IP}/http-read.json?encrypted=0",
-        text=fixture_no_checkup,
-    )
+    state = hass.states.get("sensor.wash_stain_level")
 
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    state = hass.states.get(checkup_entry.entity_id)
-    assert state is not None
-    assert state.state == "Ok"
+    assert state
+    assert state.state == "normal"  # SLevel=2
 
 
 async def test_statistics_not_fetched_when_machine_is_off(
@@ -445,6 +407,432 @@ async def test_statistics_not_fetched_when_machine_is_off(
         await stats_coordinator.async_refresh()
         await hass.async_block_till_done()
 
-    state = hass.states.get("sensor.wash_total_cycles")
+    state = hass.states.get("sensor.total_wash_cycles")
     assert state is not None
     assert state.state.isdigit()
+
+
+# ---------------------------------------------------------------------------
+# Maintenance counter sensor tests
+# ---------------------------------------------------------------------------
+
+_MAINTENANCE_CONFIG = {
+    CONF_KEY_IS_WASHING_MACHINE: True,
+    CONF_KEY_MAINTENANCE_ENABLED: True,
+    CONF_KEY_WATER_HARDNESS: 2,
+    CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP: 0,
+    CONF_KEY_MAINTENANCE_LAST_LIMESCALE: 0,
+    CONF_KEY_MAINTENANCE_LAST_FILTER: 0,
+}
+
+
+async def test_maintenance_sensors_absent_when_disabled(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data={
+            CONF_KEY_IS_WASHING_MACHINE: True,
+            CONF_KEY_MAINTENANCE_ENABLED: False,
+        },
+    )
+
+    assert (
+        hass.states.get("sensor.washing_machine_check_up_maintenance_remaining_cycles")
+        is None
+    )
+    assert (
+        hass.states.get("sensor.washing_machine_limescale_maintenance_remaining_cycles")
+        is None
+    )
+    assert (
+        hass.states.get("sensor.washing_machine_filter_maintenance_remaining_cycles")
+        is None
+    )
+
+
+async def test_maintenance_sensors_absent_without_statistics(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        extra_config_data=_MAINTENANCE_CONFIG,
+    )
+
+    assert (
+        hass.states.get("sensor.washing_machine_check_up_maintenance_remaining_cycles")
+        is None
+    )
+    assert (
+        hass.states.get("sensor.washing_machine_limescale_maintenance_remaining_cycles")
+        is None
+    )
+    assert (
+        hass.states.get("sensor.washing_machine_filter_maintenance_remaining_cycles")
+        is None
+    )
+
+
+async def test_full_checkup_sensor(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """total_cycles=40, last_full_checkup=0, threshold=100 → 60 cycles remaining."""
+    await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data=_MAINTENANCE_CONFIG,
+    )
+
+    state = hass.states.get(
+        "sensor.washing_machine_check_up_maintenance_remaining_cycles"
+    )
+    assert state
+    assert state.state == "60"
+    assert state.attributes["icon"] == "mdi:washing-machine"
+
+
+async def test_limescale_sensor_medium_hardness(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """total_cycles=40, last_limescale=0, hardness=2 (threshold=100) → 60 remaining."""
+    await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data=_MAINTENANCE_CONFIG,
+    )
+
+    state = hass.states.get(
+        "sensor.washing_machine_limescale_maintenance_remaining_cycles"
+    )
+    assert state
+    assert state.state == "60"
+    assert state.attributes["icon"] == "mdi:water-alert"
+
+
+async def test_limescale_sensor_very_hard_water(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """total_cycles=40, last_limescale=0, hardness=5 (threshold=85) → 45 remaining."""
+    config = dict(_MAINTENANCE_CONFIG)
+    config[CONF_KEY_WATER_HARDNESS] = 5
+
+    await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data=config,
+    )
+
+    state = hass.states.get(
+        "sensor.washing_machine_limescale_maintenance_remaining_cycles"
+    )
+    assert state
+    assert state.state == "45"
+
+
+async def test_filter_sensor(hass: HomeAssistant, aioclient_mock: AiohttpClientMocker):
+    """total_cycles=40, last_filter=0, threshold=100 → 60 remaining."""
+    await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data=_MAINTENANCE_CONFIG,
+    )
+
+    state = hass.states.get(
+        "sensor.washing_machine_filter_maintenance_remaining_cycles"
+    )
+    assert state
+    assert state.state == "60"
+    assert state.attributes["icon"] == "mdi:filter-check"
+
+
+async def test_maintenance_sensor_shows_zero_when_due(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """When elapsed == threshold (multiple), sensor shows 0 (due now)."""
+    # total_cycles=40, threshold=100; last_full_checkup=-60 → elapsed=100 → due
+    config = dict(_MAINTENANCE_CONFIG)
+    config[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] = -60
+
+    await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data=config,
+    )
+
+    state = hass.states.get(
+        "sensor.washing_machine_check_up_maintenance_remaining_cycles"
+    )
+    assert state
+    assert state.state == "0"
+
+
+async def test_maintenance_sensor_full_threshold_when_just_reset(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """When last_reset == total_cycles (just reset), sensor shows the full threshold."""
+    # total_cycles=40, last_selfclean=40 → elapsed=0 → full threshold=100
+    config = dict(_MAINTENANCE_CONFIG)
+    config[CONF_KEY_MAINTENANCE_LAST_FULL_CHECKUP] = 40
+
+    await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data=config,
+    )
+
+    state = hass.states.get(
+        "sensor.washing_machine_check_up_maintenance_remaining_cycles"
+    )
+    assert state
+    assert state.state == "100"
+
+
+# ---------------------------------------------------------------------------
+# Detergent sensor gating: present only when catalog data contains dose values
+# ---------------------------------------------------------------------------
+
+_PROGRAM_NO_DOSE = [
+    {
+        "program": {
+            "position": 1,
+            "name": "COTTON",
+            "command_parameters": [
+                {"command_parameter": {"name": "pr_code", "validation": "136"}},
+                {
+                    "command_parameter": {
+                        "name": "maximum_temperature",
+                        "validation": "90",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "default_temperature",
+                        "validation": "40",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "maximum_spin_speed",
+                        "validation": "1400",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "default_spin_speed",
+                        "validation": "800",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "minimum_soil_level",
+                        "validation": "1",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "maximum_soil_level",
+                        "validation": "3",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "default_soil_level",
+                        "validation": "2",
+                    }
+                },
+            ],
+        }
+    }
+]
+
+_PROGRAM_WITH_DOSE = [
+    {
+        "program": {
+            "position": 1,
+            "name": "COTTON",
+            "command_parameters": [
+                {"command_parameter": {"name": "pr_code", "validation": "136"}},
+                {
+                    "command_parameter": {
+                        "name": "maximum_temperature",
+                        "validation": "90",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "default_temperature",
+                        "validation": "40",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "maximum_spin_speed",
+                        "validation": "1400",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "default_spin_speed",
+                        "validation": "800",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "minimum_soil_level",
+                        "validation": "1",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "maximum_soil_level",
+                        "validation": "3",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "default_soil_level",
+                        "validation": "2",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "liquid_detergent_dose",
+                        "validation": "2",
+                    }
+                },
+                {
+                    "command_parameter": {
+                        "name": "powder_detergent_dose",
+                        "validation": "3",
+                    }
+                },
+            ],
+        }
+    }
+]
+
+
+def _detergent_entity_id(
+    hass: HomeAssistant, entry_id: str, uid_tpl: str
+) -> str | None:
+    reg = entity_registry.async_get(hass)
+    return reg.async_get_entity_id("sensor", DOMAIN, uid_tpl.format(entry_id))
+
+
+async def test_detergent_sensors_absent_without_dose_data(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Detergent sensors must not be registered when no program has dose values."""
+    entry = await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data={CONF_KEY_PROGRAMS: _PROGRAM_NO_DOSE},
+    )
+    assert (
+        _detergent_entity_id(hass, entry.entry_id, UNIQUE_ID_WASH_LIQUID_DETERGENT)
+        is None
+    )
+    assert (
+        _detergent_entity_id(hass, entry.entry_id, UNIQUE_ID_WASH_POWDER_DETERGENT)
+        is None
+    )
+
+
+async def test_detergent_sensors_present_with_dose_data(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Detergent sensors must be registered when catalog data includes dose values."""
+    entry = await init_integration(
+        hass,
+        aioclient_mock,
+        load_fixture("washing_machine/idle.json"),
+        statistics_response=load_fixture("washing_machine/statistics.json"),
+        extra_config_data={CONF_KEY_PROGRAMS: _PROGRAM_WITH_DOSE},
+    )
+    assert (
+        _detergent_entity_id(hass, entry.entry_id, UNIQUE_ID_WASH_LIQUID_DETERGENT)
+        is not None
+    )
+    assert (
+        _detergent_entity_id(hass, entry.entry_id, UNIQUE_ID_WASH_POWDER_DETERGENT)
+        is not None
+    )
+
+
+# ---------------------------------------------------------------------------
+# Adaptive polling interval tests
+# ---------------------------------------------------------------------------
+
+
+async def test_poll_interval_active_when_reachable(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Coordinator uses 60 s interval after a successful poll."""
+    entry = await init_integration(
+        hass, aioclient_mock, load_fixture("washing_machine/idle.json")
+    )
+    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR]
+    assert coordinator.update_interval == SCAN_INTERVAL_ACTIVE
+
+
+async def test_poll_interval_resting_when_unreachable(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Coordinator switches to 20 s interval when device becomes unreachable."""
+    entry = await init_integration(
+        hass, aioclient_mock, load_fixture("washing_machine/idle.json")
+    )
+    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR]
+
+    with patch(
+        "custom_components.candy.client.CandyClient.status",
+        side_effect=TimeoutError,
+    ):
+        await coordinator.async_refresh()
+        await hass.async_block_till_done()
+
+    assert coordinator.update_interval == SCAN_INTERVAL_RESTING
+
+
+async def test_poll_interval_restores_active_on_recovery(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+):
+    """Coordinator returns to 60 s interval once the device responds again."""
+    entry = await init_integration(
+        hass, aioclient_mock, load_fixture("washing_machine/idle.json")
+    )
+    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_KEY_COORDINATOR]
+
+    with patch(
+        "custom_components.candy.client.CandyClient.status",
+        side_effect=TimeoutError,
+    ):
+        await coordinator.async_refresh()
+        await hass.async_block_till_done()
+
+    assert coordinator.update_interval == SCAN_INTERVAL_RESTING
+
+    # Device comes back online — aioclient_mock URL is still registered from init
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    assert coordinator.update_interval == SCAN_INTERVAL_ACTIVE
