@@ -73,6 +73,8 @@ async def _authenticate(
     verifier, challenge = _generate_pkce_pair()
 
     # Step 1: GET /ciam/authorize
+    # The hOn CIAM endpoint only accepts GET (POST returns 403). Credentials are sent
+    # as query parameters because that is what the vendor API requires — not a design choice.
     async with session.get(
         f"{_CIAM_BASE}/ciam/authorize",
         params={"username": email, "password": password, "code_challenge": challenge},
